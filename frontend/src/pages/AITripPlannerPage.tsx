@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Compass,
@@ -9,961 +9,1247 @@ import {
   MapPin,
   CheckCircle2,
   X,
-  Search,
   Check,
   RefreshCw,
-  Heart,
-  Share2,
-  Download,
-  SlidersHorizontal,
-  ChevronRight,
   Clock,
   Car,
-  Bus,
-  UserCheck,
+  Plus,
+  Edit2,
+  Trash2,
+  AlertTriangle,
+  DollarSign,
+  ShieldCheck,
 } from 'lucide-react';
 import { LandingNavbar } from '../components/navigation/LandingNavbar';
 import { Footer } from '../components/navigation/Footer';
-
-// Image assets
-import sigiriyaImg from '../assets/destinations/sigiriya.jpg';
-import ellaImg from '../assets/destinations/Ella.jpg';
-import galleImg from '../assets/destinations/Galle.jpg';
-import mirissaImg from '../assets/destinations/Mirissa.jpg';
-import riverstonImg from '../assets/destinations/riverston.jpg';
-import kandyImg from '../assets/destinations/Kandy.jpg';
-import hortonPlainsImg from '../assets/destinations/Horton Plains.jpg';
+import { tripPlannerService } from '../services/tripPlannerService';
+import { TripPlan, ItineraryDayItem, ItineraryActivityItem } from '../types/tripPlanner';
 
 export const AITripPlannerPage: React.FC = () => {
   const navigate = useNavigate();
 
-  // Wizard Step State (1: Dest, 2: Dates, 3: Travelers, 4: Style, 5: Interests, 6: Travel & Guide, 7: Budget, 8: Confirm, 9: Planning Anim, 10: Result)
+  // Wizard Step State (1..7 wizard steps, 8 = AI Loading Animation, 9 = Generated Itinerary View)
   const [step, setStep] = useState<number>(1);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [saveSuccess, setSaveSuccess] = useState<boolean>(false);
 
-  // Preference Form Inputs
+  // Form Inputs
   const [destination, setDestination] = useState<string>('Sri Lanka');
-  const [duration, setDuration] = useState<string>('7 Days');
-  const [travelersType, setTravelersType] = useState<string>('Couple');
+  const [selectedDestinations, setSelectedDestinations] = useState<string[]>(['Kandy', 'Ella']);
+  const [startDate, setStartDate] = useState<string>('2026-09-12');
+  const [endDate, setEndDate] = useState<string>('2026-09-17');
   const [travelersCount, setTravelersCount] = useState<number>(2);
-  const [travelStyle, setTravelStyle] = useState<string>('Balanced');
-  const [selectedInterests, setSelectedInterests] = useState<string[]>([
-    'Nature',
-    'Culture',
-    'Food',
-  ]);
+  const [adultsCount, setAdultsCount] = useState<number>(2);
+  const [childrenCount, setChildrenCount] = useState<number>(0);
 
-  // Travel & Guide Preferences State
-  const [transportMode, setTransportMode] = useState<'Private' | 'Public' | 'None'>('Private');
-  const [hireGuide, setHireGuide] = useState<boolean>(true);
-  const [guideType, setGuideType] = useState<string>('No Preference');
-  const [selectedVehicle, setSelectedVehicle] = useState<string>('');
+  const [currency, setCurrency] = useState<string>('USD');
+  const [budgetAmount, setBudgetAmount] = useState<number>(600);
+  const [budgetCategory, setBudgetCategory] = useState<'Budget' | 'Moderate' | 'Luxury'>('Moderate');
 
-  // Budget Range State
-  const [budget, setBudget] = useState<string>('Moderate');
-  const [minBudget, setMinBudget] = useState<number>(250);
-  const [maxBudget, setMaxBudget] = useState<number>(600);
+  const [selectedTravelStyles, setSelectedTravelStyles] = useState<string[]>(['Cultural', 'Nature', 'Photography']);
+  const [selectedActivities, setSelectedActivities] = useState<string[]>(['Hiking', 'Temples', 'Beaches']);
+  const [specialRequirements, setSpecialRequirements] = useState<string>('');
 
-  // AI Generation Animation Progress State
+  const [accommodationPref, setAccommodationPref] = useState<string>('3 Star');
+  const [transportPref, setTransportPref] = useState<string>('Private vehicle');
+
+  // AI Animation State
   const [aiStepIndex, setAiStepIndex] = useState<number>(0);
-  const [aiStatusText, setAiStatusText] = useState<string>('Understanding your preferences...');
+  const [aiStatusText, setAiStatusText] = useState<string>('Understanding your travel preferences...');
+
+  // Generated Plan & Editing State
+  const [generatedPlan, setGeneratedPlan] = useState<TripPlan | null>(null);
+  const [editingActivity, setEditingActivity] = useState<{ dayIndex: number; activityIndex: number; activity: ItineraryActivityItem } | null>(null);
+  const [showAddActivityModal, setShowAddActivityModal] = useState<number | null>(null); // day index
+  const [newActivityTitle, setNewActivityTitle] = useState<string>('');
+  const [newActivityTime, setNewActivityTime] = useState<string>('02:00 PM');
+  const [newActivityCost, setNewActivityCost] = useState<number>(15);
+  const [regeneratingDayIndex, setRegeneratingDayIndex] = useState<number | null>(null);
 
   const triggerToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3500);
   };
 
-  // Participant-Based Vehicle Allocation Helper
-  const getRecommendedVehicle = (count: number) => {
-    if (count <= 3) return 'Sedan';
-    if (count <= 6) return 'SUV / Large SUV';
-    if (count <= 12) return 'Minivan';
-    return 'Mini Coach';
+  // Duration helper
+  const calculateDurationDays = () => {
+    const s = new Date(startDate);
+    const e = new Date(endDate);
+    const diff = Math.ceil((e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24));
+    return isNaN(diff) || diff <= 0 ? 1 : diff;
   };
 
-  const currentVehicle = selectedVehicle || getRecommendedVehicle(travelersCount);
+  const durationDays = calculateDurationDays();
 
-  // Run AI Planning Animation Sequence when step is 8
-  useEffect(() => {
-    if (step === 8) {
-      setAiStepIndex(0);
-      setAiStatusText('Understanding your travel preferences...');
+  const destinationOptions = ['Kandy', 'Ella', 'Galle', 'Sigiriya', 'Yala', 'Nuwara Eliya', 'Mirissa', 'Anuradhapura', 'Trincomalee'];
 
-      const timer1 = setTimeout(() => {
-        setAiStepIndex(1);
-        setAiStatusText('Optimizing your journey & destinations...');
-      }, 800);
-
-      const timer2 = setTimeout(() => {
-        setAiStepIndex(2);
-        setAiStatusText('Configuring independent exploration activities...');
-      }, 1600);
-
-      const timer3 = setTimeout(() => {
-        setAiStepIndex(3);
-        setAiStatusText('Checking travel routes & timing...');
-      }, 2400);
-
-      const timer4 = setTimeout(() => {
-        setAiStepIndex(4);
-        setAiStatusText('Optimizing your days & adding unexpected discoveries...');
-      }, 3200);
-
-      const timer5 = setTimeout(() => {
-        setAiStepIndex(5);
-        setAiStatusText('Finalizing recommendations...');
-      }, 4000);
-
-      const timer6 = setTimeout(() => {
-        setStep(9); // Show Result
-        triggerToast('Your Journey is ready!');
-      }, 4600);
-
-      return () => {
-        clearTimeout(timer1);
-        clearTimeout(timer2);
-        clearTimeout(timer3);
-        clearTimeout(timer4);
-        clearTimeout(timer5);
-        clearTimeout(timer6);
-      };
-    }
-  }, [step, travelersCount]);
-
-  const toggleInterest = (interest: string) => {
-    if (selectedInterests.includes(interest)) {
-      setSelectedInterests(selectedInterests.filter((i) => i !== interest));
+  const toggleDestination = (dest: string) => {
+    if (selectedDestinations.includes(dest)) {
+      setSelectedDestinations(selectedDestinations.filter((d) => d !== dest));
     } else {
-      setSelectedInterests([...selectedInterests, interest]);
+      setSelectedDestinations([...selectedDestinations, dest]);
     }
   };
 
-  const handleRefine = (refinementType: string) => {
-    triggerToast(`Refining itinerary with ${refinementType}...`);
-    setStep(8);
+  const travelStyleOptions = [
+    { label: 'Adventure', icon: '🧗' },
+    { label: 'Relaxation', icon: '🧘' },
+    { label: 'Cultural', icon: '🏛️' },
+    { label: 'Nature', icon: '🌿' },
+    { label: 'Beach', icon: '🏖️' },
+    { label: 'Wildlife', icon: '🐆' },
+    { label: 'Photography', icon: '📸' },
+    { label: 'Food', icon: '🍛' },
+    { label: 'Shopping', icon: '🛍️' },
+    { label: 'Family', icon: '👨‍👩‍👧‍👦' },
+    { label: 'Romantic', icon: '💖' },
+    { label: 'Backpacking', icon: '🎒' },
+    { label: 'Luxury', icon: '✨' },
+  ];
+
+  const toggleTravelStyle = (style: string) => {
+    if (selectedTravelStyles.includes(style)) {
+      setSelectedTravelStyles(selectedTravelStyles.filter((s) => s !== style));
+    } else {
+      setSelectedTravelStyles([...selectedTravelStyles, style]);
+    }
+  };
+
+  const activityOptions = ['Hiking', 'Beaches', 'Historical sites', 'Temples', 'Wildlife safaris', 'Water activities', 'Museums', 'Local food', 'Photography', 'Nightlife', 'Shopping'];
+
+  const toggleActivity = (act: string) => {
+    if (selectedActivities.includes(act)) {
+      setSelectedActivities(selectedActivities.filter((a) => a !== act));
+    } else {
+      setSelectedActivities([...selectedActivities, act]);
+    }
+  };
+
+  const accommodationOptions = ['Budget', '3 Star', '4 Star', '5 Star', 'Boutique', 'Hostel', 'Guesthouse', 'Let AI decide'];
+
+  const transportOptions = ['Private vehicle', 'Taxi', 'Public transport', 'Train', 'Bus', 'Rental vehicle', 'Let AI decide'];
+
+  // Step 7: Generate Trip Handler
+  const handleGenerateTrip = async () => {
+    if (new Date(endDate) < new Date(startDate)) {
+      triggerToast('End date cannot be earlier than start date!');
+      return;
+    }
+
+    setStep(8); // Show AI Planning Animation
+    setAiStepIndex(0);
+    setAiStatusText('Understanding your travel preferences...');
+
+    const loadingSteps = [
+      'Understanding your travel preferences...',
+      'Finding suitable destinations...',
+      'Building your route...',
+      'Planning daily activities...',
+      'Optimizing your itinerary...',
+      'Validating your trip...',
+    ];
+
+    let currentStep = 0;
+    const stepInterval = setInterval(() => {
+      currentStep++;
+      if (currentStep < loadingSteps.length) {
+        setAiStepIndex(currentStep);
+        setAiStatusText(loadingSteps[currentStep]);
+      }
+    }, 700);
+
+    try {
+      const plan = await tripPlannerService.generateTripPlan({
+        destination,
+        destinations: selectedDestinations.length > 0 ? selectedDestinations : ['Sigiriya', 'Kandy', 'Ella'],
+        startDate,
+        endDate,
+        travelers: travelersCount,
+        adults: adultsCount,
+        children: childrenCount,
+        budget: {
+          amount: budgetAmount,
+          currency,
+          category: budgetCategory,
+        },
+        travelStyle: selectedTravelStyles,
+        activities: selectedActivities,
+        accommodationPreference: accommodationPref,
+        transportPreference: transportPref,
+        specialRequirements,
+      });
+
+      clearInterval(stepInterval);
+      setGeneratedPlan(plan);
+      setStep(9); // Show Result Page
+      triggerToast('AI Trip Plan generated successfully!');
+    } catch (err: any) {
+      clearInterval(stepInterval);
+      setStep(7);
+      triggerToast(err.message || 'Failed to generate itinerary. Please try again.');
+    }
+  };
+
+  // Activity Edit & Management Handlers
+  const handleSaveEditedActivity = () => {
+    if (!editingActivity || !generatedPlan) return;
+    const { dayIndex, activityIndex, activity } = editingActivity;
+
+    const newDays = [...generatedPlan.days];
+    newDays[dayIndex].activities[activityIndex] = activity;
+    newDays[dayIndex].estimatedCost = newDays[dayIndex].activities.reduce((s, a) => s + a.estimatedCost, 0);
+
+    setGeneratedPlan({ ...generatedPlan, days: newDays });
+    setEditingActivity(null);
+    triggerToast('Activity updated!');
+  };
+
+  const handleDeleteActivity = (dayIdx: number, actIdx: number) => {
+    if (!generatedPlan) return;
+    const newDays = [...generatedPlan.days];
+    newDays[dayIdx].activities.splice(actIdx, 1);
+    newDays[dayIdx].estimatedCost = newDays[dayIdx].activities.reduce((s, a) => s + a.estimatedCost, 0);
+    setGeneratedPlan({ ...generatedPlan, days: newDays });
+    triggerToast('Activity removed');
+  };
+
+  const handleAddActivitySubmit = (dayIdx: number) => {
+    if (!generatedPlan || !newActivityTitle.trim()) return;
+    const newDays = [...generatedPlan.days];
+    const newAct: ItineraryActivityItem = {
+      id: `act-new-${Date.now()}`,
+      time: newActivityTime,
+      title: newActivityTitle,
+      location: newDays[dayIdx].location,
+      durationMinutes: 90,
+      estimatedCost: newActivityCost,
+      description: 'Custom activity added by traveler.',
+      type: 'Activity',
+    };
+    newDays[dayIdx].activities.push(newAct);
+    newDays[dayIdx].estimatedCost = newDays[dayIdx].activities.reduce((s, a) => s + a.estimatedCost, 0);
+    setGeneratedPlan({ ...generatedPlan, days: newDays });
+    setShowAddActivityModal(null);
+    setNewActivityTitle('');
+    triggerToast('New activity added to schedule!');
+  };
+
+  const handleRegenerateDay = async (dayIdx: number) => {
+    if (!generatedPlan) return;
+    setRegeneratingDayIndex(dayIdx);
+    try {
+      const targetDay = generatedPlan.days[dayIdx];
+      const newDay = await tripPlannerService.regenerateDay(targetDay.day, targetDay.location, {
+        destination,
+        destinations: selectedDestinations,
+        startDate,
+        endDate,
+        travelers: travelersCount,
+        budget: { amount: budgetAmount, currency },
+        travelStyle: selectedTravelStyles,
+        activities: selectedActivities,
+      });
+
+      const newDays = [...generatedPlan.days];
+      newDays[dayIdx] = newDay;
+      setGeneratedPlan({ ...generatedPlan, days: newDays });
+      triggerToast(`Day ${targetDay.day} recalculated with fresh recommendations!`);
+    } catch (err: any) {
+      triggerToast(err.message || 'Failed to regenerate day');
+    } finally {
+      setRegeneratingDayIndex(null);
+    }
+  };
+
+  const handleReplaceActivity = async (dayIdx: number, actIdx: number) => {
+    if (!generatedPlan) return;
+    try {
+      const act = generatedPlan.days[dayIdx].activities[actIdx];
+      const alt = await tripPlannerService.regenerateActivity(act.id, act.title, generatedPlan.days[dayIdx].location);
+
+      const newDays = [...generatedPlan.days];
+      newDays[dayIdx].activities[actIdx] = alt;
+      setGeneratedPlan({ ...generatedPlan, days: newDays });
+      triggerToast('Alternative activity selected!');
+    } catch (err: any) {
+      triggerToast(err.message || 'Failed to replace activity');
+    }
+  };
+
+  // Save Trip Handler
+  const handleSaveTrip = async () => {
+    if (!generatedPlan) return;
+    setIsSaving(true);
+    try {
+      await tripPlannerService.saveTripPlan(generatedPlan, {
+        destination,
+        destinations: selectedDestinations,
+        startDate,
+        endDate,
+        travelers: travelersCount,
+        budget: { amount: budgetAmount, currency, category: budgetCategory },
+        travelStyle: selectedTravelStyles,
+        activities: selectedActivities,
+        accommodationPreference: accommodationPref,
+        transportPreference: transportPref,
+        specialRequirements,
+      });
+
+      setSaveSuccess(true);
+      triggerToast('Trip saved to PostgreSQL database! Redirecting to Trips...');
+      setTimeout(() => {
+        navigate('/trips');
+      }, 1800);
+    } catch (err: any) {
+      triggerToast(err.message || 'Failed to save trip. Please log in first.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-slate-900 font-sans selection:bg-[#16A6A1]/20 selection:text-[#0B3A53] flex flex-col">
-      {/* Toast Notification */}
-      {toastMessage && (
-        <div className="fixed top-20 right-6 z-50 animate-in fade-in slide-in-from-top-4 duration-300">
-          <div className="bg-[#0B3A53] text-white px-5 py-3.5 rounded-2xl shadow-2xl border border-white/15 flex items-center gap-3">
-            <CheckCircle2 className="w-5 h-5 text-[#16A6A1]" />
-            <span className="text-xs font-bold tracking-wide">{toastMessage}</span>
-          </div>
-        </div>
-      )}
-
-      {/* NAVBAR */}
+    <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col font-sans antialiased selection:bg-teal-600 selection:text-white">
       <LandingNavbar />
 
-      {/* HERO SECTION */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-8 text-center space-y-4">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#16A6A1]/10 text-[#146C86] text-xs font-extrabold border border-[#16A6A1]/20">
-          <Compass className="w-3.5 h-3.5 text-[#16A6A1]" />
-          <span>NOVA INTELLIGENCE</span>
-        </div>
-        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-[#0B3A53] tracking-tight font-heading leading-tight max-w-4xl mx-auto">
-          Your Journey, Designed Around You.
-        </h1>
-        <p className="text-base sm:text-lg text-slate-600 font-medium max-w-2xl mx-auto leading-relaxed">
-          Tell NOVA what you love, where you want to go, and how you want to travel. We’ll shape the journey.
-        </p>
-      </div>
-
-      {/* STEP PROGRESS INDICATOR (STEPS 1-7) */}
-      {step >= 1 && step <= 7 && (
-        <div className="max-w-4xl mx-auto px-4 pb-8 overflow-x-auto">
-          <div className="flex items-center justify-between text-xs font-bold border-b border-slate-200/80 pb-3 min-w-[500px]">
-            {[
-              { id: 1, label: 'Destination' },
-              { id: 2, label: 'Duration' },
-              { id: 3, label: 'Travelers' },
-              { id: 4, label: 'Style' },
-              { id: 5, label: 'Interests' },
-              { id: 6, label: 'Budget' },
-              { id: 7, label: 'Confirm' },
-            ].map((s) => (
-              <button
-                key={s.id}
-                onClick={() => setStep(s.id)}
-                className={`transition-all cursor-pointer ${
-                  step === s.id
-                    ? 'text-[#0B3A53] font-black border-b-2 border-[#16A6A1] pb-1'
-                    : step > s.id
-                    ? 'text-[#16A6A1]'
-                    : 'text-slate-400'
-                }`}
-              >
-                <span>
-                  {step > s.id ? '✓ ' : ''}
-                  {s.label}
-                </span>
-              </button>
-            ))}
-          </div>
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed top-20 right-6 z-50 bg-teal-600 text-white px-5 py-3 rounded-xl shadow-2xl font-semibold flex items-center gap-2 animate-bounce">
+          <Sparkles className="w-5 h-5 text-teal-200" />
+          <span>{toastMessage}</span>
         </div>
       )}
 
-      {/* STEP-BY-STEP WIZARD */}
-      {step >= 1 && step <= 7 && (
-        <section className="max-w-3xl mx-auto px-4 sm:px-6 pb-20">
-          <div className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200/70 shadow-sm space-y-8 relative">
-            
-            {/* STEP 1: DESTINATION */}
-            {step === 1 && (
-              <div className="space-y-6 animate-in fade-in duration-300">
-                <div className="space-y-2">
-                  <span className="text-xs font-black uppercase text-[#16A6A1]">STEP 01</span>
-                  <h2 className="text-2xl sm:text-3xl font-black text-[#0B3A53] font-heading">
-                    Where do you want to go?
-                  </h2>
-                  <p className="text-xs sm:text-sm text-slate-500 font-medium">
-                    Search or select your primary travel destination.
-                  </p>
-                </div>
-
-                <div className="relative flex items-center shadow-xs rounded-2xl bg-slate-50 border border-slate-200 focus-within:border-[#16A6A1] transition-all">
-                  <div className="pl-4 text-slate-400">
-                    <Search className="w-5 h-5 text-[#16A6A1]" />
-                  </div>
-                  <input
-                    type="text"
-                    value={destination}
-                    onChange={(e) => setDestination(e.target.value)}
-                    placeholder="Search a destination (e.g. Sri Lanka, Japan, Bali)..."
-                    className="w-full py-4 pl-3 pr-4 text-sm font-semibold text-slate-800 bg-transparent focus:outline-none"
-                  />
-                </div>
-
-                <div className="space-y-2 pt-2">
-                  <label className="text-xs font-extrabold text-[#0B3A53] uppercase tracking-wider block">
-                    Popular Destinations
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {['Sri Lanka', 'Japan', 'Bali', 'Italy', 'Switzerland', 'Thailand', 'Maldives'].map((loc) => (
-                      <button
-                        key={loc}
-                        onClick={() => setDestination(loc)}
-                        className={`px-3.5 py-2 rounded-2xl text-xs font-bold border transition-all cursor-pointer ${
-                          destination === loc
-                            ? 'bg-[#0B3A53] text-white border-[#0B3A53]'
-                            : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                        }`}
-                      >
-                        {loc}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="pt-4 flex justify-end">
-                  <button
-                    onClick={() => setStep(2)}
-                    disabled={!destination.trim()}
-                    className="bg-[#0B3A53] hover:bg-[#072537] text-white font-extrabold text-xs uppercase tracking-wider px-7 py-3.5 rounded-full shadow-md disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center gap-2"
-                  >
-                    <span>Continue to Duration</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-                </div>
+      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-8 py-8">
+        {/* Step Indicator Header (Steps 1 to 7) */}
+        {step <= 7 && (
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <span className="text-teal-700 font-bold text-xs tracking-wider uppercase">AI Agent Journey Planner</span>
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">Design Your Sri Lanka Adventure</h1>
               </div>
-            )}
+              <span className="px-3.5 py-1 bg-teal-100/80 text-teal-800 border border-teal-200/80 rounded-full text-xs font-extrabold">
+                Step {step} of 7
+              </span>
+            </div>
 
-            {/* STEP 2: DURATION */}
-            {step === 2 && (
-              <div className="space-y-6 animate-in fade-in duration-300">
-                <div className="space-y-2">
-                  <span className="text-xs font-black uppercase text-[#16A6A1]">STEP 02</span>
-                  <h2 className="text-2xl sm:text-3xl font-black text-[#0B3A53] font-heading">
-                    How long is your journey?
-                  </h2>
-                  <p className="text-xs sm:text-sm text-slate-500 font-medium">
-                    Select your total trip length in days.
-                  </p>
-                </div>
+            <div className="w-full bg-slate-200/80 rounded-full h-2.5 flex overflow-hidden border border-slate-300/50">
+              <div
+                className="bg-teal-600 h-2.5 transition-all duration-500 ease-out"
+                style={{ width: `${(step / 7) * 100}%` }}
+              />
+            </div>
+          </div>
+        )}
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-                  {['3 Days', '5 Days', '7 Days', '10 Days', '14 Days'].map((dur) => (
-                    <button
-                      key={dur}
-                      onClick={() => setDuration(dur)}
-                      className={`p-4 rounded-2xl text-center font-extrabold text-xs border transition-all cursor-pointer ${
-                        duration === dur
-                          ? 'bg-[#0B3A53] text-white border-[#0B3A53] shadow-md ring-2 ring-[#16A6A1]'
-                          : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                      }`}
-                    >
-                      {dur}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="pt-4 flex items-center justify-between">
-                  <button
-                    onClick={() => setStep(1)}
-                    className="text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
-                  >
-                    ← Back
-                  </button>
-                  <button
-                    onClick={() => setStep(3)}
-                    className="bg-[#0B3A53] hover:bg-[#072537] text-white font-extrabold text-xs uppercase tracking-wider px-7 py-3.5 rounded-full shadow-md transition-all cursor-pointer flex items-center gap-2"
-                  >
-                    <span>Continue to Travelers</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-                </div>
+        {/* STEP 1: DESTINATION */}
+        {step === 1 && (
+          <div className="bg-white border border-slate-200/80 rounded-3xl p-6 sm:p-10 shadow-xl backdrop-blur-sm">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="p-3.5 bg-teal-50 rounded-2xl text-teal-700 border border-teal-200/80">
+                <MapPin className="w-7 h-7" />
               </div>
-            )}
-
-            {/* STEP 3: TRAVELERS */}
-            {step === 3 && (
-              <div className="space-y-6 animate-in fade-in duration-300">
-                <div className="space-y-2">
-                  <span className="text-xs font-black uppercase text-[#16A6A1]">STEP 03</span>
-                  <h2 className="text-2xl sm:text-3xl font-black text-[#0B3A53] font-heading">
-                    Who is travelling?
-                  </h2>
-                  <p className="text-xs sm:text-sm text-slate-500 font-medium">
-                    Choose your group type to personalize pace and recommendations.
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-                  {[
-                    { type: 'Solo', icon: '👤' },
-                    { type: 'Couple', icon: '👩‍❤️‍👨' },
-                    { type: 'Family', icon: '👨‍👩‍👧' },
-                    { type: 'Friends', icon: '👥' },
-                  ].map((group) => (
-                    <button
-                      key={group.type}
-                      onClick={() => setTravelersType(group.type)}
-                      className={`p-4 rounded-2xl text-center border transition-all cursor-pointer ${
-                        travelersType === group.type
-                          ? 'bg-[#0B3A53] text-white border-[#0B3A53] shadow-md ring-2 ring-[#16A6A1]'
-                          : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                      }`}
-                    >
-                      <div className="text-2xl mb-1">{group.icon}</div>
-                      <div className="font-extrabold text-xs">{group.type}</div>
-                    </button>
-                  ))}
-                </div>
-
-                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex items-center justify-between">
-                  <span className="text-xs font-extrabold text-slate-700">Number of Travelers</span>
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => setTravelersCount(Math.max(1, travelersCount - 1))}
-                      className="w-8 h-8 rounded-full bg-white text-slate-800 font-bold border shadow-xs"
-                    >
-                      -
-                    </button>
-                    <span className="text-sm font-black text-[#0B3A53] px-2">{travelersCount}</span>
-                    <button
-                      onClick={() => setTravelersCount(travelersCount + 1)}
-                      className="w-8 h-8 rounded-full bg-white text-slate-800 font-bold border shadow-xs"
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
-
-                <div className="pt-4 flex items-center justify-between">
-                  <button
-                    onClick={() => setStep(2)}
-                    className="text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
-                  >
-                    ← Back
-                  </button>
-                  <button
-                    onClick={() => setStep(4)}
-                    className="bg-[#0B3A53] hover:bg-[#072537] text-white font-extrabold text-xs uppercase tracking-wider px-7 py-3.5 rounded-full shadow-md transition-all cursor-pointer flex items-center gap-2"
-                  >
-                    <span>Continue to Style</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-                </div>
+              <div>
+                <h2 className="text-xl sm:text-2xl font-bold text-slate-900">Where do you want to explore?</h2>
+                <p className="text-slate-600 text-sm">Select primary country and specific Sri Lankan destinations.</p>
               </div>
-            )}
+            </div>
 
-            {/* STEP 4: STYLE */}
-            {step === 4 && (
-              <div className="space-y-6 animate-in fade-in duration-300">
-                <div className="space-y-2">
-                  <span className="text-xs font-black uppercase text-[#16A6A1]">STEP 04</span>
-                  <h2 className="text-2xl sm:text-3xl font-black text-[#0B3A53] font-heading">
-                    What's your travel style & pace?
-                  </h2>
-                  <p className="text-xs sm:text-sm text-slate-500 font-medium">
-                    Help NOVA balance your daily schedule.
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2">
-                  {['Relaxed', 'Balanced', 'Adventure', 'Fast-paced', 'Luxury', 'Budget-friendly'].map((style) => (
-                    <button
-                      key={style}
-                      onClick={() => setTravelStyle(style)}
-                      className={`p-4 rounded-2xl text-center font-extrabold text-xs border transition-all cursor-pointer ${
-                        travelStyle === style
-                          ? 'bg-[#0B3A53] text-white border-[#0B3A53] shadow-md ring-2 ring-[#16A6A1]'
-                          : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                      }`}
-                    >
-                      {style}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="pt-4 flex items-center justify-between">
-                  <button
-                    onClick={() => setStep(3)}
-                    className="text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
-                  >
-                    ← Back
-                  </button>
-                  <button
-                    onClick={() => setStep(5)}
-                    className="bg-[#0B3A53] hover:bg-[#072537] text-white font-extrabold text-xs uppercase tracking-wider px-7 py-3.5 rounded-full shadow-md transition-all cursor-pointer flex items-center gap-2"
-                  >
-                    <span>Continue to Interests</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-                </div>
+            <div className="space-y-6">
+              <div>
+                <label className="block text-slate-700 font-semibold text-sm mb-2">Target Island Country</label>
+                <select
+                  value={destination}
+                  onChange={(e) => setDestination(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-slate-900 font-medium focus:outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-500/20"
+                >
+                  <option value="Sri Lanka">Sri Lanka (Pearl of the Indian Ocean)</option>
+                </select>
               </div>
-            )}
 
-            {/* STEP 5: INTERESTS */}
-            {step === 5 && (
-              <div className="space-y-6 animate-in fade-in duration-300">
-                <div className="space-y-2">
-                  <span className="text-xs font-black uppercase text-[#16A6A1]">STEP 05</span>
-                  <h2 className="text-2xl sm:text-3xl font-black text-[#0B3A53] font-heading">
-                    What do you want to experience?
-                  </h2>
-                </div>
+              <div>
+                <label className="block text-slate-700 font-semibold text-sm mb-2">Choose Specific Destinations (Select multiple or AI Recommend)</label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDestinations([])}
+                    className={`p-3.5 rounded-xl border text-sm font-semibold transition-all text-left flex items-center justify-between ${
+                      selectedDestinations.length === 0
+                        ? 'bg-teal-50 border-2 border-teal-600 text-teal-900 shadow-sm'
+                        : 'bg-white border-slate-200 text-slate-600 hover:border-teal-500/50 hover:bg-slate-50'
+                    }`}
+                  >
+                    <span>✨ Let AI Recommend</span>
+                    {selectedDestinations.length === 0 && <Check className="w-4 h-4 text-teal-700" />}
+                  </button>
 
-                <div className="flex flex-wrap gap-2.5 pt-2">
-                  {[
-                    '🌿 Nature', '🏛️ Culture', '🏔️ Adventure', '🌊 Beaches', '🍜 Food',
-                    '🦁 Wildlife', '📸 Photography', '🧘 Wellness', '🎨 Arts & Heritage',
-                  ].map((exp) => {
-                    const cleanName = exp.split(' ')[1];
-                    const isSelected = selectedInterests.includes(cleanName);
+                  {destinationOptions.map((dest) => {
+                    const isSelected = selectedDestinations.includes(dest);
                     return (
                       <button
-                        key={exp}
-                        onClick={() => toggleInterest(cleanName)}
-                        className={`px-4 py-3 rounded-2xl text-xs font-bold border transition-all cursor-pointer ${
+                        key={dest}
+                        type="button"
+                        onClick={() => toggleDestination(dest)}
+                        className={`p-3.5 rounded-xl border text-sm font-semibold transition-all text-left flex items-center justify-between ${
                           isSelected
-                            ? 'bg-[#16A6A1] text-white border-[#16A6A1] shadow-sm'
-                            : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                            ? 'bg-teal-50 border-2 border-teal-600 text-teal-900 shadow-sm'
+                            : 'bg-white border-slate-200 text-slate-700 hover:border-teal-500/50 hover:bg-slate-50'
                         }`}
                       >
-                        {exp}
+                        <span>{dest}</span>
+                        {isSelected && <Check className="w-4 h-4 text-teal-700" />}
                       </button>
                     );
                   })}
                 </div>
-
-                <div className="pt-4 flex items-center justify-between">
-                  <button
-                    onClick={() => setStep(4)}
-                    className="text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
-                  >
-                    ← Back
-                  </button>
-                  <button
-                    onClick={() => setStep(6)}
-                    className="bg-[#0B3A53] hover:bg-[#072537] text-white font-extrabold text-xs uppercase tracking-wider px-7 py-3.5 rounded-full shadow-md transition-all cursor-pointer flex items-center gap-2"
-                  >
-                    <span>Continue to Budget →</span>
-                  </button>
-                </div>
               </div>
-            )}
+            </div>
 
-            {/* STEP 6: BUDGET RANGE */}
-            {step === 6 && (
-              <div className="space-y-6 animate-in fade-in duration-300">
-                <div className="space-y-2">
-                  <span className="text-xs font-black uppercase text-[#16A6A1]">STEP 06</span>
-                  <h2 className="text-2xl sm:text-3xl font-black text-[#0B3A53] font-heading">
-                    What's your budget range?
-                  </h2>
-                  <p className="text-xs sm:text-sm text-slate-500 font-medium">
-                    Choose a preset style or set a custom budget range for your entire journey.
-                  </p>
-                </div>
+            <div className="mt-8 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setStep(2)}
+                className="px-6 py-3.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl flex items-center gap-2 shadow-md transition-all"
+              >
+                Next: Dates & Travelers <ArrowRight className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        )}
 
-                {/* Preset Tier Buttons */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-                  {[
-                    { label: 'Budget', min: 100, max: 250 },
-                    { label: 'Moderate', min: 250, max: 600 },
-                    { label: 'Premium', min: 600, max: 1200 },
-                    { label: 'Luxury', min: 1200, max: 2500 },
-                  ].map((preset) => (
-                    <button
-                      key={preset.label}
-                      type="button"
-                      onClick={() => {
-                        setBudget(preset.label);
-                        setMinBudget(preset.min);
-                        setMaxBudget(preset.max);
-                      }}
-                      className={`p-4 rounded-2xl text-center font-extrabold text-xs sm:text-sm border transition-all cursor-pointer ${
-                        budget === preset.label
-                          ? 'bg-[#0B3A53] text-white border-[#0B3A53] shadow-md'
-                          : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                      }`}
-                    >
-                      <div>{preset.label}</div>
-                      <div className={`text-[10px] font-medium mt-0.5 ${budget === preset.label ? 'text-slate-200' : 'text-slate-400'}`}>
-                        ${preset.min} - ${preset.max}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-
-                {/* Custom Budget Range Slider & Input Controls */}
-                <div className="bg-slate-50 p-6 rounded-3xl border border-slate-200/80 space-y-4 pt-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-extrabold text-[#0B3A53] uppercase tracking-wider">
-                      Specific Budget Range Slider
-                    </span>
-                    <span className="text-xs font-black text-[#146C86] bg-white px-3.5 py-1 rounded-full border border-slate-200 shadow-2xs">
-                      ${minBudget} – ${maxBudget}
-                    </span>
-                  </div>
-
-                  {/* Range Input Slider */}
-                  <div className="space-y-2 pt-1">
-                    <input
-                      type="range"
-                      min="100"
-                      max="3000"
-                      step="25"
-                      value={maxBudget}
-                      onChange={(e) => {
-                        const val = parseInt(e.target.value);
-                        setMaxBudget(val);
-                        if (val < minBudget) setMinBudget(Math.max(100, val - 50));
-                      }}
-                      className="w-full accent-[#16A6A1] h-2.5 bg-slate-200 rounded-lg appearance-none cursor-pointer"
-                    />
-
-                    <div className="flex items-center justify-between text-[11px] font-bold text-slate-400">
-                      <span>$100 (Min)</span>
-                      <span>$1,000</span>
-                      <span>$2,500+ (Max)</span>
-                    </div>
-                  </div>
-
-                  {/* Min and Max Number Inputs */}
-                  <div className="grid grid-cols-2 gap-4 pt-2 border-t border-slate-200/60 text-xs">
-                    <div className="space-y-1">
-                      <label className="text-slate-500 font-bold block">Min Budget Limit ($)</label>
-                      <input
-                        type="number"
-                        step={25}
-                        value={minBudget}
-                        onChange={(e) => setMinBudget(parseInt(e.target.value) || 100)}
-                        className="w-full p-3 rounded-2xl bg-white border border-slate-200 focus:outline-none focus:border-[#16A6A1] font-bold text-[#0B3A53]"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-slate-500 font-bold block">Max Budget Limit ($)</label>
-                      <input
-                        type="number"
-                        step={25}
-                        value={maxBudget}
-                        onChange={(e) => setMaxBudget(parseInt(e.target.value) || 100000)}
-                        className="w-full p-3 rounded-2xl bg-white border border-slate-200 focus:outline-none focus:border-[#16A6A1] font-bold text-[#0B3A53]"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="pt-4 flex items-center justify-between">
-                  <button
-                    onClick={() => setStep(5)}
-                    className="text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
-                  >
-                    ← Back to Interests
-                  </button>
-                  <button
-                    onClick={() => setStep(7)}
-                    className="bg-[#0B3A53] hover:bg-[#072537] text-white font-extrabold text-xs uppercase tracking-wider px-7 py-3.5 rounded-full shadow-md transition-all cursor-pointer flex items-center gap-2"
-                  >
-                    <span>Review Summary →</span>
-                  </button>
-                </div>
+        {/* STEP 2: DATES & TRAVELERS */}
+        {step === 2 && (
+          <div className="bg-white border border-slate-200/80 rounded-3xl p-6 sm:p-10 shadow-xl backdrop-blur-sm">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="p-3.5 bg-teal-50 rounded-2xl text-teal-700 border border-teal-200/80">
+                <Calendar className="w-7 h-7" />
               </div>
-            )}
-
-            {/* STEP 7: CONFIRMATION SUMMARY */}
-            {step === 7 && (
-              <div className="space-y-6 animate-in fade-in duration-300 text-center py-4">
-                <div className="space-y-2">
-                  <h2 className="text-3xl font-black text-[#0B3A53] font-heading">
-                    Ready to discover your journey?
-                  </h2>
-                  <p className="text-xs sm:text-sm text-slate-500 font-medium">
-                    Review your preferences before NOVA shapes your personalized itinerary.
-                  </p>
-                </div>
-
-                <div className="bg-slate-50 p-6 rounded-3xl border border-slate-200/80 text-left space-y-3 max-w-md mx-auto text-xs">
-                  <div className="flex justify-between pb-2 border-b border-slate-200">
-                    <span className="font-bold text-slate-500">Destination</span>
-                    <span className="font-extrabold text-[#0B3A53]">{destination}</span>
-                  </div>
-                  <div className="flex justify-between pb-2 border-b border-slate-200">
-                    <span className="font-bold text-slate-500">Duration & Travelers</span>
-                    <span className="font-extrabold text-[#0B3A53]">{duration} · {travelersCount} Travelers ({travelersType})</span>
-                  </div>
-                  <div className="flex justify-between pb-2 border-b border-slate-200">
-                    <span className="font-bold text-slate-500">Interests</span>
-                    <span className="font-extrabold text-[#146C86]">{selectedInterests.join(' · ')}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="font-bold text-slate-500">Style & Specific Budget</span>
-                    <span className="font-extrabold text-[#0B3A53]">{travelStyle} Pace · ${minBudget}–${maxBudget}</span>
-                  </div>
-                </div>
-
-                <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
-                  <button
-                    onClick={() => setStep(1)}
-                    className="px-6 py-3.5 rounded-full bg-slate-100 text-slate-600 font-bold text-xs cursor-pointer hover:bg-slate-200"
-                  >
-                    ← Edit Preferences
-                  </button>
-                  <button
-                    onClick={() => setStep(8)}
-                    className="bg-[#0B3A53] hover:bg-[#072537] text-white font-extrabold text-xs uppercase tracking-wider px-8 py-3.5 rounded-full shadow-lg transition-all cursor-pointer flex items-center gap-2"
-                  >
-                    <Sparkles className="w-4 h-4 text-[#16A6A1]" />
-                    <span>Create My Journey</span>
-                  </button>
-                </div>
+              <div>
+                <h2 className="text-xl sm:text-2xl font-bold text-slate-900">When are you traveling & with whom?</h2>
+                <p className="text-slate-600 text-sm">Select dates and headcount for automatic duration calculation.</p>
               </div>
-            )}
-          </div>
-        </section>
-      )}
+            </div>
 
-      {/* AI PLANNING ANIMATION SEQUENCE (STEP 8) */}
-      {step === 8 && (
-        <section className="max-w-xl mx-auto px-4 py-20 text-center space-y-8 animate-in fade-in duration-300">
-          <div className="w-20 h-20 rounded-full bg-[#16A6A1]/10 text-[#16A6A1] mx-auto flex items-center justify-center relative">
-            <Compass className="w-10 h-10 text-[#16A6A1] animate-spin-slow" />
-            <span className="absolute inset-0 rounded-full border-2 border-[#16A6A1] animate-ping opacity-25" />
-          </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
+              <div>
+                <label className="block text-slate-700 font-semibold text-sm mb-2">Start Date</label>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-slate-900 font-medium focus:outline-none focus:border-teal-600"
+                />
+              </div>
 
-          <div className="space-y-2">
-            <span className="text-xs font-black uppercase text-[#16A6A1]">
-              ✦ NOVA IS SHAPING YOUR JOURNEY
-            </span>
-            <h2 className="text-2xl sm:text-3xl font-black text-[#0B3A53] font-heading">
-              {aiStatusText}
-            </h2>
-          </div>
+              <div>
+                <label className="block text-slate-700 font-semibold text-sm mb-2">End Date</label>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-slate-900 font-medium focus:outline-none focus:border-teal-600"
+                />
+              </div>
+            </div>
 
-          <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm text-left space-y-3 text-xs">
-            {[
-              'Understanding your travel preferences',
-              transportMode === 'Private'
-                ? `Matching ${currentVehicle} vehicle to group size (${travelersCount} travelers)`
-                : 'Optimizing transport & travel routes',
-              hireGuide
-                ? `Considering ${guideType} requirements for activities`
-                : 'Configuring independent self-guided schedule',
-              'Checking travel routes & timing',
-              'Optimizing your days for pace',
-              'Finalizing your journey recommendations',
-            ].map((st, idx) => {
-              const isDone = aiStepIndex > idx;
-              const isCurrent = aiStepIndex === idx;
-              return (
-                <div key={idx} className="flex items-center gap-3">
-                  {isDone ? (
-                    <CheckCircle2 className="w-4 h-4 text-[#16A6A1] shrink-0" />
-                  ) : isCurrent ? (
-                    <span className="w-4 h-4 rounded-full bg-[#0B3A53] animate-pulse shrink-0 flex items-center justify-center text-[10px] text-white font-black">
-                      ●
-                    </span>
-                  ) : (
-                    <span className="w-4 h-4 rounded-full border border-slate-300 shrink-0 text-[10px] text-slate-300 text-center">
-                      ○
-                    </span>
-                  )}
-                  <span
-                    className={`font-bold ${
-                      isDone
-                        ? 'text-slate-800'
-                        : isCurrent
-                        ? 'text-[#0B3A53] font-black'
-                        : 'text-slate-400'
+            <div className="bg-teal-50 border border-teal-200 p-4 rounded-2xl flex items-center justify-between mb-8">
+              <div className="flex items-center gap-3">
+                <Clock className="w-5 h-5 text-teal-700" />
+                <span className="text-slate-700 font-medium text-sm">Calculated Duration:</span>
+              </div>
+              <span className="text-teal-800 font-extrabold text-base bg-white px-3 py-1 rounded-xl border border-teal-200 shadow-sm">
+                {durationDays} Days / {Math.max(1, durationDays - 1)} Nights
+              </span>
+            </div>
+
+            <div className="space-y-4 mb-6">
+              <label className="block text-slate-700 font-semibold text-sm">Number of Travelers</label>
+              <div className="flex items-center gap-4 bg-slate-50 border border-slate-200 p-4 rounded-2xl w-fit">
+                <button
+                  type="button"
+                  onClick={() => setTravelersCount(Math.max(1, travelersCount - 1))}
+                  className="w-10 h-10 rounded-xl bg-white text-slate-800 border border-slate-300 font-bold hover:bg-slate-100 flex items-center justify-center text-lg shadow-sm"
+                >
+                  -
+                </button>
+                <span className="text-xl font-bold text-slate-900 w-8 text-center">{travelersCount}</span>
+                <button
+                  type="button"
+                  onClick={() => setTravelersCount(travelersCount + 1)}
+                  className="w-10 h-10 rounded-xl bg-white text-slate-800 border border-slate-300 font-bold hover:bg-slate-100 flex items-center justify-center text-lg shadow-sm"
+                >
+                  +
+                </button>
+                <span className="text-slate-600 text-xs ml-2 font-medium">Traveler(s) Total</span>
+              </div>
+            </div>
+
+            <div className="flex justify-between mt-8">
+              <button
+                type="button"
+                onClick={() => setStep(1)}
+                className="px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl"
+              >
+                Back
+              </button>
+              <button
+                type="button"
+                onClick={() => setStep(3)}
+                className="px-6 py-3.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl flex items-center gap-2 shadow-md"
+              >
+                Next: Budget <ArrowRight className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 3: BUDGET */}
+        {step === 3 && (
+          <div className="bg-white border border-slate-200/80 rounded-3xl p-6 sm:p-10 shadow-xl backdrop-blur-sm">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="p-3.5 bg-teal-50 rounded-2xl text-teal-700 border border-teal-200/80">
+                <DollarSign className="w-7 h-7" />
+              </div>
+              <div>
+                <h2 className="text-xl sm:text-2xl font-bold text-slate-900">What is your trip budget?</h2>
+                <p className="text-slate-600 text-sm">Specify currency, maximum total budget, and comfort category.</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
+              <div>
+                <label className="block text-slate-700 font-semibold text-sm mb-2">Currency</label>
+                <select
+                  value={currency}
+                  onChange={(e) => setCurrency(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-slate-900 font-medium focus:outline-none focus:border-teal-600"
+                >
+                  <option value="USD">USD ($)</option>
+                  <option value="EUR">EUR (€)</option>
+                  <option value="LKR">LKR (Rs)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-semibold text-sm mb-2">Maximum Budget ({currency})</label>
+                <input
+                  type="number"
+                  min="50"
+                  step="50"
+                  value={budgetAmount}
+                  onChange={(e) => setBudgetAmount(Number(e.target.value))}
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-slate-900 font-bold focus:outline-none focus:border-teal-600"
+                />
+              </div>
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-slate-700 font-semibold text-sm mb-3">Comfort & Experience Category</label>
+              <div className="grid grid-cols-3 gap-4">
+                {(['Budget', 'Moderate', 'Luxury'] as const).map((cat) => (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setBudgetCategory(cat)}
+                    className={`p-4 rounded-2xl border text-center transition-all ${
+                      budgetCategory === cat
+                        ? 'bg-teal-50 border-2 border-teal-600 text-teal-900 font-bold shadow-sm'
+                        : 'bg-white border-slate-200 text-slate-600 hover:border-teal-500/50 hover:bg-slate-50'
                     }`}
                   >
-                    {st}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      )}
+                    <div className="text-lg font-bold">{cat}</div>
+                    <div className="text-xs text-slate-500 mt-1">
+                      {cat === 'Budget' ? 'Hostels & Local Food' : cat === 'Moderate' ? '3-Star & Private Transfers' : '5-Star Resorts & Fine Dining'}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
 
-      {/* GENERATED ITINERARY PREVIEW (STEP 9) */}
-      {step === 9 && (
-        <section className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-12 animate-in fade-in duration-500">
-          
-          {/* Result Header */}
-          <div className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200/80 shadow-sm space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-6">
-              <div className="space-y-1">
-                <span className="text-xs font-black uppercase text-[#16A6A1]">
-                  ✦ YOUR JOURNEY IS READY
-                </span>
-                <h2 className="text-3xl sm:text-4xl font-black text-[#0B3A53] font-heading">
-                  {duration} in {destination}
+            <div className="flex justify-between mt-8">
+              <button
+                type="button"
+                onClick={() => setStep(2)}
+                className="px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl"
+              >
+                Back
+              </button>
+              <button
+                type="button"
+                onClick={() => setStep(4)}
+                className="px-6 py-3.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl flex items-center gap-2 shadow-md"
+              >
+                Next: Travel Style <ArrowRight className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 4: TRAVEL STYLE */}
+        {step === 4 && (
+          <div className="bg-white border border-slate-200/80 rounded-3xl p-6 sm:p-10 shadow-xl backdrop-blur-sm">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="p-3.5 bg-teal-50 rounded-2xl text-teal-700 border border-teal-200/80">
+                <Compass className="w-7 h-7" />
+              </div>
+              <div>
+                <h2 className="text-xl sm:text-2xl font-bold text-slate-900">What is your travel style?</h2>
+                <p className="text-slate-600 text-sm">Select one or multiple styles to tailor the journey's pace and theme.</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mb-6">
+              {travelStyleOptions.map((opt) => {
+                const isSel = selectedTravelStyles.includes(opt.label);
+                return (
+                  <button
+                    key={opt.label}
+                    type="button"
+                    onClick={() => toggleTravelStyle(opt.label)}
+                    className={`p-4 rounded-2xl border transition-all text-left flex items-center gap-3 ${
+                      isSel
+                        ? 'bg-teal-50 border-2 border-teal-600 text-teal-900 font-bold shadow-sm'
+                        : 'bg-white border-slate-200 text-slate-700 hover:border-teal-500/50 hover:bg-slate-50'
+                    }`}
+                  >
+                    <span className="text-2xl">{opt.icon}</span>
+                    <span className="text-sm">{opt.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="flex justify-between mt-8">
+              <button
+                type="button"
+                onClick={() => setStep(3)}
+                className="px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl"
+              >
+                Back
+              </button>
+              <button
+                type="button"
+                onClick={() => setStep(5)}
+                className="px-6 py-3.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl flex items-center gap-2 shadow-md"
+              >
+                Next: Activities <ArrowRight className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 5: ACTIVITIES & NOTES */}
+        {step === 5 && (
+          <div className="bg-white border border-slate-200/80 rounded-3xl p-6 sm:p-10 shadow-xl backdrop-blur-sm">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="p-3.5 bg-teal-50 rounded-2xl text-teal-700 border border-teal-200/80">
+                <Sparkles className="w-7 h-7" />
+              </div>
+              <div>
+                <h2 className="text-xl sm:text-2xl font-bold text-slate-900">Preferred activities & special requests</h2>
+                <p className="text-slate-600 text-sm">Tell us what you love to do and any specific requirements.</p>
+              </div>
+            </div>
+
+            <div className="space-y-6 mb-6">
+              <div>
+                <label className="block text-slate-700 font-semibold text-sm mb-3">Preferred Activities</label>
+                <div className="flex flex-wrap gap-2">
+                  {activityOptions.map((act) => {
+                    const isSel = selectedActivities.includes(act);
+                    return (
+                      <button
+                        key={act}
+                        type="button"
+                        onClick={() => toggleActivity(act)}
+                        className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                          isSel
+                            ? 'bg-teal-600 text-white font-bold shadow-sm'
+                            : 'bg-slate-50 border border-slate-200 text-slate-700 hover:border-slate-300'
+                        }`}
+                      >
+                        {act}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-semibold text-sm mb-2">Anything else you'd like us to know?</label>
+                <textarea
+                  rows={3}
+                  value={specialRequirements}
+                  onChange={(e) => setSpecialRequirements(e.target.value)}
+                  placeholder="e.g. Vegetarian food preference, traveling with elderly parents, interest in photography sunrise spots..."
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-4 text-slate-900 focus:outline-none focus:border-teal-600 placeholder:text-slate-400 text-sm"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-between mt-8">
+              <button
+                type="button"
+                onClick={() => setStep(4)}
+                className="px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl"
+              >
+                Back
+              </button>
+              <button
+                type="button"
+                onClick={() => setStep(6)}
+                className="px-6 py-3.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl flex items-center gap-2 shadow-md"
+              >
+                Next: Stay & Transport <ArrowRight className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 6: ACCOMMODATION & TRANSPORT */}
+        {step === 6 && (
+          <div className="bg-white border border-slate-200/80 rounded-3xl p-6 sm:p-10 shadow-xl backdrop-blur-sm">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="p-3.5 bg-teal-50 rounded-2xl text-teal-700 border border-teal-200/80">
+                <Car className="w-7 h-7" />
+              </div>
+              <div>
+                <h2 className="text-xl sm:text-2xl font-bold text-slate-900">Accommodation & Transport Preferences</h2>
+                <p className="text-slate-600 text-sm">Choose your stay style and how you'd like to travel across Sri Lanka.</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
+              <div>
+                <label className="block text-slate-700 font-semibold text-sm mb-2">Accommodation Preference</label>
+                <select
+                  value={accommodationPref}
+                  onChange={(e) => setAccommodationPref(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-slate-900 font-medium focus:outline-none focus:border-teal-600"
+                >
+                  {accommodationOptions.map((opt) => (
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-semibold text-sm mb-2">Transportation Preference</label>
+                <select
+                  value={transportPref}
+                  onChange={(e) => setTransportPref(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-slate-900 font-medium focus:outline-none focus:border-teal-600"
+                >
+                  {transportOptions.map((opt) => (
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="flex justify-between mt-8">
+              <button
+                type="button"
+                onClick={() => setStep(5)}
+                className="px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl"
+              >
+                Back
+              </button>
+              <button
+                type="button"
+                onClick={() => setStep(7)}
+                className="px-6 py-3.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl flex items-center gap-2 shadow-md"
+              >
+                Next: Final Review <ArrowRight className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 7: CONFIRMATION SUMMARY */}
+        {step === 7 && (
+          <div className="bg-white border border-slate-200/80 rounded-3xl p-6 sm:p-10 shadow-xl backdrop-blur-sm">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="p-3.5 bg-teal-50 rounded-2xl text-teal-700 border border-teal-200/80">
+                <CheckCircle2 className="w-7 h-7" />
+              </div>
+              <div>
+                <h2 className="text-xl sm:text-2xl font-bold text-slate-900">Review Your Trip Parameters</h2>
+                <p className="text-slate-600 text-sm">Verify your specifications before triggering the AI Trip Planner Agent.</p>
+              </div>
+            </div>
+
+            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 mb-8 space-y-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm border-b border-slate-200 pb-4">
+                <div>
+                  <span className="text-slate-500 block text-xs font-semibold">DESTINATION</span>
+                  <span className="text-slate-900 font-bold">{destination}</span>
+                </div>
+                <div>
+                  <span className="text-slate-500 block text-xs font-semibold">DURATION</span>
+                  <span className="text-slate-900 font-bold">{durationDays} Days ({startDate} to {endDate})</span>
+                </div>
+                <div>
+                  <span className="text-slate-500 block text-xs font-semibold">TRAVELERS</span>
+                  <span className="text-slate-900 font-bold">{travelersCount} Traveler(s)</span>
+                </div>
+                <div>
+                  <span className="text-slate-500 block text-xs font-semibold">BUDGET</span>
+                  <span className="text-teal-700 font-extrabold">${budgetAmount} {currency} ({budgetCategory})</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-slate-500 block text-xs font-semibold mb-1">SELECTED CITIES</span>
+                  <div className="flex flex-wrap gap-1">
+                    {selectedDestinations.length > 0 ? (
+                      selectedDestinations.map((d) => (
+                        <span key={d} className="px-2.5 py-0.5 bg-white border border-slate-200 text-slate-700 rounded text-xs font-medium">
+                          {d}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-teal-700 text-xs font-semibold">AI Recommended Destinations</span>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <span className="text-slate-500 block text-xs font-semibold mb-1">STYLES & ACTIVITIES</span>
+                  <div className="flex flex-wrap gap-1">
+                    {selectedTravelStyles.map((s) => (
+                      <span key={s} className="px-2.5 py-0.5 bg-teal-50 border border-teal-200 text-teal-800 rounded text-xs font-medium">
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-between mt-8">
+              <button
+                type="button"
+                onClick={() => setStep(6)}
+                className="px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl"
+              >
+                Back
+              </button>
+              <button
+                type="button"
+                onClick={handleGenerateTrip}
+                className="px-8 py-4 bg-teal-600 hover:bg-teal-700 text-white font-extrabold text-lg rounded-2xl shadow-xl flex items-center gap-3 transition-all transform hover:scale-[1.01]"
+              >
+                <Sparkles className="w-6 h-6 fill-white" /> Generate My AI Trip Plan
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 8: AI GENERATION ANIMATION */}
+        {step === 8 && (
+          <div className="bg-white border border-slate-200/80 rounded-3xl p-12 text-center shadow-xl max-w-2xl mx-auto my-12">
+            <div className="relative w-24 h-24 mx-auto mb-6 flex items-center justify-center">
+              <div className="absolute inset-0 rounded-full border-4 border-teal-200 border-t-teal-600 animate-spin" />
+              <Sparkles className="w-10 h-10 text-teal-600 animate-pulse" />
+            </div>
+
+            <h2 className="text-2xl font-extrabold text-slate-900 mb-2">AI Planner Orchestrator Active</h2>
+            <p className="text-teal-700 font-bold text-lg mb-6">{aiStatusText}</p>
+
+            <div className="w-full bg-slate-100 rounded-full h-3 max-w-md mx-auto overflow-hidden border border-slate-200 mb-6">
+              <div
+                className="bg-teal-600 h-3 transition-all duration-300 ease-out"
+                style={{ width: `${((aiStepIndex + 1) / 6) * 100}%` }}
+              />
+            </div>
+
+            <div className="space-y-2 text-slate-600 text-sm max-w-sm mx-auto text-left font-medium">
+              <div className={`flex items-center gap-2 ${aiStepIndex >= 0 ? 'text-teal-800 font-bold' : 'opacity-40'}`}>
+                <CheckCircle2 className="w-4 h-4 text-teal-600" /> Understanding travel preferences
+              </div>
+              <div className={`flex items-center gap-2 ${aiStepIndex >= 1 ? 'text-teal-800 font-bold' : 'opacity-40'}`}>
+                <CheckCircle2 className="w-4 h-4 text-teal-600" /> Finding suitable destinations
+              </div>
+              <div className={`flex items-center gap-2 ${aiStepIndex >= 2 ? 'text-teal-800 font-bold' : 'opacity-40'}`}>
+                <CheckCircle2 className="w-4 h-4 text-teal-600" /> Building optimized travel route
+              </div>
+              <div className={`flex items-center gap-2 ${aiStepIndex >= 3 ? 'text-teal-800 font-bold' : 'opacity-40'}`}>
+                <CheckCircle2 className="w-4 h-4 text-teal-600" /> Scheduling daily activities & timings
+              </div>
+              <div className={`flex items-center gap-2 ${aiStepIndex >= 4 ? 'text-teal-800 font-bold' : 'opacity-40'}`}>
+                <CheckCircle2 className="w-4 h-4 text-teal-600" /> Evaluating budget & constraint rules
+              </div>
+              <div className={`flex items-center gap-2 ${aiStepIndex >= 5 ? 'text-teal-800 font-bold' : 'opacity-40'}`}>
+                <CheckCircle2 className="w-4 h-4 text-teal-600" /> Validating final itinerary plan
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 9: GENERATED ITINERARY RESULT VIEW */}
+        {step === 9 && generatedPlan && (
+          <div className="space-y-8 animate-fadeIn">
+            {/* Header Controls */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white border border-slate-200/80 p-6 sm:p-8 rounded-3xl shadow-xl">
+              <div>
+                <div className="flex items-center gap-2 text-teal-700 text-xs font-extrabold uppercase tracking-wider mb-1">
+                  <ShieldCheck className="w-4 h-4 text-teal-600" /> AI Score: {generatedPlan.metadata.aiScore}% Validated
+                </div>
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">{generatedPlan.trip.title}</h1>
+                <p className="text-slate-600 text-sm mt-1">{generatedPlan.trip.description}</p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setStep(1)}
+                  className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-xl flex items-center gap-2"
+                >
+                  <RefreshCw className="w-4 h-4" /> Plan Another
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleSaveTrip}
+                  disabled={isSaving || saveSuccess}
+                  className="px-6 py-2.5 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white text-sm font-bold rounded-xl flex items-center gap-2 shadow-md transition-all"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  {isSaving ? 'Saving to Database...' : saveSuccess ? 'Saved to Trips!' : 'Save Trip'}
+                </button>
+              </div>
+            </div>
+
+            {/* Warnings Alert Banner */}
+            {generatedPlan.warnings && generatedPlan.warnings.length > 0 && (
+              <div className="space-y-3">
+                {generatedPlan.warnings.map((w) => (
+                  <div key={w.id} className="bg-amber-50 border border-amber-200 p-4 rounded-2xl flex items-start gap-3 text-amber-900 text-sm">
+                    <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-bold text-amber-950 block">{w.title}</span>
+                      <span>{w.message}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Main Content Layout (Itinerary Days + Budget Breakdown Sidebar) */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Left Column: Day-by-Day Timeline (2 Cols) */}
+              <div className="lg:col-span-2 space-y-6">
+                <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-teal-700" /> Day-by-Day Schedule ({generatedPlan.days.length} Days)
                 </h2>
-                <p className="text-xs sm:text-sm font-bold text-[#146C86]">
-                  Colombo → Kandy → Ella → Galle
-                </p>
-              </div>
 
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => handleRefine('Slower Pace')}
-                  className="px-4 py-2 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
-                >
-                  ✦ Refine with NOVA
-                </button>
-                <button
-                  onClick={() => triggerToast('Journey saved to your Trips!')}
-                  className="px-6 py-2 rounded-full bg-[#0B3A53] hover:bg-[#072537] text-white font-extrabold text-xs uppercase tracking-wider transition-colors cursor-pointer shadow-md"
-                >
-                  Save to My Trips
-                </button>
-              </div>
-            </div>
+                {generatedPlan.days.map((dayItem, dIdx) => (
+                  <div key={dayItem.day} className="bg-white border border-slate-200/90 rounded-3xl p-6 shadow-sm space-y-4">
+                    {/* Day Title Bar */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-4">
+                      <div>
+                        <span className="px-3 py-1 bg-teal-50 text-teal-800 font-extrabold text-xs rounded-lg border border-teal-200 inline-block mb-1">
+                          DAY {dayItem.day} — {dayItem.date}
+                        </span>
+                        <h3 className="text-lg font-bold text-slate-900">{dayItem.title}</h3>
+                        <span className="text-xs text-slate-500 font-medium flex items-center gap-1">
+                          <MapPin className="w-3.5 h-3.5 text-teal-600" /> Location: {dayItem.location}
+                        </span>
+                      </div>
 
-            {/* Journey Summary Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
-              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/60">
-                <span className="text-slate-400 font-bold block">Destination & Duration</span>
-                <span className="font-extrabold text-[#0B3A53]">{destination} · {duration}</span>
-              </div>
-              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/60">
-                <span className="text-slate-400 font-bold block">Travelers</span>
-                <span className="font-extrabold text-[#0B3A53]">{travelersCount} Persons ({travelersType})</span>
-              </div>
-              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/60">
-                <span className="text-slate-400 font-bold block">Transport & Guide</span>
-                <span className="font-extrabold text-[#0B3A53]">
-                  {transportMode === 'Private' ? currentVehicle : 'Public'} {hireGuide ? `· ${guideType}` : '· Self'}
-                </span>
-              </div>
-              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/60">
-                <span className="text-slate-400 font-bold block">Estimated Budget</span>
-                <span className="font-extrabold text-[#146C86]">
-                  ${minBudget}–${maxBudget}
-                </span>
-              </div>
-            </div>
-          </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-teal-800 font-bold text-sm bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
+                          Est. ${dayItem.estimatedCost}
+                        </span>
+                        <button
+                          type="button"
+                          disabled={regeneratingDayIndex === dIdx}
+                          onClick={() => handleRegenerateDay(dIdx)}
+                          className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl flex items-center gap-1 transition-all"
+                        >
+                          <RefreshCw className={`w-3.5 h-3.5 ${regeneratingDayIndex === dIdx ? 'animate-spin' : ''}`} />
+                          Regenerate Day
+                        </button>
+                      </div>
+                    </div>
 
-          {/* DAY-BY-DAY ITINERARY VERTICAL TIMELINE */}
-          <div className="space-y-6">
-            <h3 className="text-2xl font-black text-[#0B3A53] font-heading">
-              Day-by-Day Itinerary
-            </h3>
+                    {/* Activities List */}
+                    <div className="space-y-3 pt-2">
+                      {dayItem.activities.map((act, aIdx) => (
+                        <div key={act.id} className="bg-slate-50/80 border border-slate-200/80 p-4 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:border-slate-300 transition-all">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span className="px-2.5 py-0.5 bg-slate-200 text-slate-800 font-mono text-xs rounded font-bold">
+                                {act.time}
+                              </span>
+                              <span className="text-xs text-slate-500 font-medium">({act.durationMinutes} mins)</span>
+                              <span className="px-2 py-0.5 bg-white text-slate-600 text-xs rounded border border-slate-200 font-medium">
+                                {act.type}
+                              </span>
+                            </div>
+                            <h4 className="text-slate-900 font-bold text-base">{act.title}</h4>
+                            <p className="text-slate-600 text-xs">{act.description}</p>
+                            {act.travelTimeToNext && (
+                              <span className="text-slate-500 text-xs block italic mt-1 font-medium">
+                                🚗 {act.travelTimeToNext}
+                              </span>
+                            )}
+                          </div>
 
-            <div className="space-y-6">
-              {[
-                {
-                  day: 'DAY 01',
-                  title: 'Arrival & Colombo Coastal Vibe',
-                  activities: [
-                    `✦ 09:00 AM — Airport arrival & ${transportMode === 'Private' ? `private ${currentVehicle}` : 'express transport'} pickup`,
-                    '✦ 02:00 PM — Colombo Fort colonial walking tour & lotus tower view',
-                    `✦ 06:00 PM — Galle Face Green seaside street food sunset ${hireGuide ? 'with local guide' : ''}`,
-                  ],
-                  image: galleImg,
-                },
-                {
-                  day: 'DAY 02',
-                  title: 'Into the Sacred Hill Capital',
-                  activities: [
-                    `✦ 08:30 AM — ${transportMode === 'Private' ? `Private ${currentVehicle}` : 'Scenic mainline train'} travel to Kandy`,
-                    `✦ 02:00 PM — Temple of the Sacred Tooth Relic tour ${hireGuide ? `with licensed ${guideType}` : ''}`,
-                    '✦ 06:30 PM — Traditional Kandyan cultural drumming & dance show',
-                  ],
-                  image: kandyImg,
-                },
-                {
-                  day: 'DAY 03',
-                  title: 'Tea Estates & Botanical Gardens',
-                  activities: [
-                    `✦ 09:00 AM — Peradeniya Royal Botanical Gardens stroll ${hireGuide ? 'with flora guide' : ''}`,
-                    '✦ 01:30 PM — Giragama Tea Factory plucking & tasting flight',
-                    '✦ 07:00 PM — Lakeside dinner overlooking Kandy Lake',
-                  ],
-                  image: hortonPlainsImg,
-                },
-                {
-                  day: 'DAY 04',
-                  title: 'Highland Blue Train & Nine Arch Sunrise',
-                  activities: [
-                    '✦ 08:00 AM — Kandy to Ella scenic observation train journey',
-                    `✦ 03:00 PM — Nine Arch Bridge railway photography ${hireGuide ? 'with local guide' : ''}`,
-                    '✦ 07:30 PM — Relaxed mountain dinner at Cafe Chill Ella',
-                  ],
-                  image: ellaImg,
-                },
-                {
-                  day: 'DAY 05',
-                  title: 'Ella Rock Peak & Waterfalls',
-                  activities: [
-                    `✦ 07:00 AM — Guided Ella Rock summit cliff trek ${hireGuide ? `with ${guideType}` : ''}`,
-                    '✦ 01:00 PM — Refreshing swim dip by Ravana Waterfalls',
-                    '✦ 06:00 PM — Ceylon tea bungalow fireside relaxation',
-                  ],
-                  image: riverstonImg,
-                },
-                {
-                  day: 'DAY 06',
-                  title: 'Southern Dutch Fort Ramparts & Sunset',
-                  activities: [
-                    `✦ 09:00 AM — Coastal transfer to Galle ${transportMode === 'Private' ? `via private ${currentVehicle}` : ''}`,
-                    `✦ 02:00 PM — Galle Dutch Fort cobblestone ramparts tour ${hireGuide ? 'with historian guide' : ''}`,
-                    '✦ 06:00 PM — White lighthouse cliff sunset & artisan shopping',
-                  ],
-                  image: sigiriyaImg,
-                },
-                {
-                  day: 'DAY 07',
-                  title: 'Mirissa Palm Beach & Departure',
-                  activities: [
-                    '✦ 08:30 AM — Coconut Tree Hill palm cove photography',
-                    '✦ 12:30 PM — Oceanfront tiger prawn lunch on Mirissa beach',
-                    `✦ 04:00 PM — Departure transfer to Colombo Airport ${transportMode === 'Private' ? `via private ${currentVehicle}` : ''}`,
-                  ],
-                  image: mirissaImg,
-                },
-              ].map((d, idx) => (
-                <div
-                  key={idx}
-                  className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/70 shadow-sm grid grid-cols-1 md:grid-cols-12 gap-6 items-center"
-                >
-                  <div className="md:col-span-4 h-48 w-full rounded-2xl overflow-hidden bg-slate-100">
-                    <img src={d.image} alt={d.title} className="w-full h-full object-cover" />
-                  </div>
-                  <div className="md:col-span-8 space-y-3">
-                    <span className="text-xs font-black uppercase text-[#16A6A1]">{d.day}</span>
-                    <h4 className="text-xl font-extrabold text-[#0B3A53]">{d.title}</h4>
-                    <ul className="space-y-1.5 text-xs text-slate-600 font-semibold">
-                      {d.activities.map((act, aIdx) => (
-                        <li key={aIdx}>{act}</li>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className="text-slate-700 font-bold text-xs mr-2">${act.estimatedCost}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleReplaceActivity(dIdx, aIdx)}
+                              title="Replace activity with alternative"
+                              className="p-2 bg-white hover:bg-slate-100 text-teal-700 rounded-lg border border-slate-200 shadow-sm"
+                            >
+                              <RefreshCw className="w-4 h-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEditingActivity({ dayIndex: dIdx, activityIndex: aIdx, activity: { ...act } })}
+                              title="Edit activity details"
+                              className="p-2 bg-white hover:bg-slate-100 text-slate-700 rounded-lg border border-slate-200 shadow-sm"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteActivity(dIdx, aIdx)}
+                              title="Delete activity"
+                              className="p-2 bg-white hover:bg-red-50 text-red-600 rounded-lg border border-slate-200 shadow-sm"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
                       ))}
-                    </ul>
+
+                      <button
+                        type="button"
+                        onClick={() => setShowAddActivityModal(dIdx)}
+                        className="w-full py-2.5 bg-slate-50 hover:bg-slate-100 border border-dashed border-slate-300 text-slate-600 hover:text-teal-700 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all mt-3"
+                      >
+                        <Plus className="w-4 h-4" /> Add Activity to Day {dayItem.day}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Right Column: Budget Breakdown & Recommendations (1 Col) */}
+              <div className="space-y-6">
+                {/* Budget Breakdown Card */}
+                <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
+                  <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                    <DollarSign className="w-5 h-5 text-teal-700" /> Budget Breakdown
+                  </h3>
+
+                  <div className="space-y-3 text-sm">
+                    <div className="flex justify-between text-slate-600">
+                      <span>Accommodation</span>
+                      <span className="font-semibold text-slate-900">${generatedPlan.budget.accommodation}</span>
+                    </div>
+                    <div className="flex justify-between text-slate-600">
+                      <span>Transportation</span>
+                      <span className="font-semibold text-slate-900">${generatedPlan.budget.transportation}</span>
+                    </div>
+                    <div className="flex justify-between text-slate-600">
+                      <span>Activities</span>
+                      <span className="font-semibold text-slate-900">${generatedPlan.budget.activities}</span>
+                    </div>
+                    <div className="flex justify-between text-slate-600">
+                      <span>Food & Dining</span>
+                      <span className="font-semibold text-slate-900">${generatedPlan.budget.food}</span>
+                    </div>
+                    <div className="flex justify-between text-slate-600">
+                      <span>Sundry / Other</span>
+                      <span className="font-semibold text-slate-900">${generatedPlan.budget.other}</span>
+                    </div>
+
+                    <div className="border-t border-slate-200 pt-3 flex justify-between text-slate-900 font-bold text-base">
+                      <span>Total Estimated Cost</span>
+                      <span className="text-teal-700">${generatedPlan.budget.total} {generatedPlan.budget.currency}</span>
+                    </div>
+
+                    <div className="bg-teal-50 border border-teal-200 p-3 rounded-xl flex justify-between text-xs font-bold text-teal-800">
+                      <span>Allocated Budget Remaining:</span>
+                      <span>${generatedPlan.budget.remaining} {generatedPlan.budget.currency}</span>
+                    </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
 
-          {/* ROUTE MAP SECTION */}
-          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/70 shadow-sm space-y-4">
-            <h3 className="text-xl font-black text-[#0B3A53] font-heading">
-              Route Overview
-            </h3>
-            <div className="p-8 rounded-2xl bg-slate-50 border border-slate-200/80 text-center space-y-4">
-              <div className="flex flex-wrap items-center justify-center gap-4 text-xs font-extrabold text-[#0B3A53]">
-                <span className="px-4 py-2 rounded-full bg-white border shadow-2xs">📍 Colombo</span>
-                <span>→</span>
-                <span className="px-4 py-2 rounded-full bg-white border shadow-2xs">📍 Kandy (115 km)</span>
-                <span>→</span>
-                <span className="px-4 py-2 rounded-full bg-white border shadow-2xs">📍 Ella (140 km)</span>
-                <span>→</span>
-                <span className="px-4 py-2 rounded-full bg-white border shadow-2xs">📍 Galle (200 km)</span>
+                {/* Recommendations & Partner Offers */}
+                {generatedPlan.recommendations && generatedPlan.recommendations.length > 0 && (
+                  <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
+                    <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                      <Sparkles className="w-5 h-5 text-teal-700" /> AI Partner Advice
+                    </h3>
+                    <div className="space-y-3">
+                      {generatedPlan.recommendations.map((rec) => (
+                        <div key={rec.id} className="bg-slate-50 border border-slate-200 p-4 rounded-2xl space-y-1">
+                          <span className="text-xs text-teal-700 font-extrabold uppercase">{rec.category}</span>
+                          <h4 className="text-slate-900 font-bold text-sm">{rec.title}</h4>
+                          <p className="text-slate-600 text-xs">{rec.description}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-              <p className="text-xs text-slate-400 font-medium">
-                Optimized route minimizes drive time while maximizing scenic mountain rail vistas.
-              </p>
             </div>
           </div>
+        )}
 
-          {/* AI RECOMMENDATIONS ("NOVA ADDED A FEW IDEAS") */}
-          <div className="space-y-4">
-            <h3 className="text-2xl font-black text-[#0B3A53] font-heading">
-              NOVA added a few ideas
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {[
-                {
-                  title: '🌿 Hidden Waterfall',
-                  desc: 'A quiet dip near Ella away from main trails.',
-                },
-                {
-                  title: '☕ Local Tea Experience',
-                  desc: 'A slower way to experience Ceylon hill country.',
-                },
-                {
-                  title: '🌅 Sunset Viewpoint',
-                  desc: 'A perfect final evening overlooking Galle Fort.',
-                },
-              ].map((rec, idx) => (
-                <div
-                  key={idx}
-                  className="bg-white p-6 rounded-3xl border border-slate-200/70 shadow-sm space-y-2"
-                >
-                  <h4 className="text-base font-extrabold text-[#0B3A53]">{rec.title}</h4>
-                  <p className="text-xs text-slate-500 font-medium">{rec.desc}</p>
+        {/* MODAL: EDIT ACTIVITY */}
+        {editingActivity && (
+          <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-white border border-slate-200 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+                <h3 className="text-lg font-bold text-slate-900">Edit Activity Details</h3>
+                <button onClick={() => setEditingActivity(null)} className="text-slate-400 hover:text-slate-700">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-3 text-sm">
+                <div>
+                  <label className="block text-slate-700 font-semibold text-xs mb-1">Time</label>
+                  <input
+                    type="text"
+                    value={editingActivity.activity.time}
+                    onChange={(e) =>
+                      setEditingActivity({
+                        ...editingActivity,
+                        activity: { ...editingActivity.activity, time: e.target.value },
+                      })
+                    }
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900"
+                  />
                 </div>
-              ))}
+
+                <div>
+                  <label className="block text-slate-700 font-semibold text-xs mb-1">Title</label>
+                  <input
+                    type="text"
+                    value={editingActivity.activity.title}
+                    onChange={(e) =>
+                      setEditingActivity({
+                        ...editingActivity,
+                        activity: { ...editingActivity.activity, title: e.target.value },
+                      })
+                    }
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900 font-bold"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 font-semibold text-xs mb-1">Estimated Cost ($)</label>
+                  <input
+                    type="number"
+                    value={editingActivity.activity.estimatedCost}
+                    onChange={(e) =>
+                      setEditingActivity({
+                        ...editingActivity,
+                        activity: { ...editingActivity.activity, estimatedCost: Number(e.target.value) },
+                      })
+                    }
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900 font-bold"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 font-semibold text-xs mb-1">Description</label>
+                  <textarea
+                    rows={2}
+                    value={editingActivity.activity.description}
+                    onChange={(e) =>
+                      setEditingActivity({
+                        ...editingActivity,
+                        activity: { ...editingActivity.activity, description: e.target.value },
+                      })
+                    }
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-900 text-xs"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button type="button" onClick={() => setEditingActivity(null)} className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-xs font-semibold">
+                  Cancel
+                </button>
+                <button type="button" onClick={handleSaveEditedActivity} className="px-4 py-2 bg-teal-600 text-white rounded-xl text-xs font-bold shadow-md">
+                  Save Changes
+                </button>
+              </div>
             </div>
           </div>
+        )}
 
-          {/* FINAL ACTIONS & REFINE */}
-          <div className="bg-white p-8 rounded-3xl border border-slate-200/70 shadow-sm flex flex-wrap items-center justify-between gap-4">
-            <button
-              onClick={() => setStep(1)}
-              className="text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
-            >
-              ← Edit Journey Preferences
-            </button>
+        {/* MODAL: ADD ACTIVITY */}
+        {showAddActivityModal !== null && (
+          <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-white border border-slate-200 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+                <h3 className="text-lg font-bold text-slate-900">Add Custom Activity to Day {showAddActivityModal + 1}</h3>
+                <button onClick={() => setShowAddActivityModal(null)} className="text-slate-400 hover:text-slate-700">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
 
-            <div className="flex flex-wrap items-center gap-3">
-              <button
-                onClick={() => handleRefine('More Adventure')}
-                className="px-4 py-2.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
-              >
-                + More Adventure
-              </button>
-              <button
-                onClick={() => {
-                  triggerToast('Saved journey to your Trips page!');
-                  navigate('/trips');
-                }}
-                className="px-8 py-3.5 rounded-full bg-[#0B3A53] hover:bg-[#072537] text-white font-extrabold text-xs uppercase tracking-wider transition-colors cursor-pointer shadow-md"
-              >
-                Save to My Trips
-              </button>
+              <div className="space-y-3 text-sm">
+                <div>
+                  <label className="block text-slate-700 font-semibold text-xs mb-1">Time</label>
+                  <input
+                    type="text"
+                    value={newActivityTime}
+                    onChange={(e) => setNewActivityTime(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 font-semibold text-xs mb-1">Activity Title</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Evening Sunset Beach Walk"
+                    value={newActivityTitle}
+                    onChange={(e) => setNewActivityTitle(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900 font-bold"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 font-semibold text-xs mb-1">Estimated Cost ($)</label>
+                  <input
+                    type="number"
+                    value={newActivityCost}
+                    onChange={(e) => setNewActivityCost(Number(e.target.value))}
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900 font-bold"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button type="button" onClick={() => setShowAddActivityModal(null)} className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-xs font-semibold">
+                  Cancel
+                </button>
+                <button type="button" onClick={() => handleAddActivitySubmit(showAddActivityModal)} className="px-4 py-2 bg-teal-600 text-white rounded-xl text-xs font-bold shadow-md">
+                  Add Activity
+                </button>
+              </div>
             </div>
           </div>
-        </section>
-      )}
+        )}
+      </main>
 
-      {/* FOOTER */}
       <Footer />
     </div>
   );

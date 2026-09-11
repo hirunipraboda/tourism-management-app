@@ -89,7 +89,6 @@ export const ProfilePage: React.FC = () => {
   const roleOptions: UserRole[] = [
     'Tourist',
     'Tour Operator',
-    'Tour Guide',
     'Administrator',
   ];
 

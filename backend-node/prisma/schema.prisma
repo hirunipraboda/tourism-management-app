@@ -1,0 +1,316 @@
+// Travel Link - PostgreSQL Prisma Schema
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  PENDING
+}
+
+enum Province {
+  CENTRAL
+  SOUTHERN
+  WESTERN
+  NORTHERN
+  EASTERN
+  NORTH_CENTRAL
+  NORTH_WESTERN
+  SABARAGAMUWA
+  UVA
+}
+
+enum DestinationCategory {
+  BEACH
+  WILDLIFE
+  HERITAGE
+  ADVENTURE
+  NATURE
+  CULTURE
+  RELIGIOUS
+  HILL_COUNTRY
+  CITY
+}
+
+enum TourCategory {
+  CULTURAL
+  WILDLIFE
+  ADVENTURE
+  HERITAGE
+  BEACH
+  NATURE
+  HILL_COUNTRY
+}
+
+enum TripStatus {
+  DRAFT
+  PLANNED
+  COMPLETED
+  CANCELLED
+}
+
+enum TravelOption {
+  PUBLIC
+  PRIVATE
+  NONE
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+enum PaymentStatus {
+  PAID
+  PENDING
+  REFUNDED
+}
+
+model User {
+  id           String     @id @default(uuid())
+  name         String
+  email        String     @unique
+  password     String
+  role         Role       @default(USER)
+  profileImage String?
+  phone        String?
+  bio          String?
+  location     String?
+  department   String?
+  status       UserStatus @default(ACTIVE)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  trips    Trip[]
+  bookings Booking[]
+  reviews  Review[]
+
+  @@map("users")
+}
+
+model Destination {
+  id              String              @id @default(uuid())
+  name            String
+  slug            String              @unique
+  description     String              @db.Text
+  location        String
+  province        Province            @default(CENTRAL)
+  district        String?
+  imageUrl        String
+  category        DestinationCategory @default(HERITAGE)
+  rating          Float               @default(4.5)
+  reviewCount     Int                 @default(0)
+  entryFee        Float               @default(0.0)
+  openingTime     String?
+  closingTime     String?
+  bestTimeToVisit String?
+  isActive        Boolean             @default(true)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  attractions Attraction[]
+  tours       TourDestination[]
+  trips       TripDestination[]
+  reviews     Review[]
+
+  @@map("destinations")
+}
+
+model Attraction {
+  id             String      @id @default(uuid())
+  destinationId  String
+  destination    Destination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+  name           String
+  description    String      @db.Text
+  imageUrl       String?
+  category       String?
+  entryFee       Float       @default(0.0)
+  openingTime    String?
+  closingTime    String?
+  latitude       Float?
+  longitude      Float?
+  durationHours  Float       @default(2.0)
+  pricePerPerson Float       @default(0.0)
+  rating         Float       @default(4.5)
+  reviewsCount   Int         @default(0)
+  isActive       Boolean     @default(true)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@map("attractions")
+}
+
+model Tour {
+  id           String            @id @default(uuid())
+  title        String
+  slug         String            @unique
+  code         String            @unique
+  description  String            @db.Text
+  durationDays Int               @default(1)
+  price        Float
+  currency     String            @default("USD")
+  imageUrl     String?
+  maxGroupSize Int               @default(10)
+  category     TourCategory      @default(CULTURAL)
+  rating       Float             @default(4.8)
+  isActive     Boolean           @default(true)
+  createdById  String?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  destinations TourDestination[]
+  itineraries  TourItinerary[]
+  bookings     Booking[]
+  reviews      Review[]
+
+  @@map("tours")
+}
+
+model TourDestination {
+  tourId        String
+  destinationId String
+  order         Int         @default(0)
+  tour          Tour        @relation(fields: [tourId], references: [id], onDelete: Cascade)
+  destination   Destination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+
+  @@id([tourId, destinationId])
+  @@map("tour_destinations")
+}
+
+model TourItinerary {
+  id          String   @id @default(uuid())
+  tourId      String
+  tour        Tour     @relation(fields: [tourId], references: [id], onDelete: Cascade)
+  dayNumber   Int
+  title       String
+  description String   @db.Text
+  activities  String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("tour_itineraries")
+}
+
+model Trip {
+  id                String            @id @default(uuid())
+  userId            String
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title             String
+  description       String?           @db.Text
+  startDate         DateTime
+  endDate           DateTime
+  numberOfTravelers Int               @default(1)
+  budget            Float             @default(0.0)
+  transportRequired Boolean           @default(false)
+  status            TripStatus        @default(PLANNED)
+  aiScore           Float             @default(85.0)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  destinations TripDestination[]
+  itineraries  TripItinerary[]
+  bookings     Booking[]
+
+  @@map("trips")
+}
+
+model TripDestination {
+  tripId        String
+  destinationId String
+  trip          Trip        @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  destination   Destination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+
+  @@id([tripId, destinationId])
+  @@map("trip_destinations")
+}
+
+model TripItinerary {
+  id            String    @id @default(uuid())
+  tripId        String
+  trip          Trip      @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  destinationId String?
+  date          DateTime?
+  dayNumber     Int       @default(1)
+  timeSlot      String?
+  title         String
+  description   String?   @db.Text
+  activities    String?   @db.Text
+  notes         String?   @db.Text
+  type          String?
+  cost          Float     @default(0.0)
+  duration      String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("trip_itineraries")
+}
+
+model Booking {
+  id                   String        @id @default(uuid())
+  bookingRef           String        @unique
+  userId               String
+  user                 User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tourId               String?
+  tour                 Tour?         @relation(fields: [tourId], references: [id], onDelete: SetNull)
+  tripId               String?
+  trip                 Trip?         @relation(fields: [tripId], references: [id], onDelete: SetNull)
+  customerName         String
+  customerEmail        String
+  numberOfParticipants Int           @default(1)
+  startDate            DateTime
+  endDate              DateTime?
+  travelOption         TravelOption  @default(NONE)
+  transportRequired    Boolean       @default(false)
+  totalPrice           Float
+  paymentStatus        PaymentStatus @default(PENDING)
+  status               BookingStatus @default(PENDING)
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  @@map("bookings")
+}
+
+model Review {
+  id            String       @id @default(uuid())
+  userId        String
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  destinationId String?
+  destination   Destination? @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+  tourId        String?
+  tour          Tour?        @relation(fields: [tourId], references: [id], onDelete: Cascade)
+  rating        Int
+  comment       String       @db.Text
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@map("reviews")
+}
+
+model TransportPartner {
+  id                  String   @id @default(uuid())
+  name                String
+  description         String   @db.Text
+  logo                String?
+  websiteUrl          String
+  appUrl              String?
+  discount            Float    @default(10.0)
+  discountDescription String
+  isActive            Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@map("transport_partners")
+}

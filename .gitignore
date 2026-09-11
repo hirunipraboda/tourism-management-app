@@ -1,0 +1,23 @@
+# Build and output directories
+**/bin/
+**/obj/
+**/dist/
+**/node_modules/
+.dart_tool/
+.packages
+
+# Environment files
+.env
+*.env
+!.env.example
+
+# IDE files
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+
+# OS files
+Thumbs.db
+.DS_Store

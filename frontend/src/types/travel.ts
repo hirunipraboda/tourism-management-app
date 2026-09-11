@@ -99,16 +99,3 @@ export interface Booking {
   paymentStatus: 'Paid' | 'Pending' | 'Refunded';
   bookingStatus: 'Confirmed' | 'Pending' | 'Cancelled' | 'Completed';
 }
-
-export interface Guide {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  languages: string[];
-  specialties: string[];
-  rating: number;
-  toursCompleted: number;
-  status: 'Available' | 'Assigned' | 'On Leave';
-  avatarUrl: string;
-}

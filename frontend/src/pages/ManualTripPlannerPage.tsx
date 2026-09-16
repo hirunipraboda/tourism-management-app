@@ -616,12 +616,12 @@ export const ManualTripPlannerPage: React.FC = () => {
           {/* Stepper Progress Bar */}
           <div className="grid grid-cols-2 sm:grid-cols-6 gap-2 pt-2">
             {[
-              { num: 1, title: 'Destinations', desc: 'Dates & Budget' },
-              { num: 2, title: 'Accommodation', desc: 'Hotels & Cabanas' },
-              { num: 3, title: 'Travel Styles', desc: 'Vibes & Interests' },
-              { num: 4, title: 'Transport', desc: 'PickMe Integration' },
-              { num: 5, title: 'Itinerary', desc: 'Drag-and-Drop' },
-              { num: 6, title: 'Review & Finalize', desc: 'Financial Summary' },
+              { num: 1, title: 'Destinations' },
+              { num: 2, title: 'Accommodation' },
+              { num: 3, title: 'Travel Styles' },
+              { num: 4, title: 'Transport' },
+              { num: 5, title: 'Itinerary' },
+              { num: 6, title: 'Review & Finalize' },
             ].map((st) => (
               <button
                 key={st.num}
@@ -657,7 +657,6 @@ export const ManualTripPlannerPage: React.FC = () => {
                   </span>
                   <div className="min-w-0">
                     <p className="font-extrabold text-xs text-slate-900 truncate">{st.title}</p>
-                    <p className="text-[10px] text-slate-500 hidden sm:block truncate">{st.desc}</p>
                   </div>
                 </div>
               </button>

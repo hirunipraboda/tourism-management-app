@@ -16,6 +16,7 @@ import {
   ChevronRight,
   LogOut,
   Sparkles,
+  Star,
 } from 'lucide-react';
 import websiteLogo from '../../assets/website-logo.png';
 import { adminAuthService } from '../../services/adminAuthService';
@@ -74,6 +75,14 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       items: [
         { label: 'Reports', path: '/admin/reports', icon: BarChart3 },
         { label: 'Settings', path: '/admin/settings', icon: Settings },
+      ],
+    },
+    {
+      title: 'REVIEWS & RECOMMENDATIONS',
+      items: [
+        { label: 'Review Moderation', path: '/operator/reviews', icon: Star, badge: '128', badgeColor: 'bg-amber-500' },
+        { label: 'Satisfaction Analytics', path: '/operator/customer-satisfaction', icon: BarChart3 },
+        { label: 'Recommendation Insights', path: '/operator/recommendation-insights', icon: Sparkles },
       ],
     },
   ];

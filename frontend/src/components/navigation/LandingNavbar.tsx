@@ -34,17 +34,31 @@ export const LandingNavbar: React.FC = () => {
     const updateSlider = () => {
       const activeEl = tabRefs.current[activeTab];
       if (activeEl) {
-        setSliderStyle({
-          left: activeEl.offsetLeft + 20,
-          width: Math.max(0, activeEl.offsetWidth - 40),
-        });
+        const width = Math.max(24, Math.round(activeEl.offsetWidth * 0.62));
+        const left = Math.round(activeEl.offsetLeft + (activeEl.offsetWidth - width) / 2);
+        setSliderStyle({ left, width });
       }
     };
 
     updateSlider();
+    // Re-check shortly after mount/font render
+    const timer = setTimeout(updateSlider, 50);
     window.addEventListener('resize', updateSlider);
-    return () => window.removeEventListener('resize', updateSlider);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', updateSlider);
+    };
   }, [activeTab, location.pathname]);
+
+  const handleTabClick = (tabKey: string, path: string) => {
+    const el = tabRefs.current[tabKey];
+    if (el) {
+      const width = Math.max(24, Math.round(el.offsetWidth * 0.62));
+      const left = Math.round(el.offsetLeft + (el.offsetWidth - width) / 2);
+      setSliderStyle({ left, width });
+    }
+    navigate(path);
+  };
 
   const profileMenuItems = [
     {
@@ -82,7 +96,7 @@ export const LandingNavbar: React.FC = () => {
           {/* Smooth Sliding Underline Indicator */}
           {sliderStyle.width > 0 && (
             <span
-              className="absolute bottom-1.5 h-[3px] bg-[#16A6A1] rounded-full transition-all duration-300 ease-out pointer-events-none z-10"
+              className="absolute bottom-1.5 h-[3px] bg-[#0B3A53] rounded-full transition-all duration-350 ease-[cubic-bezier(0.25,1,0.5,1)] pointer-events-none z-10 shadow-xs"
               style={{
                 left: `${sliderStyle.left}px`,
                 width: `${sliderStyle.width}px`,
@@ -92,7 +106,7 @@ export const LandingNavbar: React.FC = () => {
 
           <button
             ref={(el) => { tabRefs.current['explore'] = el; }}
-            onClick={() => navigate('/')}
+            onClick={() => handleTabClick('explore', '/')}
             className={`px-3.5 2xl:px-4.5 py-2 rounded-full transition-all duration-200 cursor-pointer relative font-extrabold text-xs 2xl:text-sm ${
               activeTab === 'explore'
                 ? 'text-[#0B3A53] font-black bg-white shadow-xs'
@@ -104,7 +118,7 @@ export const LandingNavbar: React.FC = () => {
 
           <button
             ref={(el) => { tabRefs.current['destinations'] = el; }}
-            onClick={() => navigate('/destinations')}
+            onClick={() => handleTabClick('destinations', '/destinations')}
             className={`px-3.5 2xl:px-4.5 py-2 rounded-full transition-all duration-200 cursor-pointer relative font-extrabold text-xs 2xl:text-sm ${
               activeTab === 'destinations'
                 ? 'text-[#0B3A53] font-black bg-white shadow-xs'
@@ -116,7 +130,7 @@ export const LandingNavbar: React.FC = () => {
 
           <button
             ref={(el) => { tabRefs.current['trips'] = el; }}
-            onClick={() => navigate('/trips')}
+            onClick={() => handleTabClick('trips', '/trips')}
             className={`px-3.5 2xl:px-4.5 py-2 rounded-full transition-all duration-200 cursor-pointer relative font-extrabold text-xs 2xl:text-sm ${
               activeTab === 'trips'
                 ? 'text-[#0B3A53] font-black bg-white shadow-xs'
@@ -128,7 +142,7 @@ export const LandingNavbar: React.FC = () => {
 
           <button
             ref={(el) => { tabRefs.current['tours'] = el; }}
-            onClick={() => navigate('/tours')}
+            onClick={() => handleTabClick('tours', '/tours')}
             className={`px-3.5 2xl:px-4.5 py-2 rounded-full transition-all duration-200 cursor-pointer relative font-extrabold text-xs 2xl:text-sm ${
               activeTab === 'tours'
                 ? 'text-[#0B3A53] font-black bg-white shadow-xs'
@@ -140,7 +154,7 @@ export const LandingNavbar: React.FC = () => {
 
           <button
             ref={(el) => { tabRefs.current['ai'] = el; }}
-            onClick={() => navigate('/ai-workflows')}
+            onClick={() => handleTabClick('ai', '/ai-workflows')}
             className={`px-3.5 2xl:px-4.5 py-2 rounded-full transition-all duration-200 cursor-pointer relative font-extrabold text-xs 2xl:text-sm ${
               activeTab === 'ai'
                 ? 'text-[#0B3A53] font-black bg-white shadow-xs'
@@ -152,7 +166,7 @@ export const LandingNavbar: React.FC = () => {
 
           <button
             ref={(el) => { tabRefs.current['reviews'] = el; }}
-            onClick={() => navigate('/recommendations')}
+            onClick={() => handleTabClick('reviews', '/recommendations')}
             className={`px-3.5 2xl:px-4.5 py-2 rounded-full transition-all duration-200 cursor-pointer relative font-extrabold text-xs 2xl:text-sm flex items-center gap-1.5 ${
               activeTab === 'reviews'
                 ? 'text-[#0B3A53] font-black bg-white shadow-xs'

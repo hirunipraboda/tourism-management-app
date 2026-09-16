@@ -312,7 +312,7 @@ export const TripsPage: React.FC = () => {
                 onClick={() => setActiveTab(tab)}
                 className={`py-3 text-sm font-bold transition-all cursor-pointer whitespace-nowrap relative flex items-center gap-2 ${
                   isActive
-                    ? 'text-[#0B3A53] font-black border-b-2 border-[#16A6A1]'
+                    ? 'text-[#0B3A53] font-black border-b-2 border-[#0B3A53]'
                     : 'text-slate-500 hover:text-slate-800'
                 }`}
               >

@@ -276,10 +276,10 @@ export const TripsPage: React.FC = () => {
         <div className="absolute top-20 right-1/4 w-80 h-36 bg-[#16A6A1]/10 rounded-full blur-3xl pointer-events-none -z-10" />
         <div className="absolute top-16 left-10 w-72 h-36 bg-sky-400/10 rounded-full blur-3xl pointer-events-none -z-10" />
 
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 border-b border-slate-200/80 pb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 border-b border-slate-200/80 pb-8">
           <div className="space-y-2 max-w-2xl">
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-[#0B3A53] tracking-tight font-heading leading-tight">
-              Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0B3A53] via-[#146C86] to-[#16A6A1]">Journeys</span>
+              Your Journeys
             </h1>
 
             <p className="text-sm sm:text-base text-slate-600 font-medium leading-relaxed">
@@ -290,7 +290,7 @@ export const TripsPage: React.FC = () => {
           {/* Primary CTA */}
           <button
             onClick={() => navigate('/plan-trip')}
-            className="inline-flex items-center gap-2 bg-gradient-to-r from-[#16A6A1] via-teal-500 to-[#146C86] hover:from-[#146C86] hover:to-[#0B3A53] text-white font-black text-xs uppercase tracking-wider px-6 py-3.5 rounded-2xl shadow-lg shadow-[#16A6A1]/20 hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 cursor-pointer group shrink-0"
+            className="inline-flex items-center justify-center gap-2 bg-[#0B3A53] hover:bg-[#08293B] text-white font-black text-xs uppercase tracking-wider px-6 py-3.5 rounded-2xl shadow-lg shadow-[#0B3A53]/25 hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 cursor-pointer group shrink-0"
           >
             <Plus className="w-4 h-4 text-white group-hover:rotate-90 transition-transform duration-300" />
             <span>Plan a New Trip</span>

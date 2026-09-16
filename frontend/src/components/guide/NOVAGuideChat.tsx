@@ -252,33 +252,31 @@ export const NOVAGuideChat: React.FC<NOVAGuideChatProps> = ({ onSelectPackage })
 
               {/* INLINE PICKME TRANSPORTATION PARTNER CARD */}
               {msg.showPickMePartnerCard && (
-                <div className="mt-3 p-4 rounded-2xl bg-gradient-to-r from-[#0B3A53] to-[#146C86] text-white border border-[#16A6A1]/40 space-y-3 shadow-md">
+                <div className="mt-3 p-4 rounded-2xl bg-gradient-to-br from-[#18181B] to-[#121212] text-white border border-amber-400/30 space-y-3 shadow-md">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-black uppercase text-teal-300 tracking-wider">
+                    <span className="text-[10px] font-black uppercase text-amber-400 tracking-wider">
                       TRANSPORTATION PARTNER
                     </span>
-                    <span className="px-2.5 py-0.5 rounded-full bg-[#16A6A1] text-slate-950 text-[10px] font-black uppercase tracking-wider">
-                      10% OFF
+                    <span className="px-2.5 py-0.5 rounded-full bg-gradient-to-r from-[#FFD200] to-[#FFA800] text-slate-950 text-[10px] font-black uppercase tracking-wider shadow-sm">
+                      20% OFF
                     </span>
                   </div>
 
                   <div className="space-y-1">
                     <div className="flex items-center gap-2 pt-0.5">
                       <img src={pickmeLogoImg} alt="PickMe Logo" className="h-9 w-auto object-contain rounded-xl drop-shadow-md" />
-                      <span className="text-[10px] text-teal-200 font-medium">· Sri Lanka's Partner</span>
+                      <span className="text-[10px] text-amber-200 font-medium">· Sri Lanka's Partner</span>
                     </div>
                     <p className="text-xs text-slate-200 font-medium pt-1">
-                      Enjoy 10% off eligible rides with PickMe when traveling across Sri Lanka.
+                      Enjoy 20% off eligible rides with PickMe when traveling across Sri Lanka.
                     </p>
                   </div>
 
                   <a
-                    href="https://pickme.lk"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#16A6A1] to-emerald-400 hover:from-teal-300 hover:to-emerald-300 text-slate-950 text-xs font-black transition-all flex items-center justify-center gap-1.5 shadow-sm text-center"
+                    href="/payment"
+                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#FFD200] via-[#FFC400] to-[#FFA800] hover:from-[#FFE033] hover:to-[#FFC400] text-slate-950 text-xs font-black transition-all flex items-center justify-center gap-1.5 shadow-sm text-center cursor-pointer font-heading"
                   >
-                    <span>Get 10% Off with PickMe →</span>
+                    <span>Get 20% Off with PickMe →</span>
                   </a>
                 </div>
               )}

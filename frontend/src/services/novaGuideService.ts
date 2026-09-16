@@ -99,7 +99,7 @@ export class NOVAGuideService {
       replyText = `For a convenient private journey, you can arrange transportation through our partner PickMe.`;
       showPickMePartnerCard = true;
       suggestions = [
-        'Get 10% Off with PickMe',
+        'Get 20% Off with PickMe',
         'How to book train tickets?',
         '🗺 Plan a 1-day itinerary',
         '📍 Recommended places to visit'

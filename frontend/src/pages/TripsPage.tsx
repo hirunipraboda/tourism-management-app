@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Compass,
@@ -17,6 +17,8 @@ import {
   TrendingUp,
   Bot,
   Camera,
+  Tag,
+  Car,
 } from 'lucide-react';
 import { LandingNavbar } from '../components/navigation/LandingNavbar';
 import { Footer } from '../components/navigation/Footer';
@@ -26,8 +28,66 @@ import { AIBotGuideModal } from '../components/guide/AIBotGuideModal';
 export const TripsPage: React.FC = () => {
   const navigate = useNavigate();
 
+  const normalizeTrip = (t: UserTrip): UserTrip => {
+    if (t.id === 'trip-kandy-escape') {
+      return {
+        ...t,
+        status: 'Ongoing',
+        isFeatured: true,
+        progress: t.progress
+          ? {
+              destination: t.progress.destination,
+              preferences: t.progress.preferences,
+              aiPlanning: t.progress.aiPlanning,
+              itinerary: t.progress.itinerary,
+              bookings: true,
+            }
+          : undefined,
+      };
+    }
+    return t;
+  };
+
   // State Management
-  const [trips, setTrips] = useState<UserTrip[]>(MOCK_USER_TRIPS);
+  const [trips, setTrips] = useState<UserTrip[]>(() => {
+    const saved = localStorage.getItem('nova_user_trips');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const normalized: UserTrip[] = parsed.map(normalizeTrip);
+          const existingIds = new Set(normalized.map((t: UserTrip) => t.id));
+          const uniqueMocks = MOCK_USER_TRIPS.filter((t) => !existingIds.has(t.id));
+          return [...normalized, ...uniqueMocks];
+        }
+      } catch (e) {
+        console.error('Failed to parse saved trips', e);
+      }
+    }
+    return MOCK_USER_TRIPS;
+  });
+
+  useEffect(() => {
+    const syncTrips = () => {
+      const saved = localStorage.getItem('nova_user_trips');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            const normalized: UserTrip[] = parsed.map(normalizeTrip);
+            const existingIds = new Set(normalized.map((t: UserTrip) => t.id));
+            const uniqueMocks = MOCK_USER_TRIPS.filter((t) => !existingIds.has(t.id));
+            setTrips([...normalized, ...uniqueMocks]);
+          }
+        } catch (e) {
+          console.error('Failed to parse saved trips', e);
+        }
+      }
+    };
+    syncTrips();
+    window.addEventListener('storage', syncTrips);
+    return () => window.removeEventListener('storage', syncTrips);
+  }, []);
   const [activeTab, setActiveTab] = useState<'All' | 'Upcoming' | 'Planning' | 'Ongoing' | 'Completed'>('All');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -108,9 +168,9 @@ export const TripsPage: React.FC = () => {
     return trips.filter((t) => t.status === activeTab);
   }, [trips, activeTab]);
 
-  // Featured Trip (Primary active or upcoming trip)
+  // Featured Trip (Primary active or ongoing trip - prioritizes Ongoing)
   const featuredTrip = useMemo(() => {
-    return trips.find((t) => t.isFeatured) || trips[0];
+    return trips.find((t) => t.status === 'Ongoing') || trips.find((t) => t.isFeatured) || trips[0];
   }, [trips]);
 
   const handleManualTripSubmit = () => {
@@ -211,23 +271,28 @@ export const TripsPage: React.FC = () => {
       <LandingNavbar />
 
       {/* 3. PAGE HERO */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-8">
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-8">
+        {/* Subtle Ambient Background Atmosphere */}
+        <div className="absolute top-20 right-1/4 w-80 h-36 bg-[#16A6A1]/10 rounded-full blur-3xl pointer-events-none -z-10" />
+        <div className="absolute top-16 left-10 w-72 h-36 bg-sky-400/10 rounded-full blur-3xl pointer-events-none -z-10" />
+
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 border-b border-slate-200/80 pb-8">
-          <div className="space-y-2 max-w-xl">
-            <h1 className="text-4xl sm:text-5xl font-black text-[#0B3A53] tracking-tight font-heading leading-tight">
-              Your Journeys
+          <div className="space-y-2 max-w-2xl">
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-[#0B3A53] tracking-tight font-heading leading-tight">
+              Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0B3A53] via-[#146C86] to-[#16A6A1]">Journeys</span>
             </h1>
-            <p className="text-base sm:text-lg text-slate-600 font-medium leading-relaxed">
-              Every trip has a story. Keep yours in one place.
+
+            <p className="text-sm sm:text-base text-slate-600 font-medium leading-relaxed">
+              Every trip has a story. Keep your itineraries, active travels, and memories organized in one seamless place.
             </p>
           </div>
 
           {/* Primary CTA */}
           <button
-            onClick={() => setIsCreateModalOpen(true)}
-            className="inline-flex items-center gap-2 bg-[#16A6A1] hover:bg-[#146C86] text-white font-extrabold text-xs uppercase tracking-wider px-6 py-3.5 rounded-full shadow-sm hover:shadow-md transition-all cursor-pointer shrink-0"
+            onClick={() => navigate('/plan-trip')}
+            className="inline-flex items-center gap-2 bg-gradient-to-r from-[#16A6A1] via-teal-500 to-[#146C86] hover:from-[#146C86] hover:to-[#0B3A53] text-white font-black text-xs uppercase tracking-wider px-6 py-3.5 rounded-2xl shadow-lg shadow-[#16A6A1]/20 hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 cursor-pointer group shrink-0"
           >
-            <Plus className="w-4 h-4 text-white" />
+            <Plus className="w-4 h-4 text-white group-hover:rotate-90 transition-transform duration-300" />
             <span>Plan a New Trip</span>
           </button>
         </div>
@@ -265,8 +330,8 @@ export const TripsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* 5 & 6. FEATURED / UPCOMING TRIP CARD */}
-      {activeTab === 'All' && featuredTrip && (
+      {/* 5 & 6. FEATURED / UPCOMING OR ONGOING TRIP CARD */}
+      {(activeTab === 'All' || activeTab === 'Ongoing') && featuredTrip && (
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
           <div className="bg-white rounded-3xl overflow-hidden border border-slate-200/70 shadow-sm hover:shadow-md transition-all group grid grid-cols-1 lg:grid-cols-12">
             {/* Left Destination Photography */}
@@ -278,8 +343,12 @@ export const TripsPage: React.FC = () => {
               />
               <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent lg:hidden" />
 
-              <div className="absolute top-4 left-4 px-3 py-1 rounded-full bg-slate-900/80 backdrop-blur-md text-[#16A6A1] text-xs font-black uppercase tracking-wider border border-white/15">
-                PRIMARY JOURNEY
+              <div className="absolute top-4 left-4 px-3.5 py-1.5 rounded-full bg-slate-950/85 backdrop-blur-md text-emerald-400 text-xs font-black uppercase tracking-wider border border-emerald-500/30 flex items-center gap-2 shadow-lg">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400" />
+                </span>
+                <span>PRIMARY JOURNEY {featuredTrip.status === 'Ongoing' ? '· ONGOING' : ''}</span>
               </div>
             </div>
 
@@ -290,9 +359,16 @@ export const TripsPage: React.FC = () => {
                   <span className="text-xs font-extrabold uppercase tracking-wider text-[#146C86]">
                     {featuredTrip.destination}
                   </span>
-                  <span className="px-3 py-1 rounded-full bg-[#16A6A1]/10 text-[#146C86] text-xs font-bold border border-[#16A6A1]/20">
-                    {featuredTrip.status}
-                  </span>
+                  {featuredTrip.status === 'Ongoing' ? (
+                    <span className="px-3.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-black border border-emerald-300 flex items-center gap-1.5 shadow-2xs">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      <span>Ongoing</span>
+                    </span>
+                  ) : (
+                    <span className="px-3 py-1 rounded-full bg-[#16A6A1]/10 text-[#146C86] text-xs font-bold border border-[#16A6A1]/20">
+                      {featuredTrip.status}
+                    </span>
+                  )}
                 </div>
 
                 <h2 className="text-2xl sm:text-3xl font-black text-[#0B3A53] font-heading leading-snug">
@@ -324,8 +400,65 @@ export const TripsPage: React.FC = () => {
                   </div>
                 )}
 
-                {/* 6. FRIENDLY TRIP PLANNING PROGRESS */}
-                {featuredTrip.progress && (
+                {/* 6. ONGOING JOURNEY LIVE DETAILS OR PLANNING PROGRESS */}
+                {featuredTrip.status === 'Ongoing' ? (
+                  <div className="pt-4 border-t border-slate-100 space-y-3">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-extrabold text-[#0B3A53] uppercase tracking-wider flex items-center gap-1.5">
+                        <span className="relative flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                        </span>
+                        <span>Ongoing Journey Live Status</span>
+                      </span>
+                      <span className="text-[11px] font-black text-emerald-700 bg-emerald-100/80 px-2.5 py-0.5 rounded-full border border-emerald-300">
+                        Day 2 of 3 · Happening Today
+                      </span>
+                    </div>
+
+                    {/* Day-by-Day Live Progress Cards */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-left">
+                      <div className="p-3 rounded-2xl border bg-slate-50 border-slate-200/80 space-y-1">
+                        <div className="flex items-center justify-between text-[10px] font-bold">
+                          <span className="text-slate-500">Day 1 · 12 Sep</span>
+                          <span className="text-emerald-600 flex items-center gap-0.5"><Check className="w-3 h-3" /> Done</span>
+                        </div>
+                        <h4 className="text-xs font-bold text-slate-800 truncate">Scenic Train & Temple</h4>
+                        <p className="text-[10px] text-slate-500">Arrival & Puja ceremony</p>
+                      </div>
+
+                      <div className="p-3 rounded-2xl border-2 border-emerald-500 bg-emerald-50/60 shadow-xs space-y-1 relative">
+                        <div className="flex items-center justify-between text-[10px] font-black">
+                          <span className="text-emerald-900">Day 2 · 13 Sep (Today)</span>
+                          <span className="px-1.5 py-0.2 bg-emerald-600 text-white rounded-full text-[9px] font-black animate-pulse">ACTIVE</span>
+                        </div>
+                        <h4 className="text-xs font-black text-slate-900 truncate">Botanical Gardens & Tea</h4>
+                        <p className="text-[10px] text-emerald-800 font-semibold">📍 Gardens Tour In Progress</p>
+                      </div>
+
+                      <div className="p-3 rounded-2xl border bg-slate-50 border-slate-200/80 space-y-1">
+                        <div className="flex items-center justify-between text-[10px] font-bold">
+                          <span className="text-slate-500">Day 3 · 14 Sep</span>
+                          <span className="text-slate-400">Tomorrow</span>
+                        </div>
+                        <h4 className="text-xs font-bold text-slate-800 truncate">Forest Canopy & Crafts</h4>
+                        <p className="text-[10px] text-slate-500">Udawatta hike & shopping</p>
+                      </div>
+                    </div>
+
+                    {/* Live Context Indicators */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 text-xs">
+                      <div className="flex items-center gap-2 text-slate-600 bg-slate-50 px-3 py-2 rounded-xl border border-slate-200/60">
+                        <span className="text-base">🏨</span>
+                        <span className="truncate"><strong>Stay:</strong> Earl’s Regency Hotel (Kandy)</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-slate-600 bg-slate-50 px-3 py-2 rounded-xl border border-slate-200/60">
+                        <span className="text-base">⛅</span>
+                        <span className="truncate"><strong>Weather:</strong> 24°C · Pleasant & Mild</span>
+                      </div>
+                    </div>
+                  </div>
+                ) : featuredTrip.progress ? (
                   <div className="pt-4 border-t border-slate-100 space-y-3">
                     <div className="flex items-center justify-between text-xs">
                       <span className="font-extrabold text-slate-700 uppercase tracking-wider">
@@ -390,7 +523,7 @@ export const TripsPage: React.FC = () => {
                       </div>
                     </div>
                   </div>
-                )}
+                ) : null}
               </div>
 
               {/* View Trip Action Button */}
@@ -439,28 +572,55 @@ export const TripsPage: React.FC = () => {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-transparent opacity-60" />
 
-                    <div className="absolute top-3 right-3 px-3 py-1 rounded-full bg-slate-900/80 backdrop-blur-md text-white text-[11px] font-bold border border-white/15">
-                      {trip.status}
+                    <div className={`absolute top-3 right-3 px-3 py-1 rounded-full backdrop-blur-md text-[11px] font-bold border ${
+                      trip.status === 'Ongoing'
+                        ? 'bg-emerald-950/90 text-emerald-400 border-emerald-500/40 flex items-center gap-1.5 shadow-md'
+                        : 'bg-slate-900/80 text-white border-white/15'
+                    }`}>
+                      {trip.status === 'Ongoing' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />}
+                      <span>{trip.status}</span>
                     </div>
                   </div>
 
                   {/* Trip Card Content */}
-                  <div className="p-6 space-y-2">
-                    <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#146C86] block">
-                      {trip.destination}
-                    </span>
+                  <div className="p-6 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#146C86] block">
+                        {trip.destination}
+                      </span>
+                      {trip.budget && (
+                        <span className="text-[11px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
+                          Budget: {trip.budget}
+                        </span>
+                      )}
+                    </div>
+
                     <h3 className="text-xl font-black text-slate-900 font-heading group-hover:text-[#146C86] transition-colors leading-snug">
                       {trip.name}
                     </h3>
+
                     <p className="text-xs font-semibold text-slate-500">
                       {trip.dates} · {trip.duration} · {trip.travelers} Travelers
                     </p>
+
+                    {/* PickMe Promotional Offer Badge if Active */}
+                    {(() => {
+                      const promoMatch = trip.notes?.match(/Promo Code:\s*([A-Z0-9-]+)/i);
+                      const code = promoMatch ? promoMatch[1] : trip.notes?.includes('NOVAPICKME20') ? 'NOVAPICKME20' : null;
+                      if (!code) return null;
+                      return (
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200/80 text-[11px] font-extrabold text-amber-900">
+                          <Tag className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                          <span>PickMe Pass: {code} (20% Off)</span>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
 
                 {/* Card Action Link */}
                 <div className="px-6 pb-6 pt-2 border-t border-slate-100 flex items-center justify-between text-xs font-extrabold text-[#0B3A53]">
-                  <span>{trip.status === 'Completed' ? 'View Memory' : 'Continue Planning'}</span>
+                  <span>{trip.status === 'Completed' ? 'View Memory' : 'View Full Journey'}</span>
                   <span className="text-[#16A6A1] group-hover:translate-x-1 transition-transform flex items-center gap-1">
                     <span>{trip.status}</span>
                     <ArrowRight className="w-4 h-4" />
@@ -484,10 +644,10 @@ export const TripsPage: React.FC = () => {
               </p>
             </div>
             <button
-              onClick={() => setIsCreateModalOpen(true)}
+              onClick={() => navigate('/plan-trip')}
               className="bg-[#0B3A53] hover:bg-[#072537] text-white font-extrabold text-xs uppercase tracking-wider px-6 py-3 rounded-full shadow-md transition-colors cursor-pointer"
             >
-              Plan My First Trip
+              Plan a New Trip
             </button>
           </div>
         )}
@@ -1060,6 +1220,44 @@ export const TripsPage: React.FC = () => {
                   </span>
                 </div>
               </div>
+
+              {/* Trip Preferences & Transport Details Banner */}
+              {selectedTripModal.notes && (
+                <div className="bg-gradient-to-r from-teal-50/80 to-sky-50/80 border border-teal-200/80 p-5 rounded-3xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black uppercase text-[#0B3A53] tracking-wider flex items-center gap-1.5">
+                      <Sparkles className="w-4 h-4 text-[#16A6A1]" /> Trip Preferences & Transport Details
+                    </span>
+                    {(() => {
+                      const promoMatch = selectedTripModal.notes.match(/Promo Code:\s*([A-Z0-9-]+)/i);
+                      const code = promoMatch ? promoMatch[1] : selectedTripModal.notes.includes('NOVAPICKME20') ? 'NOVAPICKME20' : null;
+                      if (!code) return null;
+                      return (
+                        <span className="px-3 py-1 rounded-full bg-amber-400 text-slate-950 text-[11px] font-black uppercase tracking-wider shadow-2xs">
+                          20% Off PickMe Active ({code})
+                        </span>
+                      );
+                    })()}
+                  </div>
+                  <p className="text-xs font-medium text-slate-700 leading-relaxed">
+                    {selectedTripModal.notes}
+                  </p>
+                  {(() => {
+                    const promoMatch = selectedTripModal.notes.match(/Promo Code:\s*([A-Z0-9-]+)/i);
+                    const code = promoMatch ? promoMatch[1] : selectedTripModal.notes.includes('NOVAPICKME20') ? 'NOVAPICKME20' : null;
+                    if (!code) return null;
+                    return (
+                      <div className="pt-2 border-t border-teal-200/60 flex flex-wrap items-center justify-between gap-2 text-xs">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-slate-600">Unique Promo Code:</span>
+                          <code className="px-2 py-0.5 bg-white rounded border border-amber-300 font-mono font-black text-amber-900">{code}</code>
+                        </div>
+                        <span className="text-teal-800 font-bold text-[11px]">Valid across Tuk-Tuks, Cars, Minivans & Airport Transfers in Sri Lanka</span>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
 
               {/* AI Travel Insight Banner */}
               {selectedTripModal.aiNotes && (

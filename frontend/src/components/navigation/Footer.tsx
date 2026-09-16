@@ -57,6 +57,12 @@ export const Footer: React.FC<FooterProps> = ({ onReplaySplash }) => {
             AI Trip Planner
           </button>
           <button
+            onClick={() => navigate('/recommendations')}
+            className="hover:text-white transition-colors cursor-pointer text-[#16A6A1] font-semibold"
+          >
+            Reviews & Recommendations
+          </button>
+          <button
             onClick={() => navigate('/settings')}
             className="hover:text-white transition-colors cursor-pointer text-slate-400"
           >

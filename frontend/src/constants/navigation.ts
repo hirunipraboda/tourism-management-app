@@ -14,6 +14,7 @@ import {
   Users,
   Settings,
   Palette,
+  Star,
 } from 'lucide-react';
 
 export interface NavItemType {
@@ -41,6 +42,15 @@ export const NAV_ITEMS: NavItemType[] = [
     icon: Compass,
     badge: '18',
     badgeVariant: 'neutral',
+    section: 'main',
+  },
+  {
+    id: 'recommendations',
+    label: 'Reviews & Recs',
+    path: '/recommendations',
+    icon: Star,
+    badge: '4.9★',
+    badgeVariant: 'accent',
     section: 'main',
   },
   {

@@ -1,7 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Nova.Api.Data;
-using Nova.Api.Models;
+using Nova.Api.DTOs.Common;
+using Nova.Api.Entities;
 
 namespace Nova.Api.Controllers;
 
@@ -17,43 +18,54 @@ public class DestinationsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetDestinations([FromQuery] string? search, [FromQuery] string? category)
+    public async Task<IActionResult> GetDestinations([FromQuery] string? search)
     {
-        var query = _db.Destinations.Include(d => d.Attractions).AsQueryable();
+        try
+        {
+            var query = _db.Destinations.Include(d => d.Activities).AsQueryable();
 
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                query = query.Where(d => EF.Functions.ILike(d.Name, $"%{search.Trim()}%") || EF.Functions.ILike(d.Description, $"%{search.Trim()}%"));
+            }
+
+            var destinations = await query.ToListAsync();
+            if (destinations.Count > 0)
+            {
+                return Ok(ApiResponse<List<Destination>>.Ok(destinations));
+            }
+        }
+        catch
+        {
+            // Fallback to default destinations
+        }
+
+        var list = GetDefaultDestinations();
         if (!string.IsNullOrWhiteSpace(search))
         {
-            query = query.Where(d => d.Name.Contains(search) || d.Description.Contains(search));
+            list = list.Where(d => d.Name.Contains(search, StringComparison.OrdinalIgnoreCase) || d.Description.Contains(search, StringComparison.OrdinalIgnoreCase)).ToList();
         }
 
-        if (!string.IsNullOrWhiteSpace(category) && Enum.TryParse<DestinationCategory>(category, true, out var cat))
-        {
-            query = query.Where(d => d.Category == cat);
-        }
-
-        var destinations = await query.ToListAsync();
-
-        // If database is empty, return seed default destinations for immediate out-of-the-box operation
-        if (destinations.Count == 0)
-        {
-            destinations = GetDefaultDestinations();
-        }
-
-        return Ok(new { success = true, data = destinations });
+        return Ok(ApiResponse<List<Destination>>.Ok(list));
     }
 
     [HttpGet("{id}")]
     public async Task<IActionResult> GetDestinationById(string id)
     {
-        var destination = await _db.Destinations.Include(d => d.Attractions).FirstOrDefaultAsync(d => d.Id == id || d.Slug == id);
-        if (destination == null)
+        try
         {
-            var fallback = GetDefaultDestinations().FirstOrDefault(d => d.Id == id || d.Slug == id);
-            if (fallback != null) return Ok(new { success = true, data = fallback });
-            return NotFound(new { success = false, message = "Destination not found" });
+            var destination = await _db.Destinations.Include(d => d.Activities).FirstOrDefaultAsync(d => d.Id == id || d.Slug == id);
+            if (destination != null) return Ok(ApiResponse<Destination>.Ok(destination));
+        }
+        catch
+        {
+            // Fallback
         }
 
-        return Ok(new { success = true, data = destination });
+        var fallback = GetDefaultDestinations().FirstOrDefault(d => d.Id == id || d.Slug == id);
+        if (fallback != null) return Ok(ApiResponse<Destination>.Ok(fallback));
+
+        return NotFound(ApiResponse<Destination>.Fail("Destination not found."));
     }
 
     private static List<Destination> GetDefaultDestinations()
@@ -66,15 +78,12 @@ public class DestinationsController : ControllerBase
                 Slug = "sigiriya-rock-fortress",
                 Description = "A towering monolithic rock column crowned by the 5th-century royal palace ruins of King Kasyapa.",
                 Location = "Matale District",
-                Province = Province.CENTRAL,
+                Province = "Central",
                 ImageUrl = "https://images.unsplash.com/photo-1588598198321-9735fd52455d",
-                Category = DestinationCategory.HERITAGE,
                 Rating = 4.9,
-                ReviewCount = 1420,
-                EntryFee = 30.0,
-                Attractions = [
-                    new() { Id = "att-1", Name = "Sigiriya Frescoes", Description = "5th-century painted maidens.", EntryFee = 0 },
-                    new() { Id = "att-2", Name = "Mirror Wall", Description = "Ancient polished graffiti wall.", EntryFee = 0 }
+                Activities = [
+                    new() { Id = "act-1", Name = "Sigiriya Rock Citadel Fortress Climb", Description = "5th-century painted maidens.", CostPerPerson = 30.0m, DurationMinutes = 180 },
+                    new() { Id = "act-2", Name = "Pidurangala Rock Sunset Viewpoint", Description = "Ancient panoramic viewpoint.", CostPerPerson = 5.0m, DurationMinutes = 120 }
                 ]
             },
             new()
@@ -84,30 +93,27 @@ public class DestinationsController : ControllerBase
                 Slug = "ella-gap",
                 Description = "Picturesque mountain town renowned for the Nine Arches colonial bridge and tea plantation trails.",
                 Location = "Badulla District",
-                Province = Province.UVA,
+                Province = "Uva",
                 ImageUrl = "https://images.unsplash.com/photo-1546708973-b339540b5162",
-                Category = DestinationCategory.NATURE,
                 Rating = 4.8,
-                ReviewCount = 980,
-                EntryFee = 0.0,
-                Attractions = [
-                    new() { Id = "att-3", Name = "Nine Arches Bridge", Description = "Colonial rail bridge.", EntryFee = 0 },
-                    new() { Id = "att-4", Name = "Little Adam's Peak", Description = "Gentle panoramic hike.", EntryFee = 0 }
+                Activities = [
+                    new() { Id = "act-3", Name = "Demodara Nine Arches Viaduct Bridge", Description = "Colonial rail bridge.", CostPerPerson = 0.0m, DurationMinutes = 120 },
+                    new() { Id = "act-4", Name = "Little Adam's Peak Mountain Trek", Description = "Gentle panoramic hike.", CostPerPerson = 0.0m, DurationMinutes = 150 }
                 ]
             },
             new()
             {
                 Id = "dest-3",
-                Name = "Galle Dutch Fort",
-                Slug = "galle-fort",
-                Description = "Living UNESCO coastal citadel preserving 17th-century European architecture on the Indian Ocean.",
-                Location = "Galle",
-                Province = Province.SOUTHERN,
-                ImageUrl = "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a",
-                Category = DestinationCategory.HERITAGE,
+                Name = "Kandy Sacred City",
+                Slug = "kandy-sacred-city",
+                Description = "UNESCO World Heritage cultural capital in the hills housing the sacred tooth relic.",
+                Location = "Kandy District",
+                Province = "Central",
+                ImageUrl = "https://images.unsplash.com/photo-1546708973-b339540b5162",
                 Rating = 4.8,
-                ReviewCount = 1100,
-                EntryFee = 0.0
+                Activities = [
+                    new() { Id = "act-5", Name = "Temple of the Sacred Tooth Relic", Description = "Historic shrine.", CostPerPerson = 10.0m, DurationMinutes = 120 }
+                ]
             }
         ];
     }

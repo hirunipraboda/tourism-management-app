@@ -5,7 +5,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Nova.Api.Data;
-using Nova.Api.Models;
+using Nova.Api.DTOs.Common;
+using Nova.Api.Entities;
 
 namespace Nova.Api.Controllers;
 
@@ -25,54 +26,60 @@ public class AuthController : ControllerBase
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request)
     {
-        var existing = await _db.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
+        if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Password))
+        {
+            return BadRequest(ApiResponse<object>.Fail("Email and password are required."));
+        }
+
+        var existing = await _db.Users.FirstOrDefaultAsync(u => u.Email == request.Email.Trim().ToLowerInvariant());
         if (existing != null)
         {
-            return BadRequest(new { success = false, message = "Email already registered." });
+            return BadRequest(ApiResponse<object>.Fail("Email already registered."));
+        }
+
+        var role = UserRole.Tourist;
+        if (!string.IsNullOrWhiteSpace(request.Role) && Enum.TryParse<UserRole>(request.Role, true, out var parsedRole))
+        {
+            role = parsedRole;
         }
 
         var user = new User
         {
-            Name = request.Name,
-            Email = request.Email,
-            Password = BCrypt.Net.BCrypt.HashPassword(request.Password),
-            Role = Role.USER
+            Name = request.Name.Trim(),
+            Email = request.Email.Trim().ToLowerInvariant(),
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
+            Role = role,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
         };
 
         _db.Users.Add(user);
         await _db.SaveChangesAsync();
 
         var token = GenerateJwtToken(user);
-        return Ok(new
+        return Ok(ApiResponse<object>.Ok(new
         {
-            success = true,
-            data = new
-            {
-                token,
-                user = new { user.Id, user.Name, user.Email, Role = user.Role.ToString() }
-            }
-        });
+            token,
+            user = new { user.Id, user.Name, user.Email, Role = user.Role.ToString() }
+        }, "User registered successfully."));
     }
 
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
-        var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
-        if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.Password))
+        var email = request.Email.Trim().ToLowerInvariant();
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == email);
+        if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
         {
-            return Unauthorized(new { success = false, message = "Invalid email or password." });
+            return Unauthorized(ApiResponse<object>.Fail("Invalid email or password."));
         }
 
         var token = GenerateJwtToken(user);
-        return Ok(new
+        return Ok(ApiResponse<object>.Ok(new
         {
-            success = true,
-            data = new
-            {
-                token,
-                user = new { user.Id, user.Name, user.Email, Role = user.Role.ToString() }
-            }
-        });
+            token,
+            user = new { user.Id, user.Name, user.Email, Role = user.Role.ToString() }
+        }, "Login successful."));
     }
 
     [HttpGet("me")]
@@ -81,23 +88,18 @@ public class AuthController : ControllerBase
         var email = User.FindFirstValue(ClaimTypes.Email);
         if (string.IsNullOrEmpty(email))
         {
-            // Return first or mock user if unauthenticated for testing
-            var fallbackUser = await _db.Users.FirstOrDefaultAsync();
-            if (fallbackUser != null)
+            var fallback = await _db.Users.FirstOrDefaultAsync();
+            if (fallback != null)
             {
-                return Ok(new { success = true, data = new { fallbackUser.Id, fallbackUser.Name, fallbackUser.Email, Role = fallbackUser.Role.ToString() } });
+                return Ok(ApiResponse<object>.Ok(new { fallback.Id, fallback.Name, fallback.Email, Role = fallback.Role.ToString() }));
             }
-            return Ok(new { success = true, data = new { Id = "u-guest", Name = "Guest Traveler", Email = "guest@example.com", Role = "USER" } });
+            return Ok(ApiResponse<object>.Ok(new { Id = "u-guest", Name = "Guest Tourist", Email = "guest@example.com", Role = UserRole.Tourist.ToString() }));
         }
 
         var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == email);
-        if (user == null) return NotFound(new { success = false, message = "User not found" });
+        if (user == null) return NotFound(ApiResponse<object>.Fail("User not found."));
 
-        return Ok(new
-        {
-            success = true,
-            data = new { user.Id, user.Name, user.Email, Role = user.Role.ToString() }
-        });
+        return Ok(ApiResponse<object>.Ok(new { user.Id, user.Name, user.Email, Role = user.Role.ToString() }));
     }
 
     private string GenerateJwtToken(User user)
@@ -126,6 +128,7 @@ public class RegisterRequest
     public string Name { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;
+    public string? Role { get; set; } // Tourist, TourismOperator, Admin
 }
 
 public class LoginRequest

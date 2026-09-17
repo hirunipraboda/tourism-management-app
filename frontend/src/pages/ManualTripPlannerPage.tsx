@@ -604,14 +604,6 @@ export const ManualTripPlannerPage: React.FC = () => {
     <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col font-sans antialiased selection:bg-teal-600 selection:text-white">
       <LandingNavbar />
 
-      {/* Floating Toast Notification */}
-      {toastMessage && (
-        <div className="fixed top-20 right-6 z-50 bg-[#0B3A53] text-white px-5 py-3 rounded-xl shadow-2xl font-bold flex items-center gap-2 animate-bounce border border-teal-500/40">
-          <Sparkles className="w-5 h-5 text-teal-300" />
-          <span>{toastMessage}</span>
-        </div>
-      )}
-
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-8 pt-24 pb-20">
         
         {/* Header Title & Progress Indicator */}

@@ -319,14 +319,6 @@ export const AITripPlannerPage: React.FC = () => {
     <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col font-sans antialiased selection:bg-teal-600 selection:text-white">
       <LandingNavbar />
 
-      {/* Toast Notification */}
-      {toastMessage && (
-        <div className="fixed top-20 right-6 z-50 bg-teal-600 text-white px-5 py-3 rounded-xl shadow-2xl font-semibold flex items-center gap-2 animate-bounce">
-          <Sparkles className="w-5 h-5 text-teal-200" />
-          <span>{toastMessage}</span>
-        </div>
-      )}
-
       <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-8 py-8">
         {/* Step Indicator Header (Steps 1 to 7) */}
         {step <= 7 && (

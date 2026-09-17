@@ -316,11 +316,6 @@ export const LandingPage: React.FC = () => {
               key={activeDest.id}
               className="lg:col-span-7 space-y-6 text-left"
             >
-              {/* Brand Slogan Badge */}
-              <div className="animate-hero-stagger-1 inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#16A6A1]/15 border border-[#16A6A1]/40 text-[#16A6A1] text-xs font-bold shadow-xs">
-                <Compass className="w-3.5 h-3.5 animate-spin-slow text-[#16A6A1]" />
-                <span>Every Destination Has a Story</span>
-              </div>
 
               {/* Destination Geography & Title */}
               <div className="animate-hero-stagger-2">

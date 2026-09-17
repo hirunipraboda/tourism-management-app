@@ -27,4 +27,25 @@ export const tripService = {
       return MOCK_TRIPS;
     }
   },
+
+  async createTrip(tripData: {
+    destination: string;
+    startDate: string;
+    endDate: string;
+    numberOfTravelers: number;
+    budget: number;
+    interests: string[];
+    tripStyle?: string;
+  }): Promise<any> {
+    try {
+      const res = await fetchApi<any>('/trips', {
+        method: 'POST',
+        body: JSON.stringify(tripData),
+      });
+      return res.data;
+    } catch (err) {
+      console.warn('API trip creation failed, fallback to local storage', err);
+      return null;
+    }
+  },
 };

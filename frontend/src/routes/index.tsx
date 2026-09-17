@@ -22,10 +22,13 @@ import { DestinationsPage } from '../pages/DestinationsPage';
 import { TripsPage } from '../pages/TripsPage';
 import { ToursPage } from '../pages/ToursPage';
 import { AITripPlannerPage } from '../pages/AITripPlannerPage';
+import { ManualTripPlannerPage } from '../pages/ManualTripPlannerPage';
 import { LoginPage } from '../pages/LoginPage';
 import { RegisterPage } from '../pages/RegisterPage';
 import { ForgotPasswordPage } from '../pages/ForgotPasswordPage';
 import { ProfilePage } from '../pages/ProfilePage';
+import { PaymentPortalPage } from '../pages/PaymentPortalPage';
+import { ReviewsAndRecommendationsPage } from '../pages/ReviewsAndRecommendationsPage';
 
 // Admin Console Imports
 import { AdminLayout } from '../components/admin/AdminLayout';
@@ -55,9 +58,20 @@ export const AppRoutes: React.FC = () => {
       <Route path="/destinations/:id" element={<DestinationDetailsPage />} />
       <Route path="/destination/:id" element={<DestinationDetailsPage />} />
       <Route path="/trips" element={<TripsPage />} />
+      <Route path="/plan-trip" element={<ManualTripPlannerPage />} />
+      <Route path="/manual-planner" element={<ManualTripPlannerPage />} />
       <Route path="/tours" element={<ToursPage />} />
+      <Route path="/payment" element={<PaymentPortalPage />} />
+      <Route path="/payment-portal" element={<PaymentPortalPage />} />
       <Route path="/ai-workflows" element={<AITripPlannerPage />} />
       <Route path="/planner" element={<AITripPlannerPage />} />
+      <Route path="/reviews" element={<ReviewsAndRecommendationsPage />} />
+      <Route path="/reviews/my-reviews" element={<ReviewsAndRecommendationsPage />} />
+      <Route path="/recommendations" element={<ReviewsAndRecommendationsPage />} />
+      <Route path="/operator/reviews" element={<ReviewsAndRecommendationsPage />} />
+      <Route path="/operator/customer-satisfaction" element={<ReviewsAndRecommendationsPage />} />
+      <Route path="/operator/recommendation-insights" element={<ReviewsAndRecommendationsPage />} />
+      <Route path="/reviews-recommendations" element={<ReviewsAndRecommendationsPage />} />
       <Route path="/profile" element={<ProfilePage />} />
 
       {/* Admin Portal Authentication */}

@@ -1162,16 +1162,6 @@ export const TripsPage: React.FC = () => {
               </div>
 
               <div className="flex items-center gap-2">
-                {(selectedTripModal.status === 'Planning' || selectedTripModal.status === 'Upcoming') && (
-                  <button
-                    type="button"
-                    onClick={() => setTripToDelete(selectedTripModal)}
-                    className="px-3.5 py-1.5 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 border border-rose-200"
-                  >
-                    <Trash2 className="w-3.5 h-3.5 text-rose-600" />
-                    <span>Delete Trip</span>
-                  </button>
-                )}
                 <button
                   onClick={() => triggerToast(`Shared ${selectedTripModal.name} itinerary link!`)}
                   className="px-3.5 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors cursor-pointer"

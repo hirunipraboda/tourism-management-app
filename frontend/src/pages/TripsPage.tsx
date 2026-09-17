@@ -670,23 +670,7 @@ export const TripsPage: React.FC = () => {
 
                 {/* Card Action Link */}
                 <div className="px-6 pb-6 pt-2 border-t border-slate-100 flex items-center justify-between text-xs font-extrabold text-[#0B3A53]">
-                  <div className="flex items-center gap-3">
-                    <span>{trip.status === 'Completed' ? 'View Memory' : 'View Full Journey'}</span>
-                    {(trip.status === 'Planning' || trip.status === 'Upcoming') && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setTripToDelete(trip);
-                        }}
-                        className="text-rose-600 hover:text-rose-800 hover:bg-rose-50 px-2 py-1 rounded-lg transition-colors flex items-center gap-1 text-[11px] font-bold cursor-pointer"
-                        title="Delete this trip"
-                      >
-                        <Trash2 className="w-3.5 h-3.5 text-rose-500" />
-                        <span>Delete</span>
-                      </button>
-                    )}
-                  </div>
+                  <span>{trip.status === 'Completed' ? 'View Memory' : 'View Full Journey'}</span>
                   <span className="text-[#16A6A1] group-hover:translate-x-1 transition-transform flex items-center gap-1">
                     <span>{trip.status}</span>
                     <ArrowRight className="w-4 h-4" />

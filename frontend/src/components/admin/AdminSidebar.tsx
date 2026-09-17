@@ -80,9 +80,9 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
     {
       title: 'REVIEWS & RECOMMENDATIONS',
       items: [
-        { label: 'Review Moderation', path: '/operator/reviews', icon: Star, badge: '128', badgeColor: 'bg-amber-500' },
-        { label: 'Satisfaction Analytics', path: '/operator/customer-satisfaction', icon: BarChart3 },
-        { label: 'Recommendation Insights', path: '/operator/recommendation-insights', icon: Sparkles },
+        { label: 'Review Moderation', path: '/admin/reviews', icon: Star, badge: '128', badgeColor: 'bg-amber-500' },
+        { label: 'Satisfaction Analytics', path: '/admin/customer-satisfaction', icon: BarChart3 },
+        { label: 'Recommendation Insights', path: '/admin/recommendation-insights', icon: Sparkles },
       ],
     },
   ];

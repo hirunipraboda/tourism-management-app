@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { Search, Bell, Compass, Shield, LogOut, User as UserIcon, Menu, X, Star } from 'lucide-react';
+import { Search, Bell, Compass, Shield, LogOut, User as UserIcon, Menu, X } from 'lucide-react';
 import { BRAND } from '../../constants/brand';
 import { Avatar } from '../ui/Avatar';
 import { Dropdown } from '../ui/Dropdown';
@@ -167,13 +167,12 @@ export const LandingNavbar: React.FC = () => {
           <button
             ref={(el) => { tabRefs.current['reviews'] = el; }}
             onClick={() => handleTabClick('reviews', '/recommendations')}
-            className={`px-3.5 2xl:px-4.5 py-2 rounded-full transition-all duration-200 cursor-pointer relative font-extrabold text-xs 2xl:text-sm flex items-center gap-1.5 ${
+            className={`px-3.5 2xl:px-4.5 py-2 rounded-full transition-all duration-200 cursor-pointer relative font-extrabold text-xs 2xl:text-sm ${
               activeTab === 'reviews'
                 ? 'text-[#0B3A53] font-black bg-white shadow-xs'
                 : 'text-slate-600 hover:text-[#0B3A53] hover:bg-white/60'
             }`}
           >
-            <Star className={`w-3.5 h-3.5 ${activeTab === 'reviews' ? 'text-amber-500 fill-amber-500' : 'text-slate-400'}`} />
             <span>Reviews & Recs</span>
           </button>
         </nav>
@@ -200,7 +199,7 @@ export const LandingNavbar: React.FC = () => {
           {/* User Profile Avatar Dropdown */}
           <Dropdown
             trigger={
-              <div className="flex items-center gap-1 p-1 rounded-full ring-2 ring-[#16A6A1] hover:ring-[#0B3A53] transition-all cursor-pointer shadow-xs">
+              <div className="flex items-center gap-1 p-1 rounded-full ring-2 ring-[#0B3A53] hover:ring-[#146C86] transition-all cursor-pointer shadow-xs">
                 <Avatar src={user?.avatarUrl} name={user?.name || 'Sarah Lin'} size="md" />
               </div>
             }
@@ -263,17 +262,11 @@ export const LandingNavbar: React.FC = () => {
           </button>
           <button
             onClick={() => { navigate('/recommendations'); setMobileMenuOpen(false); }}
-            className={`w-full text-left px-4 py-2.5 rounded-xl font-bold text-sm transition-colors flex items-center justify-between ${
-              activeTab === 'reviews' ? 'bg-[#0B3A53] text-white' : 'text-[#146C86] bg-slate-50 hover:bg-slate-100'
+            className={`w-full text-left px-4 py-2.5 rounded-xl font-bold text-sm transition-colors ${
+              activeTab === 'reviews' ? 'bg-[#0B3A53] text-white' : 'text-slate-700 hover:bg-slate-100'
             }`}
           >
-            <span className="flex items-center gap-2">
-              <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-              <span>Reviews & Recommendations</span>
-            </span>
-            <span className="text-[10px] bg-amber-100 text-amber-800 font-extrabold px-2 py-0.5 rounded-full">
-              4.9★
-            </span>
+            Reviews & Recs
           </button>
         </div>
       )}

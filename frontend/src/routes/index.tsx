@@ -44,6 +44,7 @@ import { AdminAIWorkflowsPage } from '../pages/admin/AdminAIWorkflowsPage';
 import { AdminAIApprovalsPage } from '../pages/admin/AdminAIApprovalsPage';
 import { AdminReportsPage } from '../pages/admin/AdminReportsPage';
 import { AdminSettingsPage } from '../pages/admin/AdminSettingsPage';
+import { AdminReviewsPage } from '../pages/admin/AdminReviewsPage';
 
 export const AppRoutes: React.FC = () => {
   return (
@@ -68,9 +69,9 @@ export const AppRoutes: React.FC = () => {
       <Route path="/reviews" element={<ReviewsAndRecommendationsPage />} />
       <Route path="/reviews/my-reviews" element={<ReviewsAndRecommendationsPage />} />
       <Route path="/recommendations" element={<ReviewsAndRecommendationsPage />} />
-      <Route path="/operator/reviews" element={<ReviewsAndRecommendationsPage />} />
-      <Route path="/operator/customer-satisfaction" element={<ReviewsAndRecommendationsPage />} />
-      <Route path="/operator/recommendation-insights" element={<ReviewsAndRecommendationsPage />} />
+      <Route path="/operator/reviews" element={<Navigate to="/admin/reviews" replace />} />
+      <Route path="/operator/customer-satisfaction" element={<Navigate to="/admin/customer-satisfaction" replace />} />
+      <Route path="/operator/recommendation-insights" element={<Navigate to="/admin/recommendation-insights" replace />} />
       <Route path="/reviews-recommendations" element={<ReviewsAndRecommendationsPage />} />
       <Route path="/profile" element={<ProfilePage />} />
 
@@ -90,6 +91,9 @@ export const AppRoutes: React.FC = () => {
         <Route path="/admin/approvals" element={<AdminAIApprovalsPage />} />
         <Route path="/admin/reports" element={<AdminReportsPage />} />
         <Route path="/admin/settings" element={<AdminSettingsPage />} />
+        <Route path="/admin/reviews" element={<AdminReviewsPage defaultTab="review-management" />} />
+        <Route path="/admin/customer-satisfaction" element={<AdminReviewsPage defaultTab="customer-satisfaction" />} />
+        <Route path="/admin/recommendation-insights" element={<AdminReviewsPage defaultTab="recommendation-insights" />} />
       </Route>
 
       {/* Legacy Operator Console (App Shell) */}

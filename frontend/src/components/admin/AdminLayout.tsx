@@ -32,6 +32,12 @@ export const AdminLayout: React.FC = () => {
         return 'Analytics & Reports';
       case '/admin/settings':
         return 'System Settings';
+      case '/admin/reviews':
+        return 'Review & Moderation Center';
+      case '/admin/customer-satisfaction':
+        return 'Customer Satisfaction Analytics';
+      case '/admin/recommendation-insights':
+        return 'Recommendation Insights';
       default:
         return 'Travel Link Administration';
     }

@@ -19,6 +19,8 @@ import {
   Camera,
   Tag,
   Car,
+  Trash2,
+  AlertTriangle,
 } from 'lucide-react';
 import { LandingNavbar } from '../components/navigation/LandingNavbar';
 import { Footer } from '../components/navigation/Footer';
@@ -48,8 +50,18 @@ export const TripsPage: React.FC = () => {
     return t;
   };
 
+  // Deleted trips tracker (persisted in localStorage)
+  const getDeletedTripIds = (): Set<string> => {
+    try {
+      const deleted = localStorage.getItem('nova_deleted_trip_ids');
+      if (deleted) return new Set(JSON.parse(deleted));
+    } catch {}
+    return new Set();
+  };
+
   // State Management
   const [trips, setTrips] = useState<UserTrip[]>(() => {
+    const deletedIds = getDeletedTripIds();
     const saved = localStorage.getItem('nova_user_trips');
     if (saved) {
       try {
@@ -58,17 +70,18 @@ export const TripsPage: React.FC = () => {
           const normalized: UserTrip[] = parsed.map(normalizeTrip);
           const existingIds = new Set(normalized.map((t: UserTrip) => t.id));
           const uniqueMocks = MOCK_USER_TRIPS.filter((t) => !existingIds.has(t.id));
-          return [...normalized, ...uniqueMocks];
+          return [...normalized, ...uniqueMocks].filter((t) => !deletedIds.has(t.id));
         }
       } catch (e) {
         console.error('Failed to parse saved trips', e);
       }
     }
-    return MOCK_USER_TRIPS;
+    return MOCK_USER_TRIPS.filter((t) => !deletedIds.has(t.id));
   });
 
   useEffect(() => {
     const syncTrips = () => {
+      const deletedIds = getDeletedTripIds();
       const saved = localStorage.getItem('nova_user_trips');
       if (saved) {
         try {
@@ -77,12 +90,14 @@ export const TripsPage: React.FC = () => {
             const normalized: UserTrip[] = parsed.map(normalizeTrip);
             const existingIds = new Set(normalized.map((t: UserTrip) => t.id));
             const uniqueMocks = MOCK_USER_TRIPS.filter((t) => !existingIds.has(t.id));
-            setTrips([...normalized, ...uniqueMocks]);
+            setTrips([...normalized, ...uniqueMocks].filter((t) => !deletedIds.has(t.id)));
+            return;
           }
         } catch (e) {
           console.error('Failed to parse saved trips', e);
         }
       }
+      setTrips(MOCK_USER_TRIPS.filter((t) => !deletedIds.has(t.id)));
     };
     syncTrips();
     window.addEventListener('storage', syncTrips);
@@ -94,7 +109,42 @@ export const TripsPage: React.FC = () => {
   // Modals State
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedTripModal, setSelectedTripModal] = useState<UserTrip | null>(null);
+  const [tripToDelete, setTripToDelete] = useState<UserTrip | null>(null);
   const [isAIBotModalOpen, setIsAIBotModalOpen] = useState(false);
+
+  // Handle Delete Trip (restricted to 'Planning' and 'Upcoming')
+  const handleDeleteTrip = (tripId: string) => {
+    const targetTrip = trips.find((t) => t.id === tripId);
+    if (!targetTrip) return;
+
+    if (targetTrip.status !== 'Planning' && targetTrip.status !== 'Upcoming') {
+      return;
+    }
+
+    setTrips((prev) => prev.filter((t) => t.id !== tripId));
+
+    // Save to deleted IDs set
+    const deletedIds = getDeletedTripIds();
+    deletedIds.add(tripId);
+    localStorage.setItem('nova_deleted_trip_ids', JSON.stringify(Array.from(deletedIds)));
+
+    // Update localStorage user trips if present
+    try {
+      const saved = localStorage.getItem('nova_user_trips');
+      if (saved) {
+        const parsed: UserTrip[] = JSON.parse(saved);
+        const filtered = parsed.filter((t) => t.id !== tripId);
+        localStorage.setItem('nova_user_trips', JSON.stringify(filtered));
+      }
+    } catch (e) {
+      console.error('Failed to update localStorage trips on delete', e);
+    }
+
+    if (selectedTripModal?.id === tripId) {
+      setSelectedTripModal(null);
+    }
+    setTripToDelete(null);
+  };
 
   // Manual Trip Planner Wizard State
   const [plannerStep, setPlannerStep] = useState<number>(1);
@@ -620,7 +670,23 @@ export const TripsPage: React.FC = () => {
 
                 {/* Card Action Link */}
                 <div className="px-6 pb-6 pt-2 border-t border-slate-100 flex items-center justify-between text-xs font-extrabold text-[#0B3A53]">
-                  <span>{trip.status === 'Completed' ? 'View Memory' : 'View Full Journey'}</span>
+                  <div className="flex items-center gap-3">
+                    <span>{trip.status === 'Completed' ? 'View Memory' : 'View Full Journey'}</span>
+                    {(trip.status === 'Planning' || trip.status === 'Upcoming') && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setTripToDelete(trip);
+                        }}
+                        className="text-rose-600 hover:text-rose-800 hover:bg-rose-50 px-2 py-1 rounded-lg transition-colors flex items-center gap-1 text-[11px] font-bold cursor-pointer"
+                        title="Delete this trip"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+                        <span>Delete</span>
+                      </button>
+                    )}
+                  </div>
                   <span className="text-[#16A6A1] group-hover:translate-x-1 transition-transform flex items-center gap-1">
                     <span>{trip.status}</span>
                     <ArrowRight className="w-4 h-4" />
@@ -1112,6 +1178,16 @@ export const TripsPage: React.FC = () => {
               </div>
 
               <div className="flex items-center gap-2">
+                {(selectedTripModal.status === 'Planning' || selectedTripModal.status === 'Upcoming') && (
+                  <button
+                    type="button"
+                    onClick={() => setTripToDelete(selectedTripModal)}
+                    className="px-3.5 py-1.5 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 border border-rose-200"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                    <span>Delete Trip</span>
+                  </button>
+                )}
                 <button
                   onClick={() => triggerToast(`Shared ${selectedTripModal.name} itinerary link!`)}
                   className="px-3.5 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
@@ -1395,6 +1471,17 @@ export const TripsPage: React.FC = () => {
               </button>
 
               <div className="flex items-center gap-3">
+                {(selectedTripModal.status === 'Planning' || selectedTripModal.status === 'Upcoming') && (
+                  <button
+                    type="button"
+                    onClick={() => setTripToDelete(selectedTripModal)}
+                    className="px-5 py-2.5 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs border border-rose-200 transition-colors flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Trash2 className="w-4 h-4 text-rose-600" />
+                    <span>Delete Trip</span>
+                  </button>
+                )}
+
                 <button
                   onClick={() => {
                     setSelectedTripModal(null);
@@ -1417,6 +1504,61 @@ export const TripsPage: React.FC = () => {
               </div>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* 13. DELETE TRIP CONFIRMATION MODAL */}
+      {tripToDelete && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl border border-slate-200 space-y-5">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-6 h-6 text-rose-600" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-lg font-black text-slate-900 font-heading">Delete Journey</h3>
+                <p className="text-xs text-slate-500 leading-relaxed font-medium">
+                  Are you sure you want to delete <strong className="text-slate-800 font-bold">{tripToDelete.name}</strong>?
+                  This journey is in the <span className="font-bold text-[#146C86]">{tripToDelete.status}</span> category and will be permanently removed.
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 text-xs space-y-1.5">
+              <div className="flex items-center justify-between text-slate-700">
+                <span className="font-bold text-slate-500">Destination:</span>
+                <span className="font-extrabold text-slate-900">{tripToDelete.destination}</span>
+              </div>
+              <div className="flex items-center justify-between text-slate-700">
+                <span className="font-bold text-slate-500">Dates:</span>
+                <span className="font-semibold text-slate-800">{tripToDelete.dates}</span>
+              </div>
+              <div className="flex items-center justify-between text-slate-700">
+                <span className="font-bold text-slate-500">Category:</span>
+                <span className="px-2.5 py-0.5 rounded-full bg-slate-200 text-slate-800 font-black text-[10px] uppercase tracking-wider">
+                  {tripToDelete.status}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setTripToDelete(null)}
+                className="px-5 py-2.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDeleteTrip(tripToDelete.id)}
+                className="px-6 py-2.5 rounded-full bg-rose-600 hover:bg-rose-700 text-white font-black text-xs uppercase tracking-wider transition-colors cursor-pointer flex items-center gap-1.5 shadow-md shadow-rose-600/20"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Yes, Delete Trip</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

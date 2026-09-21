@@ -1,17 +1,8 @@
-namespace SmartTourism.API.Domain.Entities.Enums
-{
-    public enum GuideStatus
-    {
-        Available = 0,
-        Busy = 1,
-        Inactive = 2
-    }
+namespace SmartTourism.API.Domain.Entities.Enums;
 
-    public enum TourOperationStatus
-    {
-        Scheduled = 0,
-        InProgress = 1,
-        Completed = 2,
-        Cancelled = 3
-    }
-}
+public enum GuideVerificationStatus { Pending, Verified, Rejected }
+
+public enum TourOperationStatus { Scheduled, CheckedIn, InProgress, Completed, NoShow, Cancelled }
+
+public enum UserRole { Tourist, Provider, Admin }
+

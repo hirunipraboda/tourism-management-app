@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 740 180" fill="none">
+  <!-- ICON -->
+  <g transform="translate(10, 0)">
+    <!-- Continuous Dark Navy Loop Shape -->
+    <path
+      d="M 38 120 
+         C 16 102 18 70 42 66 
+         C 64 62 72 88 50 102 
+         C 32 114 28 88 46 60 
+         C 62 32 66 16 80 16 
+         C 94 16 94 38 104 80 
+         C 112 112 118 128 132 128 
+         C 142 128 148 112 148 76 
+         L 148 124"
+      fill="none"
+      stroke="#061826"
+      stroke-width="16"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+
+    <!-- Sky Blue Swoosh Arc -->
+    <path
+      d="M 44 116 C 70 112 110 100 152 50"
+      fill="none"
+      stroke="#009BF2"
+      stroke-width="11"
+      stroke-linecap="round"
+    />
+
+    <!-- 4-Point Star Spark -->
+    <path
+      d="M 160 22 L 165 37 L 180 42 L 165 47 L 160 62 L 155 47 L 140 42 L 155 37 Z"
+      fill="#009BF2"
+    />
+  </g>
+
+  <!-- WORDMARK: NOVA -->
+  <g fill="#061826">
+    <!-- N -->
+    <path d="M 205 30 L 232 30 L 268 98 L 268 30 L 293 30 L 293 118 L 266 118 L 230 50 L 230 118 L 205 118 Z" />
+
+    <!-- O -->
+    <path fill-rule="evenodd" clip-rule="evenodd" d="M 352 30 C 376 30 396 50 396 74 C 396 98 376 118 352 118 C 328 118 308 98 308 74 C 308 50 328 30 352 30 Z M 352 52 C 340 52 330 62 330 74 C 330 86 340 96 352 96 C 364 96 374 86 374 74 C 374 62 364 52 352 52 Z" />
+
+    <!-- V -->
+    <path d="M 412 30 L 437 30 L 454 92 L 471 30 L 496 30 L 467 118 L 441 118 Z" />
+
+    <!-- A -->
+    <path fill-rule="evenodd" clip-rule="evenodd" d="M 515 118 L 542 30 L 567 30 L 594 118 L 568 118 L 561 94 L 528 94 L 521 118 Z M 544 48 L 534 76 L 555 76 Z" />
+  </g>
+
+  <!-- OFFICIAL SLOGAN -->
+  <text x="205" y="152" fill="#146C86" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="22" font-weight="800" letter-spacing="1">SMART JOURNEYS. LASTING MEMORIES.</text>
+</svg>

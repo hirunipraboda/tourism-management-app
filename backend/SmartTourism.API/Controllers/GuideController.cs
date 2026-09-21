@@ -18,8 +18,29 @@ public class GuideController : ControllerBase
         _db = db;
     }
 
+    private static Guid IntToGuid(int value)
+    {
+        byte[] bytes = new byte[16];
+        BitConverter.GetBytes(value).CopyTo(bytes, 0);
+        return new Guid(bytes);
+    }
+
+    private static int GuidToInt(Guid guid)
+    {
+        return BitConverter.ToInt32(guid.ToByteArray(), 0);
+    }
+
+    private async Task<Guide?> FindGuideAsync(string id)
+    {
+        if (int.TryParse(id, out var intId))
+            return await _db.Guides.FindAsync(intId);
+        if (Guid.TryParse(id, out var guidId))
+            return await _db.Guides.FindAsync(GuidToInt(guidId));
+        return null;
+    }
+
     // Computes "Available" vs "Assigned" from active TourOperations — not a stored field
-    private async Task<string> GetStatus(Guid guideId)
+    private async Task<string> GetStatus(int guideId)
     {
         var hasActiveOperation = await _db.TourOperations.AnyAsync(o =>
             o.GuideId == guideId &&
@@ -33,7 +54,7 @@ public class GuideController : ControllerBase
     private async Task<GuideResponse> ToResponse(Guide g)
     {
         var status = await GetStatus(g.Id);
-        return new GuideResponse(g.Id, g.Name, g.Email, g.Phone, g.Languages, g.Specialties,
+        return new GuideResponse(IntToGuid(g.Id), g.Name, g.Email, g.Phone, g.Languages, g.Specialties,
             g.RatingAvg, g.ToursCompleted, status, g.AvatarUrl);
     }
 
@@ -41,9 +62,33 @@ public class GuideController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<GuideResponse>> Create(CreateGuideRequest request)
     {
+        // Reuse an existing account if this email is already registered
+        var existingUser = await _db.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
+
+        User user;
+        if (existingUser != null)
+        {
+            user = existingUser;
+        }
+        else
+        {
+            user = new User
+            {
+                Id = Guid.NewGuid(),
+                FullName = request.Name,
+                Email = request.Email,
+                Phone = request.Phone,
+                Role = UserRole.Provider,
+                PasswordHash = Guid.NewGuid().ToString(), // TEMPORARY placeholder until real auth exists
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+            _db.Users.Add(user);
+        }
+
         var guide = new Guide
         {
-            Id = Guid.NewGuid(),
+            UserId = user.Id,
             Name = request.Name,
             Email = request.Email,
             Phone = request.Phone,
@@ -100,9 +145,9 @@ public class GuideController : ControllerBase
 
     // GET /api/v1/guides/{id}
     [HttpGet("{id}")]
-    public async Task<ActionResult<GuideResponse>> GetById(Guid id)
+    public async Task<ActionResult<GuideResponse>> GetById(string id)
     {
-        var guide = await _db.Guides.FindAsync(id);
+        var guide = await FindGuideAsync(id);
         if (guide is null) return NotFound();
 
         return Ok(await ToResponse(guide));
@@ -110,9 +155,9 @@ public class GuideController : ControllerBase
 
     // PUT /api/v1/guides/{id}
     [HttpPut("{id}")]
-    public async Task<ActionResult<GuideResponse>> Update(Guid id, UpdateGuideRequest request)
+    public async Task<ActionResult<GuideResponse>> Update(string id, UpdateGuideRequest request)
     {
-        var guide = await _db.Guides.FindAsync(id);
+        var guide = await FindGuideAsync(id);
         if (guide is null) return NotFound();
 
         guide.Name = request.Name;
@@ -130,9 +175,9 @@ public class GuideController : ControllerBase
 
     // PATCH /api/v1/guides/{id}/verification
     [HttpPatch("{id}/verification")]
-    public async Task<ActionResult<GuideResponse>> UpdateVerification(Guid id, VerifyGuideRequest request)
+    public async Task<ActionResult<GuideResponse>> UpdateVerification(string id, VerifyGuideRequest request)
     {
-        var guide = await _db.Guides.FindAsync(id);
+        var guide = await FindGuideAsync(id);
         if (guide is null) return NotFound();
 
         if (!Enum.TryParse<GuideVerificationStatus>(request.VerificationStatus, out var status))
@@ -145,9 +190,9 @@ public class GuideController : ControllerBase
 
     // DELETE /api/v1/guides/{id}
     [HttpDelete("{id}")]
-    public async Task<IActionResult> Deactivate(Guid id)
+    public async Task<IActionResult> Deactivate(string id)
     {
-        var guide = await _db.Guides.FindAsync(id);
+        var guide = await FindGuideAsync(id);
         if (guide is null) return NotFound();
 
         guide.IsActive = false;

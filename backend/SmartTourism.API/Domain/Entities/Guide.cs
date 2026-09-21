@@ -1,39 +1,29 @@
-using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using SmartTourism.API.Domain.Entities.Enums;
 
-namespace SmartTourism.API.Domain.Entities
+namespace SmartTourism.API.Domain.Entities;
+
+public class Guide
 {
-    public class Guide
-    {
-        [Key]
-        public int GuideId { get; set; }
+    public int Id { get; set; }
+    [Column("ProviderId")]
+    public Guid UserId { get; set; }          // ← CHANGED from ProviderId
+    public User User { get; set; } = null!;   // ← ADDED navigation property
+    public string Name { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string? Phone { get; set; }
+    public string? Bio { get; set; }
+    public List<string>? Languages { get; set; }
+    public List<string>? Specialties { get; set; }
+    public int? YearsExperience { get; set; }
+    public GuideVerificationStatus VerificationStatus { get; set; } = GuideVerificationStatus.Pending;
+    public decimal RatingAvg { get; set; }
+    public int RatingCount { get; set; }
+    public int ToursCompleted { get; set; }
+    public string? AvatarUrl { get; set; }
+    public bool IsActive { get; set; } = true;
 
-        [Required]
-        [MaxLength(100)]
-        public string FullName { get; set; } = string.Empty;
-
-        [Required]
-        [EmailAddress]
-        [MaxLength(150)]
-        public string Email { get; set; } = string.Empty;
-
-        [MaxLength(20)]
-        public string PhoneNumber { get; set; } = string.Empty;
-
-        [MaxLength(50)]
-        public string Language { get; set; } = string.Empty;
-
-        [MaxLength(200)]
-        public string Specialization { get; set; } = string.Empty;
-
-        public decimal HourlyRate { get; set; }
-
-        public GuideStatus Status { get; set; } = GuideStatus.Available;
-
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
-        // Navigation properties
-        public ICollection<GuideAvailability> Availabilities { get; set; } = new List<GuideAvailability>();
-        public ICollection<TourOperation> TourOperations { get; set; } = new List<TourOperation>();
-    }
+    public ICollection<TourPackage> TourPackages { get; set; } = new List<TourPackage>();
+    public ICollection<GuideAvailability> Availabilities { get; set; } = new List<GuideAvailability>();
+    public ICollection<TourOperation> TourOperations { get; set; } = new List<TourOperation>();
 }

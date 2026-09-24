@@ -52,9 +52,15 @@ namespace tourism_management_app.Api.Controllers
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
             var touristId = GetCurrentTouristId();
-            var created = await _reviewService.CreateReviewAsync(touristId, reviewDto);
-            
-            return CreatedAtAction(nameof(GetReview), new { id = created.Id }, created);
+            try
+            {
+                var created = await _reviewService.CreateReviewAsync(touristId, reviewDto);
+                return CreatedAtAction(nameof(GetReview), new { id = created.Id }, created);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         [HttpGet("{id}")]
@@ -79,14 +85,37 @@ namespace tourism_management_app.Api.Controllers
         }
 
         [HttpDelete("{id}")]
-        [Authorize]
         public async Task<IActionResult> DeleteReview(int id)
         {
             var touristId = GetCurrentTouristId();
             var success = await _reviewService.DeleteReviewAsync(id, touristId);
             
-            if (!success) return NotFound("Review not found or you are not authorized to delete it.");
+            if (!success) return NotFound(new { message = "Review not found or you are not authorized to delete it." });
             return NoContent();
+        }
+
+        [HttpPost("{id}/helpful")]
+        public async Task<IActionResult> ToggleHelpful(int id)
+        {
+            var result = await _reviewService.ToggleHelpfulAsync(id, GetCurrentTouristId());
+            if (result == null) return NotFound(new { message = "Review not found" });
+            return Ok(new { helpfulCount = result.Value.HelpfulCount, isHelpfulByUser = result.Value.IsHelpfulByUser });
+        }
+
+        [HttpPost("{id}/status")]
+        public async Task<IActionResult> UpdateStatus(int id, [FromBody] ReviewStatusUpdateDto dto)
+        {
+            var updated = await _reviewService.UpdateReviewStatusAsync(id, dto.Status, dto.OperatorNotes);
+            if (updated == null) return NotFound(new { message = "Review not found" });
+            return Ok(updated);
+        }
+
+        [HttpPost("{id}/reply")]
+        public async Task<IActionResult> ReplyToReview(int id, [FromBody] ReviewReplyDto dto)
+        {
+            var updated = await _reviewService.UpdateReviewStatusAsync(id, null, dto.Reply);
+            if (updated == null) return NotFound(new { message = "Review not found" });
+            return Ok(updated);
         }
 
         [HttpGet("destination/{id}")]

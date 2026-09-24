@@ -29,7 +29,6 @@ import { LandingNavbar } from '../components/navigation/LandingNavbar';
 import { Footer } from '../components/navigation/Footer';
 import { tripPlannerService } from '../services/tripPlannerService';
 import { TripPlan, ItineraryDayItem, ItineraryActivityItem } from '../types/tripPlanner';
-import pickmeLogoImg from '../assets/pickme-logo.png';
 
 export const AITripPlannerPage: React.FC = () => {
   const navigate = useNavigate();
@@ -58,8 +57,7 @@ export const AITripPlannerPage: React.FC = () => {
   const [specialRequirements, setSpecialRequirements] = useState<string>('');
 
   const [accommodationPref, setAccommodationPref] = useState<string>('3 Star');
-  const [transportPref, setTransportPref] = useState<string>('PickMe Mobility & Rides');
-  const [pickMeOfferApplied, setPickMeOfferApplied] = useState<boolean>(false);
+  const [transportPref, setTransportPref] = useState<string>('Public Transport (Trains & Buses)');
 
   // AI Animation State
   const [aiStepIndex, setAiStepIndex] = useState<number>(0);
@@ -706,16 +704,16 @@ export const AITripPlannerPage: React.FC = () => {
           </div>
         )}
 
-        {/* STEP 6: ACCOMMODATION & PICKME MOBILITY OFFER */}
+        {/* STEP 6: ACCOMMODATION & MOBILITY SELECTION */}
         {step === 6 && (
           <div className="bg-white border border-slate-200/80 rounded-3xl p-6 sm:p-10 shadow-xl backdrop-blur-sm">
             <div className="flex items-center gap-4 mb-6">
-              <div className="p-3.5 bg-amber-50 rounded-2xl text-amber-700 border border-amber-200/80">
-                <Car className="w-7 h-7" />
+              <div className="p-3.5 bg-teal-50 rounded-2xl text-teal-700 border border-teal-200/80">
+                <Car className="w-7 h-7 text-[#16A6A1]" />
               </div>
               <div>
                 <h2 className="text-xl sm:text-2xl font-bold text-slate-900">Accommodation & Transport</h2>
-                <p className="text-slate-600 text-sm">Choose your stay style and claim an exclusive PickMe tourist ride offer across Sri Lanka.</p>
+                <p className="text-slate-600 text-sm">Choose your stay style and preferred mode of getting around Sri Lanka.</p>
               </div>
             </div>
 
@@ -751,88 +749,32 @@ export const AITripPlannerPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* PickMe Offer & Get the App Card */}
-              <div className="relative overflow-hidden bg-gradient-to-br from-amber-400 via-amber-300 to-yellow-400 border-2 border-amber-400/90 rounded-2xl p-6 shadow-md flex flex-col justify-between">
-                {/* Background decorative elements */}
-                <div className="absolute -right-6 -bottom-6 w-28 h-28 bg-white/25 rounded-full blur-lg pointer-events-none" />
-
+              {/* Transport Preference */}
+              <div className="flex flex-col justify-between p-6 bg-slate-50 border border-slate-200/90 rounded-2xl">
                 <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2.5">
-                      <div className="h-9 px-3 bg-slate-950 rounded-xl flex items-center justify-center shadow-sm">
-                        <img src={pickmeLogoImg} alt="PickMe" className="h-7 w-auto object-contain brightness-110" />
-                      </div>
-                      <span className="text-xs font-black uppercase tracking-wider text-slate-900 bg-white/85 backdrop-blur-sm px-2.5 py-1 rounded-full border border-amber-300">
-                        Official Mobility Partner
-                      </span>
-                    </div>
-                    {pickMeOfferApplied && (
-                      <span className="flex items-center gap-1 text-[11px] font-extrabold bg-emerald-600 text-white px-2.5 py-0.5 rounded-full shadow-sm animate-pulse">
-                        <Check className="w-3.5 h-3.5" /> Applied
-                      </span>
-                    )}
+                  <div className="flex items-center gap-2 mb-2">
+                    <Car className="w-5 h-5 text-[#16A6A1]" />
+                    <label className="text-slate-900 font-bold text-base">Transportation Preference</label>
                   </div>
-
-                  <h3 className="text-xl font-black text-slate-950 mb-1.5 leading-tight">
-                    Apply for PickMe Offer
-                  </h3>
-                  <p className="text-xs text-slate-800 font-medium mb-4 leading-relaxed">
-                    Get <strong>20% OFF</strong> your first 5 rides across Sri Lanka. Instant on-demand Tuk-Tuks, air-conditioned Cars, Vans, and Airport Transfers everywhere you travel.
+                  <p className="text-xs text-slate-500 mb-4">
+                    Select your preferred mobility method for intercity travel and sightseeing.
                   </p>
-
-                  <div className="bg-white/95 backdrop-blur-sm rounded-xl p-3.5 border border-amber-200/90 flex items-center justify-between mb-4 shadow-sm">
-                    <div>
-                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 block">Tourist Promo Code</span>
-                      <span className="text-base font-black tracking-widest text-slate-950 font-mono">NOVAPICKME20</span>
-                    </div>
-                    <span className="text-xs font-bold text-amber-950 bg-amber-100 border border-amber-300 px-2.5 py-1 rounded-md">
-                      20% Discount
-                    </span>
-                  </div>
+                  <select
+                    value={transportPref}
+                    onChange={(e) => setTransportPref(e.target.value)}
+                    className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3.5 text-slate-900 font-semibold focus:outline-none focus:border-teal-600 shadow-sm"
+                  >
+                    <option value="Public Transport (Trains & Buses)">Public Transport (Scenic Trains & Express Buses)</option>
+                    <option value="Private Chauffeur / Dedicated Van">Private Licensed Chauffeur / Dedicated Car</option>
+                    <option value="Self-Arranged Travel">Self-Arranged Local Transit & Taxis</option>
+                  </select>
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const nextState = !pickMeOfferApplied;
-                      setPickMeOfferApplied(nextState);
-                      setTransportPref(nextState ? 'PickMe Rides (Promo: NOVAPICKME20 Applied)' : 'PickMe Mobility & Rides');
-                      triggerToast(
-                        nextState
-                          ? '🎉 PickMe 20% Tourist Offer applied to your trip!'
-                          : 'PickMe offer removed from trip.'
-                      );
-                    }}
-                    className={`flex-1 py-3 px-4 font-extrabold text-sm rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 ${
-                      pickMeOfferApplied
-                        ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                        : 'bg-slate-950 hover:bg-slate-900 text-white'
-                    }`}
-                  >
-                    {pickMeOfferApplied ? (
-                      <>
-                        <Check className="w-4 h-4 text-white" />
-                        <span>Offer Applied (20% OFF)</span>
-                      </>
-                    ) : (
-                      <>
-                        <Gift className="w-4 h-4 text-amber-300" />
-                        <span>Apply for PickMe Offer</span>
-                      </>
-                    )}
-                  </button>
-
-                  <a
-                    href="https://pickme.lk/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 py-3 px-4 bg-white hover:bg-slate-50 text-slate-950 font-extrabold text-sm rounded-xl shadow-sm border border-amber-300/80 transition-all text-center"
-                  >
-                    <Smartphone className="w-4 h-4 text-slate-800" />
-                    <span>Get the App</span>
-                    <ExternalLink className="w-3.5 h-3.5 text-slate-500" />
-                  </a>
+                <div className="mt-6 pt-4 border-t border-slate-200/80">
+                  <div className="flex items-center gap-2 text-xs font-medium text-slate-600">
+                    <span className="w-2 h-2 rounded-full bg-[#16A6A1]"></span>
+                    <span>Automated multi-agent routing based on your choice</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -923,15 +865,7 @@ export const AITripPlannerPage: React.FC = () => {
                 </div>
                 <div>
                   <span className="text-slate-500 block text-xs font-semibold mb-1">LOCAL TRANSPORT & MOBILITY</span>
-                  {pickMeOfferApplied ? (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-100 border border-amber-300 text-amber-950 rounded-lg text-xs font-bold">
-                      <Tag className="w-3 h-3 text-amber-700" /> PickMe 20% Off Applied (NOVAPICKME20)
-                    </span>
-                  ) : (
-                    <span className="text-slate-700 font-medium text-xs">
-                      PickMe Mobility & Rides
-                    </span>
-                  )}
+                  <span className="text-slate-900 font-bold text-xs">{transportPref}</span>
                 </div>
               </div>
             </div>

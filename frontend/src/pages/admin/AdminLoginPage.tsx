@@ -8,13 +8,13 @@ import { adminAuthService } from '../../services/adminAuthService';
 export const AdminLoginPage: React.FC = () => {
   const navigate = useNavigate();
 
-  const [email, setEmail] = useState('admin@travellink.lk');
-  const [password, setPassword] = useState('admin123');
+  const [email, setEmail] = useState('admin@example.com');
+  const [password, setPassword] = useState('Password123!');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleAdminLogin = (e: React.FormEvent) => {
+  const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -25,11 +25,19 @@ export const AdminLoginPage: React.FC = () => {
 
     setIsLoading(true);
 
-    setTimeout(() => {
-      adminAuthService.login(email);
+    try {
+      const result = await adminAuthService.login(email, password);
       setIsLoading(false);
-      navigate('/admin');
-    }, 800);
+      if (result.success) {
+        localStorage.setItem('nova_admin_sidebar_collapsed', 'true');
+        navigate('/admin');
+      } else {
+        setError(result.error || 'Failed to authenticate administrator.');
+      }
+    } catch {
+      setIsLoading(false);
+      setError('Network communication failure with auth server.');
+    }
   };
 
   return (

@@ -653,18 +653,7 @@ export const TripsPage: React.FC = () => {
                       {trip.dates} · {trip.duration} · {trip.travelers} Travelers
                     </p>
 
-                    {/* PickMe Promotional Offer Badge if Active */}
-                    {(() => {
-                      const promoMatch = trip.notes?.match(/Promo Code:\s*([A-Z0-9-]+)/i);
-                      const code = promoMatch ? promoMatch[1] : trip.notes?.includes('NOVAPICKME20') ? 'NOVAPICKME20' : null;
-                      if (!code) return null;
-                      return (
-                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200/80 text-[11px] font-extrabold text-amber-900">
-                          <Tag className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                          <span>PickMe Pass: {code} (20% Off)</span>
-                        </div>
-                      );
-                    })()}
+
                   </div>
                 </div>
 
@@ -1278,34 +1267,11 @@ export const TripsPage: React.FC = () => {
                     <span className="text-xs font-black uppercase text-[#0B3A53] tracking-wider flex items-center gap-1.5">
                       <Sparkles className="w-4 h-4 text-[#16A6A1]" /> Trip Preferences & Transport Details
                     </span>
-                    {(() => {
-                      const promoMatch = selectedTripModal.notes.match(/Promo Code:\s*([A-Z0-9-]+)/i);
-                      const code = promoMatch ? promoMatch[1] : selectedTripModal.notes.includes('NOVAPICKME20') ? 'NOVAPICKME20' : null;
-                      if (!code) return null;
-                      return (
-                        <span className="px-3 py-1 rounded-full bg-amber-400 text-slate-950 text-[11px] font-black uppercase tracking-wider shadow-2xs">
-                          20% Off PickMe Active ({code})
-                        </span>
-                      );
-                    })()}
                   </div>
                   <p className="text-xs font-medium text-slate-700 leading-relaxed">
                     {selectedTripModal.notes}
                   </p>
-                  {(() => {
-                    const promoMatch = selectedTripModal.notes.match(/Promo Code:\s*([A-Z0-9-]+)/i);
-                    const code = promoMatch ? promoMatch[1] : selectedTripModal.notes.includes('NOVAPICKME20') ? 'NOVAPICKME20' : null;
-                    if (!code) return null;
-                    return (
-                      <div className="pt-2 border-t border-teal-200/60 flex flex-wrap items-center justify-between gap-2 text-xs">
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-slate-600">Unique Promo Code:</span>
-                          <code className="px-2 py-0.5 bg-white rounded border border-amber-300 font-mono font-black text-amber-900">{code}</code>
-                        </div>
-                        <span className="text-teal-800 font-bold text-[11px]">Valid across Tuk-Tuks, Cars, Minivans & Airport Transfers in Sri Lanka</span>
-                      </div>
-                    );
-                  })()}
+
                 </div>
               )}
 

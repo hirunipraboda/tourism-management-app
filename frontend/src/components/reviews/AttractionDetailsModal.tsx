@@ -70,7 +70,7 @@ export const AttractionDetailsModal: React.FC<AttractionDetailsModalProps> = ({
               <span className="px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-xs font-black uppercase">
                 {recommendation.category}
               </span>
-              <span className="px-3 py-1 rounded-full bg-emerald-500 text-white text-xs font-black">
+              <span className="px-3 py-1 rounded-full bg-[#0B3A53] text-white text-xs font-black border border-white/20">
                 {recommendation.suitabilityScore}% Suitable For You
               </span>
             </div>

@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
-  Sparkles,
   CheckCircle2,
   X,
 } from 'lucide-react';
@@ -203,23 +202,15 @@ export const ReviewsAndRecommendationsPage: React.FC = () => {
         </div>
       )}
 
-      {/* HERO BANNER SECTION */}
-      <section className="relative bg-gradient-to-r from-[#0B3A53] via-[#146C86] to-[#0B3A53] text-white py-12 px-4 sm:px-8 border-b border-white/10 overflow-hidden">
-        <div className="absolute top-0 right-1/4 w-96 h-96 bg-[#16A6A1]/15 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-10 right-10 w-64 h-64 bg-teal-400/10 rounded-full blur-2xl pointer-events-none" />
-
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-          <div className="space-y-3 max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-teal-300 text-xs font-black uppercase tracking-wider border border-white/15">
-              <Sparkles className="w-3.5 h-3.5 text-teal-300" />
-              <span>Smart Tourism Sentiment & AI Suitability Matching</span>
-            </div>
-
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black font-heading tracking-tight text-white leading-tight">
+      {/* HERO SECTION */}
+      <section className="bg-white py-10 px-4 sm:px-8 border-b border-slate-200/80">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-2 max-w-2xl">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black font-heading tracking-tight text-[#0B3A53] leading-tight">
               Reviews & Recommendations
             </h1>
 
-            <p className="text-sm sm:text-base text-slate-200 leading-relaxed font-medium">
+            <p className="text-sm sm:text-base text-slate-500 leading-relaxed font-medium">
               Discover what other travelers think and find places recommended for you.
             </p>
           </div>
@@ -282,9 +273,8 @@ export const ReviewsAndRecommendationsPage: React.FC = () => {
             {/* Section Header with count */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/80 pb-4">
               <div>
-                <h2 className="text-xl sm:text-2xl font-black text-[#0B3A53] font-heading flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-amber-500" />
-                  <span>Personalized Destination Matches</span>
+                <h2 className="text-xl sm:text-2xl font-black text-[#0B3A53] font-heading">
+                  Personalized Destination Matches
                 </h2>
                 <p className="text-xs sm:text-sm text-slate-500 font-medium">
                   Calculated from historical reviews, category preferences, and budget affinities

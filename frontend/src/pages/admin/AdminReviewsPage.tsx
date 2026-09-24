@@ -3,13 +3,11 @@ import { useSearchParams } from 'react-router-dom';
 import {
   Star,
   BarChart3,
-  Sparkles,
   MessageSquare,
   CheckCircle2,
   X,
   Check,
   Ban,
-  ShieldCheck,
 } from 'lucide-react';
 import { ReviewStats } from '../../components/reviews/ReviewStats';
 import { RatingDistribution } from '../../components/reviews/RatingDistribution';
@@ -119,69 +117,62 @@ export const AdminReviewsPage: React.FC<AdminReviewsPageProps> = ({
       )}
 
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#16A6A1]/10 text-[#146C86] text-xs font-black uppercase tracking-wider mb-2">
-            <ShieldCheck className="w-3.5 h-3.5 text-[#16A6A1]" />
-            <span>Operator Moderation Center</span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-[#0B3A53] font-heading tracking-tight">
-            Reviews & Recommendations Management
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 font-medium">
-            Moderate tourist feedback, inspect satisfaction ratings across destinations, and review AI recommendation algorithms.
-          </p>
-        </div>
+      <div>
+        <h1 className="text-2xl sm:text-3xl font-black text-[#0B3A53] font-heading tracking-tight">
+          Reviews & Recommendations Management
+        </h1>
+        <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1">
+          Moderate tourist feedback, inspect satisfaction ratings across destinations, and review AI recommendation algorithms.
+        </p>
+      </div>
 
-        {/* Action Tabs Switcher */}
-        <div className="flex items-center gap-1.5 p-1.5 bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-x-auto no-scrollbar">
-          <button
-            onClick={() => handleTabChange('review-management')}
-            className={`px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
-              activeTab === 'review-management'
-                ? 'bg-[#0B3A53] text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-            }`}
-          >
-            <MessageSquare className="w-3.5 h-3.5" />
-            <span>Review Moderation</span>
-            {pendingCount > 0 && (
-              <span
-                className={`text-[10px] font-black px-1.5 py-0.2 rounded-full ${
-                  activeTab === 'review-management'
-                    ? 'bg-amber-400 text-slate-900'
-                    : 'bg-amber-100 text-amber-800'
-                }`}
-              >
-                {pendingCount}
-              </span>
-            )}
-          </button>
+      {/* Action Tabs Switcher */}
+      <div className="inline-flex items-center gap-1.5 p-1.5 bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-x-auto no-scrollbar">
+        <button
+          onClick={() => handleTabChange('review-management')}
+          className={`px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
+            activeTab === 'review-management'
+              ? 'bg-[#0B3A53] text-white shadow-xs'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+          }`}
+        >
+          <MessageSquare className="w-3.5 h-3.5" />
+          <span>Review Moderation</span>
+          {pendingCount > 0 && (
+            <span
+              className={`text-[10px] font-black px-1.5 py-0.2 rounded-full ${
+                activeTab === 'review-management'
+                  ? 'bg-amber-400 text-slate-900'
+                  : 'bg-amber-100 text-amber-800'
+              }`}
+            >
+              {pendingCount}
+            </span>
+          )}
+        </button>
 
-          <button
-            onClick={() => handleTabChange('customer-satisfaction')}
-            className={`px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
-              activeTab === 'customer-satisfaction'
-                ? 'bg-[#0B3A53] text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-            }`}
-          >
-            <BarChart3 className="w-3.5 h-3.5" />
-            <span>Satisfaction Analytics</span>
-          </button>
+        <button
+          onClick={() => handleTabChange('customer-satisfaction')}
+          className={`px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
+            activeTab === 'customer-satisfaction'
+              ? 'bg-[#0B3A53] text-white shadow-xs'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+          }`}
+        >
+          <BarChart3 className="w-3.5 h-3.5" />
+          <span>Satisfaction Analytics</span>
+        </button>
 
-          <button
-            onClick={() => handleTabChange('recommendation-insights')}
-            className={`px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
-              activeTab === 'recommendation-insights'
-                ? 'bg-[#0B3A53] text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-            }`}
-          >
-            <Sparkles className="w-3.5 h-3.5 text-[#16A6A1]" />
-            <span>Recommendation Insights</span>
-          </button>
-        </div>
+        <button
+          onClick={() => handleTabChange('recommendation-insights')}
+          className={`px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
+            activeTab === 'recommendation-insights'
+              ? 'bg-[#0B3A53] text-white shadow-xs'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+          }`}
+        >
+          <span>Recommendation Insights</span>
+        </button>
       </div>
 
       {/* Tab 1: Review Moderation */}

@@ -1,10 +1,11 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { Search, Bell, Compass, Shield, LogOut, User as UserIcon, Menu, X } from 'lucide-react';
+import { Compass, Shield, LogOut, User as UserIcon, Menu, X } from 'lucide-react';
 import { BRAND } from '../../constants/brand';
 import { Avatar } from '../ui/Avatar';
 import { Dropdown } from '../ui/Dropdown';
 import { useAuth } from '../../hooks/useAuth';
+import { UserNotificationsPopover } from './UserNotificationsPopover';
 import { UserRole } from '../../types/auth';
 
 import headerLogo from '../../assets/header-logo.png';
@@ -72,7 +73,10 @@ export const LandingNavbar: React.FC = () => {
       label: 'Sign Out',
       icon: <LogOut className="w-4 h-4" />,
       danger: true,
-      onClick: logout,
+      onClick: () => {
+        logout();
+        navigate('/login');
+      },
     },
   ];
 
@@ -86,6 +90,7 @@ export const LandingNavbar: React.FC = () => {
             <img
               src={headerLogo}
               alt="Travel Link - Your Island Journey"
+              style={{ maxWidth: '245px', maxHeight: '58px' }}
               className="w-[185px] sm:w-[220px] md:w-[245px] lg:w-[265px] h-auto object-contain transition-transform group-hover:scale-[1.02] drop-shadow-2xs"
             />
           </NavLink>
@@ -179,22 +184,8 @@ export const LandingNavbar: React.FC = () => {
 
         {/* Right: Actions & User Avatar */}
         <div className="flex items-center gap-2.5 sm:gap-4">
-          {/* Search Icon Button */}
-          <button
-            aria-label="Search"
-            className="p-2.5 sm:p-3 text-slate-700 hover:text-[#0B3A53] hover:bg-slate-100 rounded-full border border-slate-200/90 shadow-2xs transition-all cursor-pointer"
-          >
-            <Search className="w-4 sm:w-5 h-4 sm:h-5" />
-          </button>
-
-          {/* Notification Icon Button */}
-          <button
-            aria-label="Notifications"
-            className="p-2.5 sm:p-3 text-slate-700 hover:text-[#0B3A53] hover:bg-slate-100 rounded-full border border-slate-200/90 shadow-2xs transition-all cursor-pointer relative"
-          >
-            <Bell className="w-4 sm:w-5 h-4 sm:h-5" />
-            <span className="absolute top-2 right-2 sm:top-2.5 sm:right-2.5 w-2 sm:w-2.5 h-2 sm:h-2.5 bg-amber-500 rounded-full ring-2 ring-white" />
-          </button>
+          {/* User Side Interactive Notifications */}
+          <UserNotificationsPopover />
 
           {/* User Profile Avatar Dropdown */}
           <Dropdown

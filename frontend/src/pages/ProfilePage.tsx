@@ -349,7 +349,10 @@ export const ProfilePage: React.FC = () => {
               <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
                 <button
                   type="button"
-                  onClick={() => logout()}
+                  onClick={() => {
+                    logout();
+                    navigate('/login');
+                  }}
                   className="text-xs font-bold text-rose-600 hover:text-rose-700 flex items-center gap-2 hover:bg-rose-50 px-4 py-2.5 rounded-full transition-colors cursor-pointer"
                 >
                   <LogOut className="w-4 h-4" />

@@ -1,49 +1,72 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Users,
   Search,
-  Filter,
-  Plus,
-  MoreVertical,
-  X,
+  Eye,
   CheckCircle2,
   XCircle,
+  X,
   ShieldCheck,
-  Calendar,
-  Phone,
-  Mail,
-  Award,
-  BookOpen,
+  Power,
 } from 'lucide-react';
 import { adminService } from '../../services/adminService';
-import { AdminUser } from '../../mock/mockAdminData';
+import { AdminUserItem } from '../../types/adminTypes';
 
 export const AdminUsersPage: React.FC = () => {
-  const [users, setUsers] = useState<AdminUser[]>(adminService.getUsers());
+  const [users, setUsers] = useState<AdminUserItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedRole, setSelectedRole] = useState<string>('All');
-  const [selectedStatus, setSelectedStatus] = useState<string>('All');
-  const [activeUserModal, setActiveUserModal] = useState<AdminUser | null>(null);
+  const [selectedRole, setSelectedRole] = useState('All');
+  const [activeUserModal, setActiveUserModal] = useState<AdminUserItem | null>(null);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-  const filteredUsers = useMemo(() => {
-    return users.filter((u) => {
-      const matchesSearch =
-        u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        u.email.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesRole = selectedRole === 'All' || u.role === selectedRole;
-      const matchesStatus = selectedStatus === 'All' || u.status === selectedStatus;
-      return matchesSearch && matchesRole && matchesStatus;
-    });
-  }, [users, searchQuery, selectedRole, selectedStatus]);
+  const loadUsers = async () => {
+    setLoading(true);
+    try {
+      const data = await adminService.fetchUsers(searchQuery, selectedRole);
+      setUsers(data);
+    } catch (err) {
+      console.error('Failed to load users', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const handleToggleStatus = (id: string) => {
-    const updated = adminService.toggleUserStatus(id);
-    setUsers([...updated]);
+  useEffect(() => {
+    loadUsers();
+  }, [selectedRole]);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    loadUsers();
+  };
+
+  const handleToggleStatus = async (user: AdminUserItem) => {
+    const newStatus = user.status !== 'Active';
+    setUpdatingId(user.id);
+    try {
+      await adminService.updateUserStatus(user.id, newStatus);
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === user.id ? { ...u, status: newStatus ? 'Active' : 'Inactive' } : u
+        )
+      );
+      if (activeUserModal && activeUserModal.id === user.id) {
+        setActiveUserModal({
+          ...activeUserModal,
+          status: newStatus ? 'Active' : 'Inactive',
+        });
+      }
+    } catch (err) {
+      console.error('Failed to update user status', err);
+      alert('Could not update user status. Please try again.');
+    } finally {
+      setUpdatingId(null);
+    }
   };
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
-      
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -51,250 +74,204 @@ export const AdminUsersPage: React.FC = () => {
             User Management
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 font-medium">
-            Manage tourists, tour operators, and system administrator accounts.
+            Inspect, manage, and toggle account activation status for registered users and administrators.
           </p>
         </div>
       </div>
 
-      {/* Search & Filter Toolbar */}
+      {/* Toolbar */}
       <div className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">
-        <div className="relative w-full md:w-80">
+        <form onSubmit={handleSearch} className="relative w-full md:w-80">
           <input
             type="text"
+            placeholder="Search by name or email..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search name or email address..."
-            className="w-full h-11 pl-10 pr-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs font-semibold text-[#0B3A53] placeholder-slate-400 focus:outline-none focus:bg-white focus:border-[#16A6A1]"
+            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-hidden focus:border-[#16A6A1]"
           />
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-        </div>
+        </form>
 
-        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-          {/* Role Filter */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-slate-400 uppercase">Role:</span>
-            <select
-              value={selectedRole}
-              onChange={(e) => setSelectedRole(e.target.value)}
-              className="bg-slate-50 border border-slate-200 text-xs font-bold text-[#0B3A53] px-3 py-2 rounded-xl focus:outline-none focus:border-[#16A6A1] cursor-pointer"
+        {/* Role Filters */}
+        <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto">
+          {['All', 'Admin', 'User'].map((role) => (
+            <button
+              key={role}
+              onClick={() => setSelectedRole(role)}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                selectedRole === role
+                  ? 'bg-[#0B3A53] text-white shadow-2xs'
+                  : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'
+              }`}
             >
-              <option value="All">All Roles</option>
-              <option value="Tourist">Tourist</option>
-              <option value="Tour Operator">Tour Operator</option>
-              <option value="Administrator">Administrator</option>
-            </select>
-          </div>
-
-          {/* Status Filter */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-slate-400 uppercase">Status:</span>
-            <select
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              className="bg-slate-50 border border-slate-200 text-xs font-bold text-[#0B3A53] px-3 py-2 rounded-xl focus:outline-none focus:border-[#16A6A1] cursor-pointer"
-            >
-              <option value="All">All Statuses</option>
-              <option value="Active">Active</option>
-              <option value="Inactive">Inactive</option>
-              <option value="Pending">Pending</option>
-            </select>
-          </div>
+              {role}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Users Data Table */}
+      {/* Users Table */}
       <div className="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead>
-              <tr className="bg-slate-50 border-b border-slate-200/80 text-[10px] font-black uppercase tracking-wider text-slate-400">
-                <th className="py-4 px-5">User Profile</th>
-                <th className="py-4 px-5">Email Address</th>
+              <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-black uppercase tracking-wider text-slate-400">
+                <th className="py-4 px-5">User</th>
                 <th className="py-4 px-5">Role</th>
-                <th className="py-4 px-5">Registered Date</th>
-                <th className="py-4 px-5">Status</th>
+                <th className="py-4 px-5">Trips Formulated</th>
+                <th className="py-4 px-5">Tours Booked</th>
+                <th className="py-4 px-5">Registered</th>
+                <th className="py-4 px-5">Account Status</th>
                 <th className="py-4 px-5 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 font-medium">
-              {filteredUsers.length > 0 ? (
-                filteredUsers.map((user) => (
-                  <tr key={user.id} className="hover:bg-slate-50/80 transition-colors">
+              {loading ? (
+                <tr>
+                  <td colSpan={7} className="py-12 text-center text-slate-400">
+                    Loading users from database...
+                  </td>
+                </tr>
+              ) : users.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-12 text-center text-slate-400">
+                    No users found matching query.
+                  </td>
+                </tr>
+              ) : (
+                users.map((u) => (
+                  <tr key={u.id} className="hover:bg-slate-50/80 transition-colors">
                     <td className="py-4 px-5">
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={user.avatar}
-                          alt={user.name}
-                          className="w-9 h-9 rounded-full object-cover border border-slate-200"
-                        />
-                        <div>
-                          <div className="font-extrabold text-[#0B3A53]">{user.name}</div>
-                          <div className="text-[11px] text-slate-400 font-medium">{user.phone}</div>
-                        </div>
-                      </div>
+                      <div className="font-extrabold text-slate-800">{u.name}</div>
+                      <div className="text-[11px] text-slate-400">{u.email}</div>
                     </td>
-                    <td className="py-4 px-5 text-slate-600 font-semibold">{user.email}</td>
                     <td className="py-4 px-5">
                       <span
-                        className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase ${
-                          user.role === 'Administrator'
-                            ? 'bg-purple-100 text-purple-700'
-                            : user.role === 'Tour Operator'
-                            ? 'bg-blue-100 text-blue-700'
-                            : 'bg-teal-100 text-[#146C86]'
+                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${
+                          u.role === 'Admin'
+                            ? 'bg-rose-100 text-rose-800'
+                            : 'bg-blue-100 text-blue-800'
                         }`}
                       >
-                        {user.role}
+                        {u.role === 'Admin' && <ShieldCheck className="w-3 h-3" />}
+                        <span>{u.role === 'Admin' ? 'ADMIN' : 'USER'}</span>
                       </span>
                     </td>
-                    <td className="py-4 px-5 text-slate-500">{user.registeredAt}</td>
+                    <td className="py-4 px-5 font-bold text-[#0B3A53]">{u.tripsCount}</td>
+                    <td className="py-4 px-5 font-bold text-slate-700">{u.bookingsCount}</td>
+                    <td className="py-4 px-5 text-slate-400 text-[11px]">
+                      {new Date(u.createdAt).toLocaleDateString()}
+                    </td>
                     <td className="py-4 px-5">
-                      <span
-                        className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase ${
-                          user.status === 'Active'
-                            ? 'bg-emerald-100 text-emerald-700'
-                            : user.status === 'Pending'
-                            ? 'bg-amber-100 text-amber-700'
-                            : 'bg-rose-100 text-rose-700'
-                        }`}
+                      <button
+                        onClick={() => handleToggleStatus(u)}
+                        disabled={updatingId === u.id}
+                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase cursor-pointer transition-all ${
+                          u.status === 'Active'
+                            ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
+                            : 'bg-rose-100 text-rose-800 hover:bg-rose-200'
+                        } ${updatingId === u.id ? 'opacity-50' : ''}`}
+                        title="Click to toggle status in database"
                       >
-                        {user.status}
-                      </span>
+                        <Power className="w-3 h-3" />
+                        <span>{updatingId === u.id ? 'Updating...' : u.status}</span>
+                      </button>
                     </td>
                     <td className="py-4 px-5 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => setActiveUserModal(user)}
-                          className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-[#0B3A53] font-bold text-[11px] transition-colors cursor-pointer"
-                        >
-                          View Details
-                        </button>
-                        <button
-                          onClick={() => handleToggleStatus(user.id)}
-                          className={`px-3 py-1.5 rounded-xl font-bold text-[11px] transition-colors cursor-pointer ${
-                            user.status === 'Active'
-                              ? 'bg-rose-50 text-rose-600 hover:bg-rose-100'
-                              : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
-                          }`}
-                        >
-                          {user.status === 'Active' ? 'Deactivate' : 'Activate'}
-                        </button>
-                      </div>
+                      <button
+                        onClick={() => setActiveUserModal(u)}
+                        className="p-1.5 hover:bg-slate-100 text-slate-600 rounded-lg transition-colors cursor-pointer inline-flex items-center gap-1"
+                        title="Inspect user details"
+                      >
+                        <Eye className="w-4 h-4" />
+                        <span className="font-bold text-[11px]">Profile</span>
+                      </button>
                     </td>
                   </tr>
                 ))
-              ) : (
-                <tr>
-                  <td colSpan={6} className="py-12 text-center text-slate-400 font-bold">
-                    No users matching search filters.
-                  </td>
-                </tr>
               )}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* User Details Drawer Modal */}
+      {/* USER DETAIL MODAL */}
       {activeUserModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex justify-end animate-in fade-in duration-200">
-          <div className="bg-white w-full max-w-lg h-full p-6 sm:p-8 space-y-6 shadow-2xl flex flex-col justify-between overflow-y-auto">
-            <div className="space-y-6">
-              
-              {/* Modal Header */}
-              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                <h3 className="text-xl font-black text-[#0B3A53] font-heading">User Account Profile</h3>
-                <button
-                  onClick={() => setActiveUserModal(null)}
-                  className="p-2 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors cursor-pointer"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              {/* Profile Card Summary */}
-              <div className="bg-slate-50 p-6 rounded-3xl border border-slate-200/80 text-center space-y-3">
-                <img
-                  src={activeUserModal.avatar}
-                  alt={activeUserModal.name}
-                  className="w-20 h-20 rounded-full object-cover mx-auto border-2 border-[#16A6A1] shadow-md"
-                />
-                <div>
-                  <h4 className="text-lg font-black text-[#0B3A53]">{activeUserModal.name}</h4>
-                  <p className="text-xs font-semibold text-slate-500">{activeUserModal.email}</p>
-                </div>
-                <div className="flex items-center justify-center gap-2 pt-1">
-                  <span className="px-3 py-1 rounded-full text-xs font-black uppercase bg-[#16A6A1]/10 text-[#146C86]">
-                    {activeUserModal.role}
-                  </span>
-                  <span
-                    className={`px-3 py-1 rounded-full text-xs font-black uppercase ${
-                      activeUserModal.status === 'Active' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
-                    }`}
-                  >
-                    {activeUserModal.status}
-                  </span>
-                </div>
-              </div>
-
-              {/* User Stats Grid */}
-              <div className="grid grid-cols-3 gap-3 text-center text-xs">
-                <div className="bg-white p-3 rounded-2xl border border-slate-200 space-y-0.5">
-                  <div className="font-extrabold text-slate-400">Total Bookings</div>
-                  <div className="text-lg font-black text-[#0B3A53]">{activeUserModal.totalBookings}</div>
-                </div>
-                <div className="bg-white p-3 rounded-2xl border border-slate-200 space-y-0.5">
-                  <div className="font-extrabold text-slate-400">Completed Trips</div>
-                  <div className="text-lg font-black text-[#0B3A53]">{activeUserModal.completedTrips}</div>
-                </div>
-                <div className="bg-white p-3 rounded-2xl border border-slate-200 space-y-0.5">
-                  <div className="font-extrabold text-slate-400">Reviews</div>
-                  <div className="text-lg font-black text-[#0B3A53]">{activeUserModal.reviewsCount}</div>
-                </div>
-              </div>
-
-              {/* Account Metadata Details */}
-              <div className="bg-slate-50 p-5 rounded-3xl border border-slate-200/80 space-y-3 text-xs">
-                <div className="flex justify-between pb-2 border-b border-slate-200">
-                  <span className="font-bold text-slate-500">Phone Number</span>
-                  <span className="font-extrabold text-[#0B3A53]">{activeUserModal.phone}</span>
-                </div>
-                <div className="flex justify-between pb-2 border-b border-slate-200">
-                  <span className="font-bold text-slate-500">Registered Date</span>
-                  <span className="font-extrabold text-[#0B3A53]">{activeUserModal.registeredAt}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="font-bold text-slate-500">User Account ID</span>
-                  <span className="font-mono font-extrabold text-[#146C86]">{activeUserModal.id}</span>
-                </div>
-              </div>
-
-            </div>
-
-            {/* Modal Bottom Actions */}
-            <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="font-black text-sm text-[#0B3A53]">User Account Profile</h3>
               <button
                 onClick={() => setActiveUserModal(null)}
-                className="px-6 py-3 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs cursor-pointer"
+                className="text-slate-400 hover:text-slate-700 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-4 text-xs">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#16A6A1] to-[#0B3A53] text-white flex items-center justify-center font-black text-base shadow-xs">
+                  {activeUserModal.name.charAt(0)}
+                </div>
+                <div>
+                  <div className="font-black text-sm text-slate-800">{activeUserModal.name}</div>
+                  <div className="text-slate-400 text-xs">{activeUserModal.email}</div>
+                  <span
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase mt-1 ${
+                      activeUserModal.role === 'Admin'
+                        ? 'bg-rose-100 text-rose-800'
+                        : 'bg-blue-100 text-blue-800'
+                    }`}
+                  >
+                    {activeUserModal.role === 'Admin' && <ShieldCheck className="w-3 h-3" />}
+                    <span>{activeUserModal.role === 'Admin' ? 'ADMIN' : 'USER'}</span>
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 bg-slate-50 p-3 rounded-2xl border border-slate-200 text-center">
+                <div>
+                  <div className="font-black text-sm text-[#0B3A53]">{activeUserModal.tripsCount}</div>
+                  <div className="text-[10px] text-slate-500 font-bold">Trips</div>
+                </div>
+                <div>
+                  <div className="font-black text-sm text-[#0B3A53]">{activeUserModal.bookingsCount}</div>
+                  <div className="text-[10px] text-slate-500 font-bold">Bookings</div>
+                </div>
+              </div>
+
+              <div className="space-y-2 text-slate-600 bg-slate-50 p-3 rounded-2xl border border-slate-200">
+                <div><strong>Account ID:</strong> <span className="font-mono text-[11px]">{activeUserModal.id}</span></div>
+                <div><strong>Registered:</strong> {new Date(activeUserModal.createdAt).toLocaleString()}</div>
+                <div className="flex items-center justify-between">
+                  <span><strong>Account Status:</strong></span>
+                  <button
+                    onClick={() => handleToggleStatus(activeUserModal)}
+                    disabled={updatingId === activeUserModal.id}
+                    className={`px-3 py-1 rounded-full text-[10px] font-black uppercase cursor-pointer ${
+                      activeUserModal.status === 'Active'
+                        ? 'bg-emerald-100 text-emerald-800'
+                        : 'bg-rose-100 text-rose-800'
+                    }`}
+                  >
+                    {activeUserModal.status} (Toggle)
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <button
+                onClick={() => setActiveUserModal(null)}
+                className="px-5 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-xl text-xs font-bold cursor-pointer"
               >
                 Close Profile
-              </button>
-              <button
-                onClick={() => {
-                  handleToggleStatus(activeUserModal.id);
-                  setActiveUserModal(null);
-                }}
-                className={`px-6 py-3 rounded-full font-extrabold text-xs uppercase tracking-wider text-white shadow-md transition-colors cursor-pointer ${
-                  activeUserModal.status === 'Active' ? 'bg-rose-600 hover:bg-rose-700' : 'bg-emerald-600 hover:bg-emerald-700'
-                }`}
-              >
-                {activeUserModal.status === 'Active' ? 'Deactivate Account' : 'Activate Account'}
               </button>
             </div>
           </div>
         </div>
       )}
-
     </div>
   );
 };

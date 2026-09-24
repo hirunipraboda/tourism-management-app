@@ -1,459 +1,472 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Users,
   Compass,
-  Package,
-  CalendarCheck,
-  Cpu,
-  CheckSquare,
-  TrendingUp,
-  MapPin,
-  Clock,
-  Plus,
-  ArrowRight,
-  Sparkles,
+  Milestone,
   Bot,
-  ChevronRight,
-  Eye,
-  CheckCircle2,
+  Car,
+  Ticket,
+  Bus,
+  Sparkles,
   AlertTriangle,
+  ArrowRight,
+  CreditCard,
+  Star,
+  MapPin,
+  Activity as ActivityIcon,
+  CheckCircle2,
+  Clock,
+  RotateCcw,
 } from 'lucide-react';
 import { adminService } from '../../services/adminService';
+import { AdminDashboardData } from '../../types/adminTypes';
 
 export const AdminDashboardPage: React.FC = () => {
   const navigate = useNavigate();
-  const kpis = adminService.getKPIs();
-  const destinations = adminService.getDestinations();
-  const bookings = adminService.getBookings();
-  const workflows = adminService.getWorkflows();
+  const [data, setData] = useState<AdminDashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const [bookingTimeframe, setBookingTimeframe] = useState<'7 Days' | '30 Days' | '3 Months' | '12 Months'>('30 Days');
+  const loadDashboard = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const result = await adminService.fetchDashboard();
+      setData(result);
+    } catch (err: any) {
+      console.error('Failed to load dashboard data', err);
+      setError('Failed to fetch real-time dashboard statistics from backend.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  // Quick Action Handler
-  const handleQuickAction = (route: string) => {
-    navigate(route);
+  useEffect(() => {
+    loadDashboard();
+  }, []);
+
+  const kpis = data?.kpis || {
+    totalUsers: 0,
+    totalDestinations: 0,
+    totalAttractions: 0,
+    totalActivities: 0,
+    totalTrips: 0,
+    aiGeneratedTrips: 0,
+    chatbotPurchases: 0,
+    transportRoutes: 0,
+    aiGuideQueries: 0,
   };
 
   return (
     <div className="space-y-8 animate-in fade-in duration-300">
-      
-      {/* 1. WELCOME SECTION */}
-      <div className="bg-gradient-to-r from-slate-50 via-teal-50/50 to-sky-50/50 border border-slate-200/90 rounded-3xl p-6 sm:p-8 text-slate-800 shadow-xs relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+      {/* 1. WELCOME HERO SECTION */}
+      <div className="bg-gradient-to-r from-slate-900 via-[#0B3A53] to-teal-900 border border-slate-800 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div className="space-y-2 z-10 max-w-2xl">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#16A6A1]/10 text-[#138D89] text-xs font-extrabold border border-[#16A6A1]/20">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#16A6A1]/20 text-[#16A6A1] text-xs font-extrabold border border-[#16A6A1]/30">
             <Sparkles className="w-3.5 h-3.5 animate-pulse" />
-            <span>TRAVEL LINK COMMAND CENTER</span>
+            <span>NOVA SMART TOURISM PLATFORM</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black font-heading tracking-tight text-[#0B3A53] leading-tight">
-            Welcome back, System Operator 👋
+          <h1 className="text-2xl sm:text-3xl font-black font-heading tracking-tight text-white leading-tight">
+            Administrator Command Center
           </h1>
-          <p className="text-xs sm:text-sm text-slate-600 font-medium leading-relaxed">
-            Monitor live travel analytics, active bookings, and AI-generated journey optimizations across Sri Lanka in real time.
+          <p className="text-xs sm:text-sm text-slate-300 font-medium leading-relaxed">
+            Live database operations: Traveler accounts, multi-agent AI itineraries, tourist confirmation statuses, and public transport schedules.
           </p>
         </div>
 
         <div className="flex items-center gap-3 z-10 shrink-0">
+
           <button
-            onClick={() => navigate('/admin/approvals')}
-            className="bg-[#16A6A1] hover:bg-[#146C86] text-white font-extrabold text-xs uppercase tracking-wider px-6 py-3.5 rounded-full shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center gap-2"
+            onClick={() => navigate('/admin/trips')}
+            className="bg-[#16A6A1] hover:bg-[#146C86] text-white font-extrabold text-xs uppercase tracking-wider px-6 py-3.5 rounded-2xl shadow-lg hover:shadow-xl transition-all cursor-pointer flex items-center gap-2"
           >
-            <CheckSquare className="w-4 h-4" />
-            <span>Review AI Approvals ({kpis.pendingApprovals})</span>
+            <Milestone className="w-4 h-4" />
+            <span>Monitor Itineraries ({kpis.totalTrips})</span>
           </button>
         </div>
       </div>
 
-      {/* 2. KPI STATISTIC CARDS */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        
-        {/* Card 1: Total Users */}
-        <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-3 hover:shadow-md transition-shadow">
+      {error && (
+        <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-semibold flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-amber-600" />
+            <span>{error}</span>
+          </div>
+          <button onClick={loadDashboard} className="underline font-bold cursor-pointer">
+            Retry
+          </button>
+        </div>
+      )}
+
+      {/* 2. THE 9 CORE LIVE KPIS (Real Database Calculations) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+        {/* Total Users */}
+        <div
+          onClick={() => navigate('/admin/users')}
+          className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs space-y-3 hover:shadow-md transition-all cursor-pointer group"
+        >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">Total Users</span>
-            <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
+            <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">
+              Total Users
+            </span>
+            <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center transition-transform group-hover:scale-110">
               <Users className="w-5 h-5" />
             </div>
           </div>
-          <div className="flex items-baseline justify-between">
-            <div className="text-2xl sm:text-3xl font-black text-[#0B3A53] font-heading">
-              {kpis.totalUsers.toLocaleString()}
-            </div>
-            <div className="text-xs font-extrabold text-emerald-600 flex items-center gap-0.5">
-              <TrendingUp className="w-3.5 h-3.5" />
-              <span>+12.4%</span>
-            </div>
+          <div className="text-2xl sm:text-3xl font-black text-[#0B3A53] font-heading">
+            {kpis.totalUsers}
           </div>
-          <p className="text-[11px] text-slate-400 font-medium">Tourists & registered operators</p>
+          <p className="text-[11px] text-slate-400 font-medium">Registered tourists & staff</p>
         </div>
 
-        {/* Card 2: Active Destinations */}
-        <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-3 hover:shadow-md transition-shadow">
+        {/* Total Destinations */}
+        <div
+          onClick={() => navigate('/admin/destinations')}
+          className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs space-y-3 hover:shadow-md transition-all cursor-pointer group"
+        >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">Active Destinations</span>
-            <div className="w-10 h-10 rounded-2xl bg-teal-50 text-[#16A6A1] flex items-center justify-center">
+            <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">
+              Total Destinations
+            </span>
+            <div className="w-10 h-10 rounded-2xl bg-teal-50 text-[#16A6A1] flex items-center justify-center transition-transform group-hover:scale-110">
               <Compass className="w-5 h-5" />
             </div>
           </div>
-          <div className="flex items-baseline justify-between">
-            <div className="text-2xl sm:text-3xl font-black text-[#0B3A53] font-heading">
-              {kpis.activeDestinations}
-            </div>
-            <div className="text-xs font-extrabold text-[#16A6A1]">
-              +4 this month
-            </div>
+          <div className="text-2xl sm:text-3xl font-black text-[#0B3A53] font-heading">
+            {kpis.totalDestinations}
           </div>
-          <p className="text-[11px] text-slate-400 font-medium">Kandy, Ella, Galle, Sigiriya & more</p>
+          <p className="text-[11px] text-slate-400 font-medium">Active Sri Lanka tourism hubs</p>
         </div>
 
-        {/* Card 3: Tour Packages */}
-        <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-3 hover:shadow-md transition-shadow">
+        {/* Total Attractions */}
+        <div
+          onClick={() => navigate('/admin/attractions')}
+          className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs space-y-3 hover:shadow-md transition-all cursor-pointer group"
+        >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">Tour Packages</span>
-            <div className="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center">
-              <Package className="w-5 h-5" />
+            <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">
+              Total Attractions
+            </span>
+            <div className="w-10 h-10 rounded-2xl bg-sky-50 text-sky-600 flex items-center justify-center transition-transform group-hover:scale-110">
+              <MapPin className="w-5 h-5" />
             </div>
           </div>
-          <div className="flex items-baseline justify-between">
-            <div className="text-2xl sm:text-3xl font-black text-[#0B3A53] font-heading">
-              {kpis.tourPackages}
-            </div>
-            <div className="text-xs font-extrabold text-emerald-600 flex items-center gap-0.5">
-              <TrendingUp className="w-3.5 h-3.5" />
-              <span>+8.2%</span>
-            </div>
+          <div className="text-2xl sm:text-3xl font-black text-[#0B3A53] font-heading">
+            {kpis.totalAttractions}
           </div>
-          <p className="text-[11px] text-slate-400 font-medium">Cultural & coastal itineraries</p>
+          <p className="text-[11px] text-slate-400 font-medium">Landmarks, forts, & nature sites</p>
         </div>
 
-        {/* Card 4: Total Bookings */}
-        <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-3 hover:shadow-md transition-shadow">
+        {/* Total Activities */}
+        <div
+          onClick={() => navigate('/admin/activities')}
+          className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs space-y-3 hover:shadow-md transition-all cursor-pointer group"
+        >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">Total Bookings</span>
-            <div className="w-10 h-10 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center">
-              <CalendarCheck className="w-5 h-5" />
+            <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">
+              Total Activities
+            </span>
+            <div className="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center transition-transform group-hover:scale-110">
+              <ActivityIcon className="w-5 h-5" />
             </div>
           </div>
-          <div className="flex items-baseline justify-between">
-            <div className="text-2xl sm:text-3xl font-black text-[#0B3A53] font-heading">
-              {kpis.totalBookings.toLocaleString()}
-            </div>
-            <div className="text-xs font-extrabold text-emerald-600 flex items-center gap-0.5">
-              <TrendingUp className="w-3.5 h-3.5" />
-              <span>+18.6%</span>
-            </div>
+          <div className="text-2xl sm:text-3xl font-black text-[#0B3A53] font-heading">
+            {kpis.totalActivities}
           </div>
-          <p className="text-[11px] text-slate-400 font-medium">Confirmed & upcoming bookings</p>
+          <p className="text-[11px] text-slate-400 font-medium">Surfing, safaris, tea tasting, hikes</p>
         </div>
 
-        {/* Card 5: AI Guide Bot Engine */}
-        <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-3 hover:shadow-md transition-shadow">
+        {/* Total Trips */}
+        <div
+          onClick={() => navigate('/admin/trips')}
+          className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs space-y-3 hover:shadow-md transition-all cursor-pointer group"
+        >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">AI Guide Bot</span>
-            <div className="w-10 h-10 rounded-2xl bg-[#16A6A1]/10 text-[#16A6A1] flex items-center justify-center">
+            <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">
+              Total Trips
+            </span>
+            <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center transition-transform group-hover:scale-110">
+              <Milestone className="w-5 h-5" />
+            </div>
+          </div>
+          <div className="text-2xl sm:text-3xl font-black text-[#0B3A53] font-heading">
+            {kpis.totalTrips}
+          </div>
+          <p className="text-[11px] text-slate-400 font-medium">All traveler formulated itineraries</p>
+        </div>
+
+        {/* AI Generated Trips */}
+        <div
+          onClick={() => navigate('/admin/trips')}
+          className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs space-y-3 hover:shadow-md transition-all cursor-pointer group"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">
+              AI Generated Trips
+            </span>
+            <div className="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center transition-transform group-hover:scale-110">
+              <Sparkles className="w-5 h-5" />
+            </div>
+          </div>
+          <div className="text-2xl sm:text-3xl font-black text-indigo-700 font-heading">
+            {kpis.aiGeneratedTrips}
+          </div>
+          <p className="text-[11px] text-slate-400 font-medium">Formulated by 4-agent pipeline</p>
+        </div>
+
+        {/* Chatbot Purchases */}
+        <div
+          onClick={() => navigate('/admin/chatbot-payments')}
+          className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs space-y-3 hover:shadow-md transition-all cursor-pointer group"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">
+              Chatbot Purchases
+            </span>
+            <div className="w-10 h-10 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center transition-transform group-hover:scale-110">
+              <CreditCard className="w-5 h-5" />
+            </div>
+          </div>
+          <div className="text-2xl sm:text-3xl font-black text-[#0B3A53] font-heading">
+            {kpis.chatbotPurchases}
+          </div>
+          <p className="text-[11px] text-slate-400 font-medium">Virtual guide subscription tiers</p>
+        </div>
+
+        {/* Transport Routes & Schedules */}
+        <div
+          onClick={() => navigate('/admin/transportation')}
+          className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs space-y-3 hover:shadow-md transition-all cursor-pointer group"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">
+              Transport Routes
+            </span>
+            <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center transition-transform group-hover:scale-110">
+              <Bus className="w-5 h-5" />
+            </div>
+          </div>
+          <div className="text-2xl sm:text-3xl font-black text-[#0B3A53] font-heading">
+            {kpis.transportRoutes ?? 0}
+          </div>
+          <p className="text-[11px] text-slate-400 font-medium">Verified bus & train timetables</p>
+        </div>
+
+        {/* AI Guide Queries */}
+        <div
+          onClick={() => navigate('/admin/ai-guide/usage')}
+          className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs space-y-3 hover:shadow-md transition-all cursor-pointer group"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">
+              AI Guide Queries
+            </span>
+            <div className="w-10 h-10 rounded-2xl bg-teal-50 text-[#16A6A1] flex items-center justify-center transition-transform group-hover:scale-110">
               <Bot className="w-5 h-5" />
             </div>
           </div>
-          <div className="flex items-baseline justify-between">
-            <div className="text-2xl sm:text-3xl font-black text-[#0B3A53] font-heading">
-              99.8%
-            </div>
-            <div className="text-xs font-extrabold text-[#16A6A1]">
-              Online Engine
-            </div>
+          <div className="text-2xl sm:text-3xl font-black text-[#0B3A53] font-heading">
+            {kpis.aiGuideQueries}
           </div>
-          <p className="text-[11px] text-slate-400 font-medium">NOVA AI Guide live assistant</p>
+          <p className="text-[11px] text-slate-400 font-medium">Traveler questions & landmark scans</p>
         </div>
-
-        {/* Card 6: Pending Approvals */}
-        <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-3 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">Pending Approvals</span>
-            <div className="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center">
-              <CheckSquare className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="flex items-baseline justify-between">
-            <div className="text-2xl sm:text-3xl font-black text-[#0B3A53] font-heading">
-              {kpis.pendingApprovals}
-            </div>
-            <div className="text-xs font-extrabold text-amber-600">
-              Needs Review
-            </div>
-          </div>
-          <p className="text-[11px] text-slate-400 font-medium">Human operator verification</p>
-        </div>
-
-        {/* Card 7: Active AI Workflows */}
-        <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-3 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">AI Workflows</span>
-            <div className="w-10 h-10 rounded-2xl bg-cyan-50 text-[#146C86] flex items-center justify-center">
-              <Cpu className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="flex items-baseline justify-between">
-            <div className="text-2xl sm:text-3xl font-black text-[#0B3A53] font-heading">
-              {kpis.activeWorkflows}
-            </div>
-            <div className="text-xs font-extrabold text-[#146C86]">
-              Running
-            </div>
-          </div>
-          <p className="text-[11px] text-slate-400 font-medium">Planner, Route & Validation agents</p>
-        </div>
-
-        {/* Card 8: Completed Trips */}
-        <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-3 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">Completed Trips</span>
-            <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-              <CheckCircle2 className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="flex items-baseline justify-between">
-            <div className="text-2xl sm:text-3xl font-black text-[#0B3A53] font-heading">
-              {kpis.completedTrips.toLocaleString()}
-            </div>
-            <div className="text-xs font-extrabold text-emerald-600 flex items-center gap-0.5">
-              <TrendingUp className="w-3.5 h-3.5" />
-              <span>+15.2%</span>
-            </div>
-          </div>
-          <p className="text-[11px] text-slate-400 font-medium">Fully executed itineraries</p>
-        </div>
-
       </div>
 
-      {/* 3. QUICK ACTIONS & POPULAR DESTINATIONS GRID */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* Quick Actions Panel */}
-        <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <h2 className="text-base font-black text-[#0B3A53] font-heading">Quick Actions</h2>
-            <span className="text-[11px] text-slate-400 font-bold">Admin shortcuts</span>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
+      {/* 3. RECENT ACTIVITY GRIDS */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Recent Itineraries */}
+        <div className="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
+          <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+            <h3 className="text-sm font-black text-[#0B3A53] font-heading flex items-center gap-2">
+              <Milestone className="w-4 h-4 text-[#16A6A1]" />
+              <span>Recent Trips & User Approvals</span>
+            </h3>
             <button
-              onClick={() => handleQuickAction('/admin/destinations')}
-              className="p-3.5 rounded-2xl bg-slate-50 hover:bg-[#16A6A1]/10 text-slate-700 hover:text-[#0B3A53] border border-slate-200/70 text-xs font-bold transition-all text-left flex flex-col gap-2 group cursor-pointer"
+              onClick={() => navigate('/admin/trips')}
+              className="text-xs font-bold text-[#16A6A1] hover:underline cursor-pointer flex items-center gap-1"
             >
-              <div className="w-8 h-8 rounded-xl bg-white shadow-2xs flex items-center justify-center text-[#16A6A1]">
-                <Plus className="w-4 h-4" />
-              </div>
-              <span>Add Destination</span>
-            </button>
-
-            <button
-              onClick={() => handleQuickAction('/admin/attractions')}
-              className="p-3.5 rounded-2xl bg-slate-50 hover:bg-[#16A6A1]/10 text-slate-700 hover:text-[#0B3A53] border border-slate-200/70 text-xs font-bold transition-all text-left flex flex-col gap-2 group cursor-pointer"
-            >
-              <div className="w-8 h-8 rounded-xl bg-white shadow-2xs flex items-center justify-center text-[#16A6A1]">
-                <MapPin className="w-4 h-4" />
-              </div>
-              <span>Add Attraction</span>
-            </button>
-
-            <button
-              onClick={() => handleQuickAction('/admin/tours')}
-              className="p-3.5 rounded-2xl bg-slate-50 hover:bg-[#16A6A1]/10 text-slate-700 hover:text-[#0B3A53] border border-slate-200/70 text-xs font-bold transition-all text-left flex flex-col gap-2 group cursor-pointer"
-            >
-              <div className="w-8 h-8 rounded-xl bg-white shadow-2xs flex items-center justify-center text-[#16A6A1]">
-                <Package className="w-4 h-4" />
-              </div>
-              <span>Create Package</span>
-            </button>
-
-            <button
-              onClick={() => handleQuickAction('/admin/approvals')}
-              className="p-3.5 rounded-2xl bg-slate-50 hover:bg-[#16A6A1]/10 text-slate-700 hover:text-[#0B3A53] border border-slate-200/70 text-xs font-bold transition-all text-left flex flex-col gap-2 group cursor-pointer"
-            >
-              <div className="w-8 h-8 rounded-xl bg-white shadow-2xs flex items-center justify-center text-amber-500">
-                <CheckSquare className="w-4 h-4" />
-              </div>
-              <span>AI Approvals</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Ranked Popular Destinations */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <div>
-              <h2 className="text-base font-black text-[#0B3A53] font-heading">Popular Destinations</h2>
-              <p className="text-[11px] text-slate-400 font-medium">Ranked by current tourist booking volume</p>
-            </div>
-            <button
-              onClick={() => navigate('/admin/destinations')}
-              className="text-xs font-bold text-[#146C86] hover:underline flex items-center gap-1 cursor-pointer"
-            >
-              <span>View All ({destinations.length})</span>
-              <ChevronRight className="w-3.5 h-3.5" />
+              <span>View All</span>
+              <ArrowRight className="w-3 h-3" />
             </button>
           </div>
 
-          <div className="space-y-3">
-            {destinations.slice(0, 5).map((dest, idx) => (
-              <div
-                key={dest.id}
-                className="p-3 rounded-2xl bg-slate-50 hover:bg-slate-100 transition-colors flex items-center justify-between gap-4 text-xs"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <span className="w-6 text-center font-black text-slate-400 text-xs">0{idx + 1}</span>
-                  <img
-                    src={dest.coverImage}
-                    alt={dest.name}
-                    className="w-12 h-10 rounded-xl object-cover shrink-0 border border-slate-200"
-                  />
-                  <div className="min-w-0">
-                    <div className="font-extrabold text-[#0B3A53] truncate">{dest.name}</div>
-                    <div className="text-[11px] text-slate-400 font-medium">{dest.province}</div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-6 shrink-0">
-                  <div className="text-right">
-                    <div className="font-extrabold text-[#0B3A53]">{dest.bookingsCount} Bookings</div>
-                    <div className="text-[10px] font-bold text-emerald-600">+{dest.growthPercentage}% this month</div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-      </div>
-
-      {/* 4. RECENT BOOKINGS TABLE & RECENT ACTIVITY TIMELINE */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* Recent Bookings Table */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <div>
-              <h2 className="text-base font-black text-[#0B3A53] font-heading">Recent Bookings</h2>
-              <p className="text-[11px] text-slate-400 font-medium">Latest tourist travel reservations</p>
-            </div>
-            <button
-              onClick={() => navigate('/admin/bookings')}
-              className="text-xs font-bold text-[#146C86] hover:underline flex items-center gap-1 cursor-pointer"
-            >
-              <span>Manage Bookings</span>
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead>
-                <tr className="border-b border-slate-100 text-[10px] font-black uppercase tracking-wider text-slate-400">
-                  <th className="pb-3 px-2">Booking ID</th>
-                  <th className="pb-3 px-2">Tourist</th>
-                  <th className="pb-3 px-2">Package</th>
-                  <th className="pb-3 px-2">Amount</th>
-                  <th className="pb-3 px-2">Status</th>
-                  <th className="pb-3 px-2 text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 font-medium">
-                {bookings.map((bkg) => (
-                  <tr key={bkg.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="py-3 px-2 font-mono font-bold text-[#0B3A53]">{bkg.bookingCode}</td>
-                    <td className="py-3 px-2">
-                      <div className="flex items-center gap-2">
-                        <img src={bkg.touristAvatar} alt="" className="w-6 h-6 rounded-full object-cover" />
-                        <span className="font-bold text-slate-800">{bkg.touristName}</span>
-                      </div>
-                    </td>
-                    <td className="py-3 px-2 text-slate-600 truncate max-w-[150px]">{bkg.packageName}</td>
-                    <td className="py-3 px-2 font-bold text-[#0B3A53]">${bkg.totalAmount}</td>
-                    <td className="py-3 px-2">
+          <div className="divide-y divide-slate-100 text-xs font-medium">
+            {data?.recentTrips && data.recentTrips.length > 0 ? (
+              data.recentTrips.map((t) => (
+                <div
+                  key={t.id}
+                  className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors"
+                >
+                  <div className="space-y-0.5">
+                    <div className="font-extrabold text-slate-800 flex items-center gap-2">
+                      <span>{t.destination}</span>
                       <span
-                        className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase ${
-                          bkg.status === 'Confirmed'
-                            ? 'bg-emerald-100 text-emerald-700'
-                            : bkg.status === 'Pending'
-                            ? 'bg-amber-100 text-amber-700'
-                            : 'bg-rose-100 text-rose-700'
+                        className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${
+                          t.tripType === 'AI GENERATED'
+                            ? 'bg-indigo-100 text-indigo-800'
+                            : 'bg-slate-100 text-slate-700'
                         }`}
                       >
-                        {bkg.status}
+                        {t.tripType}
                       </span>
-                    </td>
-                    <td className="py-3 px-2 text-right">
-                      <button
-                        onClick={() => navigate('/admin/bookings')}
-                        className="p-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors cursor-pointer"
-                      >
-                        <Eye className="w-3.5 h-3.5" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Recent Activity Timeline */}
-        <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <h2 className="text-base font-black text-[#0B3A53] font-heading">Live Activity Feed</h2>
-            <span className="text-[10px] font-bold text-[#16A6A1] bg-[#16A6A1]/10 px-2 py-0.5 rounded-full">Realtime</span>
-          </div>
-
-          <div className="space-y-4 text-xs">
-            {[
-              {
-                title: 'Booking #TL10294 confirmed',
-                time: '12 mins ago',
-                desc: 'Sanath W. completed payment for Grand Cultural Odyssey.',
-                icon: CheckCircle2,
-                color: 'text-emerald-500 bg-emerald-50',
-              },
-              {
-                title: 'AI Itinerary WF-TL-801 generated',
-                time: '25 mins ago',
-                desc: 'Validation agent score: 96%. Awaiting operator review.',
-                icon: Sparkles,
-                color: 'text-[#16A6A1] bg-[#16A6A1]/10',
-              },
-              {
-                title: 'Destination Kandy catalog updated',
-                time: '1 hour ago',
-                desc: 'Added Temple of Tooth festival timetable notes.',
-                icon: Compass,
-                color: 'text-[#146C86] bg-[#146C86]/10',
-              },
-              {
-                title: 'New User Registered',
-                time: '3 hours ago',
-                desc: 'Samantha Perera created a traveler profile.',
-                icon: Users,
-                color: 'text-blue-500 bg-blue-50',
-              },
-            ].map((act, idx) => {
-              const Icon = act.icon;
-              return (
-                <div key={idx} className="flex items-start gap-3">
-                  <div className={`p-2 rounded-xl shrink-0 ${act.color}`}>
-                    <Icon className="w-4 h-4" />
+                    </div>
+                    <div className="text-slate-400 text-[11px]">
+                      Traveler: <strong className="text-slate-600">{t.userName}</strong> · {t.startDate}
+                    </div>
                   </div>
-                  <div className="space-y-0.5">
-                    <div className="font-extrabold text-[#0B3A53]">{act.title}</div>
-                    <div className="text-[11px] text-slate-500 leading-relaxed">{act.desc}</div>
-                    <div className="text-[10px] font-bold text-slate-400 pt-0.5">{act.time}</div>
+                  <div className="text-right">
+                    <span
+                      className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-full ${
+                        t.approvalStatus === 'APPROVED_BY_USER'
+                          ? 'bg-emerald-100 text-emerald-800'
+                          : t.approvalStatus === 'REVISION_REQUESTED'
+                          ? 'bg-amber-100 text-amber-800'
+                          : 'bg-blue-100 text-blue-800'
+                      }`}
+                    >
+                      {t.approvalStatus.replace(/_/g, ' ')}
+                    </span>
                   </div>
                 </div>
-              );
-            })}
+              ))
+            ) : (
+              <div className="py-8 text-center text-slate-400 text-xs">No trips formulated yet.</div>
+            )}
           </div>
         </div>
 
-      </div>
+        {/* Recent Chatbot Purchases */}
+        <div className="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
+          <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+            <h3 className="text-sm font-black text-[#0B3A53] font-heading flex items-center gap-2">
+              <CreditCard className="w-4 h-4 text-purple-600" />
+              <span>Recent Chatbot Purchases</span>
+            </h3>
+            <button
+              onClick={() => navigate('/admin/chatbot-payments')}
+              className="text-xs font-bold text-[#16A6A1] hover:underline cursor-pointer flex items-center gap-1"
+            >
+              <span>View All</span>
+              <ArrowRight className="w-3 h-3" />
+            </button>
+          </div>
 
+          <div className="divide-y divide-slate-100 text-xs font-medium">
+            {data?.recentChatbotPurchases && data.recentChatbotPurchases.length > 0 ? (
+              data.recentChatbotPurchases.map((p) => (
+                <div
+                  key={p.id}
+                  className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors"
+                >
+                  <div className="space-y-0.5">
+                    <div className="font-extrabold text-slate-800">{p.packageName}</div>
+                    <div className="text-slate-400 text-[11px]">
+                      {p.userName} · <span className="font-mono">{p.maskedCardNumber}</span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-black text-[#146C86]">${p.amount.toFixed(2)}</div>
+                    <span className="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                      {p.status}
+                    </span>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="py-8 text-center text-slate-400 text-xs">No chatbot purchases recorded.</div>
+            )}
+          </div>
+        </div>
+
+        {/* Recent AI Guide Activity */}
+        <div className="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
+          <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+            <h3 className="text-sm font-black text-[#0B3A53] font-heading flex items-center gap-2">
+              <Bot className="w-4 h-4 text-teal-600" />
+              <span>Recent AI Guide Activity</span>
+            </h3>
+            <button
+              onClick={() => navigate('/admin/ai-guide/activity')}
+              className="text-xs font-bold text-[#16A6A1] hover:underline cursor-pointer flex items-center gap-1"
+            >
+              <span>View All</span>
+              <ArrowRight className="w-3 h-3" />
+            </button>
+          </div>
+
+          <div className="divide-y divide-slate-100 text-xs font-medium">
+            {data?.recentAiGuideActivity && data.recentAiGuideActivity.length > 0 ? (
+              data.recentAiGuideActivity.map((a: any) => (
+                <div
+                  key={a.id}
+                  className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors"
+                >
+                  <div className="space-y-0.5">
+                    <div className="font-extrabold text-slate-800">{a.topic || 'General Travel Inquiry'}</div>
+                    <div className="text-slate-400 text-[11px]">
+                      {a.userName} · {a.queryCount} queries
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-teal-100 text-teal-800">
+                      {a.status}
+                    </span>
+                    <div className="text-[10px] text-slate-400 mt-0.5">{a.lastActivity}</div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="py-8 text-center text-slate-400 text-xs">No recent AI sessions recorded.</div>
+            )}
+          </div>
+        </div>
+
+        {/* Recent Reviews */}
+        <div className="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
+          <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+            <h3 className="text-sm font-black text-[#0B3A53] font-heading flex items-center gap-2">
+              <Star className="w-4 h-4 text-amber-500" />
+              <span>Recent Reviews & Feedback</span>
+            </h3>
+            <button
+              onClick={() => navigate('/admin/reviews')}
+              className="text-xs font-bold text-[#16A6A1] hover:underline cursor-pointer flex items-center gap-1"
+            >
+              <span>View All</span>
+              <ArrowRight className="w-3 h-3" />
+            </button>
+          </div>
+
+          <div className="divide-y divide-slate-100 text-xs font-medium">
+            {data?.recentReviews && data.recentReviews.length > 0 ? (
+              data.recentReviews.map((r) => (
+                <div
+                  key={r.id}
+                  className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors"
+                >
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-extrabold text-slate-800">{r.destinationName}</span>
+                      <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 text-[10px] font-black">
+                        ★ {r.rating}
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-slate-600 line-clamp-1 italic">
+                      "{r.comment}"
+                    </div>
+                    <div className="text-[10px] text-slate-400 font-medium">
+                      By {r.userName} · {new Date(r.createdAt).toLocaleDateString()}
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="py-8 text-center text-slate-400 text-xs">No reviews submitted yet.</div>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

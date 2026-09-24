@@ -31,12 +31,22 @@ export const Avatar: React.FC<AvatarProps> = ({
     xl: 'w-3.5 h-3.5',
   };
 
+  const pixelSizes = {
+    sm: 28,
+    md: 36,
+    lg: 44,
+    xl: 56,
+  };
+
   return (
-    <div className="relative inline-block">
+    <div className="relative inline-block" style={{ width: pixelSizes[size], height: pixelSizes[size] }}>
       {src ? (
         <img
           src={src}
           alt={name}
+          width={pixelSizes[size]}
+          height={pixelSizes[size]}
+          style={{ width: pixelSizes[size], height: pixelSizes[size], objectFit: 'cover' }}
           className={cn('rounded-full object-cover border border-slate-200 shadow-xs', sizes[size], className)}
         />
       ) : (

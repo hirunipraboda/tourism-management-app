@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   CalendarCheck,
   Search,
@@ -10,32 +10,48 @@ import {
   User,
   ArrowRight,
   ShieldCheck,
+  AlertTriangle,
 } from 'lucide-react';
 import { adminService } from '../../services/adminService';
-import { AdminBooking } from '../../mock/mockAdminData';
+import { AdminBookingItem } from '../../types/adminTypes';
 
 export const AdminBookingsPage: React.FC = () => {
-  const [bookings, setBookings] = useState<AdminBooking[]>(adminService.getBookings());
+  const [bookings, setBookings] = useState<AdminBookingItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('All');
-  const [activeBookingModal, setActiveBookingModal] = useState<AdminBooking | null>(null);
+  const [activeBookingModal, setActiveBookingModal] = useState<AdminBookingItem | null>(null);
 
-  const filteredBookings = useMemo(() => {
-    return bookings.filter((b) => {
-      const matchesSearch =
-        b.bookingCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        b.touristName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        b.packageName.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesStatus = selectedStatus === 'All' || b.status === selectedStatus;
-      return matchesSearch && matchesStatus;
-    });
-  }, [bookings, searchQuery, selectedStatus]);
+  const loadBookings = async () => {
+    setLoading(true);
+    try {
+      const data = await adminService.fetchBookings(selectedStatus, searchQuery);
+      setBookings(data);
+    } catch (err) {
+      console.error('Failed to load bookings', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const handleUpdateStatus = (id: string, status: AdminBooking['status']) => {
-    const updated = adminService.updateBookingStatus(id, status);
-    setBookings([...updated]);
-    if (activeBookingModal && activeBookingModal.id === id) {
-      setActiveBookingModal({ ...activeBookingModal, status });
+  useEffect(() => {
+    loadBookings();
+  }, [selectedStatus]);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    loadBookings();
+  };
+
+  const handleUpdateStatus = async (id: string, newStatus: string) => {
+    try {
+      await adminService.updateBookingStatus(id, newStatus);
+      loadBookings();
+      if (activeBookingModal && activeBookingModal.id === id) {
+        setActiveBookingModal({ ...activeBookingModal, status: newStatus as any });
+      }
+    } catch {
+      alert('Failed to update booking status.');
     }
   };
 
@@ -49,184 +65,181 @@ export const AdminBookingsPage: React.FC = () => {
             Booking Management
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 font-medium">
-            Monitor, confirm, cancel, and review tourist travel bookings and reservation timelines.
+            Monitor, inspect, and manage service reservations for itineraries, transport transfers, and AI Guide subscriptions.
           </p>
         </div>
       </div>
 
       {/* Toolbar */}
       <div className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">
-        <div className="relative w-full md:w-80">
+        <form onSubmit={handleSearch} className="relative w-full md:w-80">
           <input
             type="text"
+            placeholder="Search booking ref or traveler..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search booking code, tourist, or package..."
-            className="w-full h-11 pl-10 pr-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs font-semibold text-[#0B3A53] placeholder-slate-400 focus:outline-none focus:bg-white focus:border-[#16A6A1]"
+            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-hidden focus:border-[#16A6A1]"
           />
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-        </div>
+        </form>
 
-        <div className="flex items-center gap-2 w-full md:w-auto">
-          <span className="text-xs font-bold text-slate-400 uppercase">Filter Status:</span>
-          <select
-            value={selectedStatus}
-            onChange={(e) => setSelectedStatus(e.target.value)}
-            className="bg-slate-50 border border-slate-200 text-xs font-bold text-[#0B3A53] px-3 py-2 rounded-xl focus:outline-none focus:border-[#16A6A1] cursor-pointer"
-          >
-            <option value="All">All Statuses</option>
-            <option value="Confirmed">Confirmed</option>
-            <option value="Pending">Pending</option>
-            <option value="Completed">Completed</option>
-            <option value="Cancelled">Cancelled</option>
-          </select>
+        {/* Status Filters */}
+        <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto">
+          {['All', 'Confirmed', 'Completed', 'Pending', 'Cancelled'].map((status) => (
+            <button
+              key={status}
+              onClick={() => setSelectedStatus(status)}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                selectedStatus === status
+                  ? 'bg-[#0B3A53] text-white shadow-2xs'
+                  : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'
+              }`}
+            >
+              {status}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Bookings Data Table */}
+      {/* Bookings Table */}
       <div className="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead>
-              <tr className="bg-slate-50 border-b border-slate-200/80 text-[10px] font-black uppercase tracking-wider text-slate-400">
+              <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-black uppercase tracking-wider text-slate-400">
                 <th className="py-4 px-5">Booking Ref</th>
-                <th className="py-4 px-5">Tourist</th>
-                <th className="py-4 px-5">Package / Destination</th>
-                <th className="py-4 px-5">Travel Date</th>
-                <th className="py-4 px-5">Travelers</th>
+                <th className="py-4 px-5">Traveler</th>
+                <th className="py-4 px-5">Service</th>
+                <th className="py-4 px-5">Type</th>
                 <th className="py-4 px-5">Amount</th>
+                <th className="py-4 px-5">Booking Date</th>
                 <th className="py-4 px-5">Status</th>
                 <th className="py-4 px-5 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 font-medium">
-              {filteredBookings.map((bkg) => (
-                <tr key={bkg.id} className="hover:bg-slate-50/80 transition-colors">
-                  <td className="py-4 px-5 font-mono font-bold text-[#0B3A53]">{bkg.bookingCode}</td>
-                  <td className="py-4 px-5">
-                    <div className="flex items-center gap-2.5">
-                      <img src={bkg.touristAvatar} alt="" className="w-7 h-7 rounded-full object-cover" />
-                      <div>
-                        <div className="font-extrabold text-[#0B3A53]">{bkg.touristName}</div>
-                        <div className="text-[10px] text-slate-400">{bkg.touristEmail}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="py-4 px-5">
-                    <div className="font-bold text-[#0B3A53] max-w-[200px] truncate">{bkg.packageName}</div>
-                    <div className="text-[10px] text-[#146C86] font-extrabold">{bkg.destinationName}</div>
-                  </td>
-                  <td className="py-4 px-5 text-slate-600">{bkg.travelDate}</td>
-                  <td className="py-4 px-5 font-bold text-[#0B3A53]">{bkg.travelersCount} Pax</td>
-                  <td className="py-4 px-5 font-black text-[#146C86]">${bkg.totalAmount}</td>
-                  <td className="py-4 px-5">
-                    <span
-                      className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase ${
-                        bkg.status === 'Confirmed'
-                          ? 'bg-emerald-100 text-emerald-700'
-                          : bkg.status === 'Pending'
-                          ? 'bg-amber-100 text-amber-700'
-                          : 'bg-rose-100 text-rose-700'
-                      }`}
-                    >
-                      {bkg.status}
-                    </span>
-                  </td>
-                  <td className="py-4 px-5 text-right">
-                    <button
-                      onClick={() => setActiveBookingModal(bkg)}
-                      className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-[#0B3A53] font-bold text-[11px] transition-colors cursor-pointer inline-flex items-center gap-1"
-                    >
-                      <Eye className="w-3.5 h-3.5" />
-                      <span>Details</span>
-                    </button>
-                  </td>
+              {loading ? (
+                <tr>
+                  <td colSpan={8} className="py-12 text-center text-slate-400">Loading bookings...</td>
                 </tr>
-              ))}
+              ) : bookings.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="py-12 text-center text-slate-400">No bookings found.</td>
+                </tr>
+              ) : (
+                bookings.map((b) => (
+                  <tr key={b.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="py-4 px-5 font-mono font-bold text-[#0B3A53]">{b.id}</td>
+                    <td className="py-4 px-5">
+                      <div className="font-extrabold text-slate-800">{b.customerName}</div>
+                      <div className="text-[11px] text-slate-400">{b.customerEmail}</div>
+                    </td>
+                    <td className="py-4 px-5 font-bold text-slate-800">{b.serviceName}</td>
+                    <td className="py-4 px-5">
+                      <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-slate-100 text-slate-700">
+                        {b.serviceType}
+                      </span>
+                    </td>
+                    <td className="py-4 px-5 font-black text-[#146C86]">${b.amount}</td>
+                    <td className="py-4 px-5 text-slate-500">
+                      {new Date(b.bookingDate || b.date || b.createdAt).toLocaleDateString()}
+                    </td>
+                    <td className="py-4 px-5">
+                      <span
+                        className={`px-3 py-1 rounded-full text-[10px] font-black uppercase inline-flex items-center gap-1 ${
+                          b.status === 'Confirmed'
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : b.status === 'Completed'
+                            ? 'bg-blue-100 text-blue-800'
+                            : b.status === 'Pending'
+                            ? 'bg-amber-100 text-amber-800'
+                            : 'bg-rose-100 text-rose-800'
+                        }`}
+                      >
+                        {b.status}
+                      </span>
+                    </td>
+                    <td className="py-4 px-5 text-right">
+                      <button
+                        onClick={() => setActiveBookingModal(b)}
+                        className="p-1.5 hover:bg-slate-100 text-slate-600 rounded-lg transition-colors cursor-pointer inline-flex items-center gap-1"
+                        title="View details"
+                      >
+                        <Eye className="w-4 h-4" />
+                        <span className="font-bold text-[11px]">Inspect</span>
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* BOOKING DETAILS & TIMELINE MODAL */}
+      {/* INSPECT BOOKING MODAL */}
       {activeBookingModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex justify-end animate-in fade-in duration-200">
-          <div className="bg-white w-full max-w-xl h-full p-6 sm:p-8 space-y-6 shadow-2xl flex flex-col justify-between overflow-y-auto">
-            <div className="space-y-6">
-              
-              {/* Header */}
-              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="font-black text-sm text-[#0B3A53]">Booking Record {activeBookingModal.id}</h3>
+                <span className="text-[10px] text-slate-400 font-bold uppercase">{activeBookingModal.serviceType}</span>
+              </div>
+              <button
+                onClick={() => setActiveBookingModal(null)}
+                className="text-slate-400 hover:text-slate-700 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div className="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-200">
                 <div>
-                  <span className="text-[10px] font-black uppercase text-[#16A6A1]">BOOKING SUMMARY</span>
-                  <h3 className="text-xl font-black text-[#0B3A53] font-heading">
-                    Booking #{activeBookingModal.bookingCode}
-                  </h3>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase">Customer</span>
+                  <div className="font-extrabold text-slate-800">{activeBookingModal.customerName}</div>
+                  <div className="text-[11px] text-slate-400">{activeBookingModal.customerEmail}</div>
                 </div>
-                <button
-                  onClick={() => setActiveBookingModal(null)}
-                  className="p-2 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors cursor-pointer"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              {/* Tourist Info Card */}
-              <div className="bg-slate-50 p-5 rounded-3xl border border-slate-200/80 space-y-3">
-                <div className="flex items-center gap-3">
-                  <img src={activeBookingModal.touristAvatar} alt="" className="w-12 h-12 rounded-full object-cover border" />
-                  <div>
-                    <h4 className="text-base font-black text-[#0B3A53]">{activeBookingModal.touristName}</h4>
-                    <p className="text-xs font-semibold text-slate-500">{activeBookingModal.touristEmail}</p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-slate-200">
-                  <div>
-                    <span className="text-slate-400 font-bold">Package:</span>
-                    <div className="font-extrabold text-[#0B3A53]">{activeBookingModal.packageName}</div>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 font-bold">Total Amount:</span>
-                    <div className="font-black text-[#146C86]">${activeBookingModal.totalAmount} ({activeBookingModal.paymentStatus})</div>
-                  </div>
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase">Total Paid</span>
+                  <div className="font-black text-[#146C86] text-base">${activeBookingModal.amount}</div>
                 </div>
               </div>
 
-              {/* Booking Timeline */}
-              <div className="space-y-3">
-                <h4 className="text-xs font-black uppercase text-[#0B3A53]">Reservation Timeline</h4>
-                <div className="space-y-3 pl-2 text-xs">
-                  {activeBookingModal.timeline.map((step, idx) => (
-                    <div key={idx} className="flex items-start gap-3 relative">
-                      <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 ${
-                        step.status === 'completed' ? 'bg-[#16A6A1] text-white' : 'bg-slate-200 text-slate-500'
-                      }`}>
-                        ✓
-                      </div>
-                      <div>
-                        <div className="font-extrabold text-[#0B3A53]">{step.title}</div>
-                        <div className="text-[10px] text-slate-400 font-medium">{step.timestamp}</div>
-                      </div>
-                    </div>
+              <div>
+                <span className="font-bold text-slate-700">Reserved Service</span>
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 font-semibold text-slate-800 mt-1">
+                  {activeBookingModal.serviceName}
+                </div>
+              </div>
+
+              <div>
+                <span className="font-bold text-slate-700 block mb-1">Update Booking Status</span>
+                <div className="flex gap-2">
+                  {['Confirmed', 'Completed', 'Cancelled'].map((st) => (
+                    <button
+                      key={st}
+                      onClick={() => handleUpdateStatus(activeBookingModal.id, st)}
+                      className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        activeBookingModal.status === st
+                          ? 'bg-[#16A6A1] text-white shadow-2xs'
+                          : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                      }`}
+                    >
+                      {st}
+                    </button>
                   ))}
                 </div>
               </div>
-
             </div>
 
-            {/* Actions */}
-            <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-3">
+            <div className="flex justify-end pt-2">
               <button
-                onClick={() => handleUpdateStatus(activeBookingModal.id, 'Cancelled')}
-                className="px-5 py-2.5 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs cursor-pointer"
+                onClick={() => setActiveBookingModal(null)}
+                className="px-5 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-xl text-xs font-bold cursor-pointer"
               >
-                Cancel Booking
-              </button>
-              <button
-                onClick={() => handleUpdateStatus(activeBookingModal.id, 'Confirmed')}
-                className="px-6 py-2.5 rounded-full bg-[#0B3A53] hover:bg-[#072537] text-white font-extrabold text-xs uppercase tracking-wider shadow-md cursor-pointer"
-              >
-                Confirm Booking
+                Close
               </button>
             </div>
           </div>

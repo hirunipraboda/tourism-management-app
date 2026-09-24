@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import {
   Compass,
   Search,
@@ -13,6 +13,10 @@ import {
   Eye,
   TrendingUp,
   Globe,
+  Upload,
+  Trash2,
+  Link,
+  ImageIcon,
 } from 'lucide-react';
 import { adminService } from '../../services/adminService';
 import { AdminDestination } from '../../mock/mockAdminData';
@@ -29,10 +33,88 @@ export const AdminDestinationsPage: React.FC = () => {
   const [province, setProvince] = useState('Central Province');
   const [category, setCategory] = useState<AdminDestination['category']>('Cultural');
   const [location, setLocation] = useState('');
-  const [coverImage, setCoverImage] = useState('https://images.unsplash.com/photo-1588598056972-2d12f6a73c1d?auto=format&fit=crop&w=800&q=80');
+  const [coverImage, setCoverImage] = useState('');
+  const [imageInputMode, setImageInputMode] = useState<'upload' | 'url'>('upload');
+  const [uploadedImagePreview, setUploadedImagePreview] = useState<string | null>(null);
+  const [uploadedFileName, setUploadedFileName] = useState<string>('');
+  const [uploadedFileSize, setUploadedFileSize] = useState<string>('');
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [description, setDescription] = useState('');
   const [accessibility, setAccessibility] = useState('Highway & Rail Connected');
   const [bestTimeToVisit, setBestTimeToVisit] = useState('December to April');
+
+  const handleImageFile = (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      alert('Please select a valid image file (PNG, JPG, WEBP, etc.)');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      alert('File size exceeds 10MB limit.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        setUploadedImagePreview(reader.result);
+        setCoverImage(reader.result);
+        setUploadedFileName(file.name);
+        setUploadedFileSize((file.size / (1024 * 1024)).toFixed(2) + ' MB');
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleImageFile(file);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      handleImageFile(file);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setUploadedImagePreview(null);
+    setUploadedFileName('');
+    setUploadedFileSize('');
+    setCoverImage('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const resetForm = () => {
+    setName('');
+    setLocation('');
+    setDescription('');
+    setCoverImage('');
+    setUploadedImagePreview(null);
+    setUploadedFileName('');
+    setUploadedFileSize('');
+    setImageInputMode('upload');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   const filteredDestinations = useMemo(() => {
     return destinations.filter((d) => {
@@ -69,9 +151,7 @@ export const AdminDestinationsPage: React.FC = () => {
 
     setDestinations([created, ...destinations]);
     setIsAddModalOpen(false);
-    setName('');
-    setLocation('');
-    setDescription('');
+    resetForm();
   };
 
   return (
@@ -285,7 +365,10 @@ export const AdminDestinationsPage: React.FC = () => {
             <div className="flex items-center justify-between border-b border-slate-100 pb-4">
               <h3 className="text-xl font-black text-[#0B3A53] font-heading">Add New Destination</h3>
               <button
-                onClick={() => setIsAddModalOpen(false)}
+                onClick={() => {
+                  setIsAddModalOpen(false);
+                  resetForm();
+                }}
                 className="p-2 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
@@ -346,15 +429,144 @@ export const AdminDestinationsPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="space-y-1">
-                <label className="text-slate-600 font-bold block">Cover Image URL</label>
+              {/* Destination Cover Image */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-slate-600 font-bold block">Cover Image</label>
+                  
+                  {/* Selector Tabs: Upload File / Image URL */}
+                  <div className="flex items-center bg-slate-100 p-0.5 rounded-xl text-[11px] font-bold">
+                    <button
+                      type="button"
+                      onClick={() => setImageInputMode('upload')}
+                      className={`px-3 py-1 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+                        imageInputMode === 'upload'
+                          ? 'bg-white text-[#0B3A53] shadow-xs'
+                          : 'text-slate-500 hover:text-slate-700'
+                      }`}
+                    >
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>Upload File</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setImageInputMode('url')}
+                      className={`px-3 py-1 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+                        imageInputMode === 'url'
+                          ? 'bg-white text-[#0B3A53] shadow-xs'
+                          : 'text-slate-500 hover:text-slate-700'
+                      }`}
+                    >
+                      <Link className="w-3.5 h-3.5" />
+                      <span>Image URL</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Hidden File Input */}
                 <input
-                  type="text"
-                  value={coverImage}
-                  onChange={(e) => setCoverImage(e.target.value)}
-                  placeholder="https://images.unsplash.com/..."
-                  className="w-full p-3 rounded-2xl bg-slate-50 border border-slate-200 font-medium text-slate-700 focus:bg-white focus:border-[#16A6A1] focus:outline-none"
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileInputChange}
+                  className="hidden"
                 />
+
+                {imageInputMode === 'upload' ? (
+                  uploadedImagePreview ? (
+                    <div className="relative rounded-2xl border border-teal-200 bg-teal-50/40 p-3 overflow-hidden">
+                      <div className="flex items-center gap-4">
+                        <div className="relative w-28 h-20 rounded-xl overflow-hidden shadow-inner border border-slate-200 shrink-0 bg-slate-100">
+                          <img
+                            src={uploadedImagePreview}
+                            alt="Uploaded preview"
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0 space-y-1">
+                          <div className="flex items-center gap-1.5 text-[#16A6A1] font-bold text-xs">
+                            <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                            <span>Image uploaded successfully</span>
+                          </div>
+                          <p className="text-slate-700 font-semibold truncate text-xs">
+                            {uploadedFileName || 'Uploaded destination cover photo'}
+                          </p>
+                          {uploadedFileSize && (
+                            <p className="text-slate-400 text-[10px] font-medium">{uploadedFileSize}</p>
+                          )}
+                          <div className="flex items-center gap-2 pt-1">
+                            <button
+                              type="button"
+                              onClick={() => fileInputRef.current?.click()}
+                              className="text-[11px] font-bold text-[#0B3A53] hover:text-[#16A6A1] cursor-pointer underline transition-colors"
+                            >
+                              Change photo
+                            </button>
+                            <span className="text-slate-300">•</span>
+                            <button
+                              type="button"
+                              onClick={handleRemoveImage}
+                              className="text-[11px] font-bold text-rose-500 hover:text-rose-700 cursor-pointer flex items-center gap-1 transition-colors"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                              <span>Remove</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                      onDrop={handleDrop}
+                      onClick={() => fileInputRef.current?.click()}
+                      className={`border-2 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-200 ${
+                        isDragging
+                          ? 'border-[#16A6A1] bg-teal-50/60 scale-[1.01]'
+                          : 'border-slate-200 hover:border-[#16A6A1] bg-slate-50/70 hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className="w-12 h-12 rounded-2xl bg-teal-50 border border-teal-100 flex items-center justify-center mb-2.5 text-[#16A6A1]">
+                        <Upload className="w-6 h-6" />
+                      </div>
+                      <p className="text-xs font-bold text-[#0B3A53]">
+                        Click to browse or drag & drop an image here
+                      </p>
+                      <p className="text-[11px] text-slate-400 mt-1 font-medium">
+                        Supports PNG, JPG, JPEG, WEBP (Max 10MB)
+                      </p>
+                    </div>
+                  )
+                ) : (
+                  <div className="space-y-2">
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={coverImage}
+                        onChange={(e) => setCoverImage(e.target.value)}
+                        placeholder="https://images.unsplash.com/photo-..."
+                        className="w-full p-3 pl-9 rounded-2xl bg-slate-50 border border-slate-200 font-medium text-slate-700 focus:bg-white focus:border-[#16A6A1] focus:outline-none text-xs"
+                      />
+                      <Link className="w-4 h-4 text-slate-400 absolute left-3 top-3.5" />
+                    </div>
+                    {coverImage && (
+                      <div className="relative w-full h-28 rounded-2xl overflow-hidden border border-slate-200 bg-slate-100">
+                        <img
+                          src={coverImage}
+                          alt="Cover preview"
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1588598056972-2d12f6a73c1d?auto=format&fit=crop&w=800&q=80';
+                          }}
+                        />
+                        <div className="absolute top-2 right-2 bg-slate-900/60 backdrop-blur-xs text-white text-[10px] px-2 py-0.5 rounded-full font-bold">
+                          Live Preview
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="space-y-1">
@@ -371,7 +583,10 @@ export const AdminDestinationsPage: React.FC = () => {
               <div className="pt-4 flex items-center justify-between border-t border-slate-100">
                 <button
                   type="button"
-                  onClick={() => setIsAddModalOpen(false)}
+                  onClick={() => {
+                    setIsAddModalOpen(false);
+                    resetForm();
+                  }}
                   className="px-6 py-3 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs cursor-pointer"
                 >
                   Cancel

@@ -9,7 +9,6 @@ export interface NOVAGuideMessage {
   imageCaption?: string;
   suggestions?: string[];
   recommendedPackage?: TravelPackage;
-  showPickMePartnerCard?: boolean;
 }
 
 export class NOVAGuideService {
@@ -27,8 +26,6 @@ export class NOVAGuideService {
     let replyText = '';
     let suggestions: string[] = [];
     let recommendedPackage: TravelPackage | undefined = undefined;
-
-    let showPickMePartnerCard = false;
 
     // 1. IMAGE-BASED ANALYSIS
     if (imageFileOrUrl) {
@@ -81,13 +78,14 @@ export class NOVAGuideService {
         ];
       }
     } 
-    // 2. TRANSPORT & PICKME PARTNER QUERIES
+    // 2. TRANSPORT & PUBLIC MOBILITY QUERIES
     else if (
-      textLower.includes('pickme') ||
       textLower.includes('ride') ||
       textLower.includes('transport') ||
       textLower.includes('taxi') ||
       textLower.includes('cab') ||
+      textLower.includes('bus') ||
+      textLower.includes('train') ||
       textLower.includes('colombo to galle') ||
       textLower.includes('get to sigiriya') ||
       textLower.includes('around kandy') ||
@@ -96,10 +94,8 @@ export class NOVAGuideService {
       textLower.includes('best transport option') ||
       textLower.includes('get around')
     ) {
-      replyText = `For a convenient private journey, you can arrange transportation through our partner PickMe.`;
-      showPickMePartnerCard = true;
+      replyText = `For convenient island travel across Sri Lanka, you can utilize the scenic Sri Lanka Railways network (like the world-famous Kandy to Ella train), public express highway buses, or book private licensed chauffeur vehicles for flexible multi-day exploration.`;
       suggestions = [
-        'Get 20% Off with PickMe',
         'How to book train tickets?',
         '🗺 Plan a 1-day itinerary',
         '📍 Recommended places to visit'
@@ -136,7 +132,7 @@ export class NOVAGuideService {
         'How do I travel around?'
       ];
     } else {
-      replyText = `Hello! I'm **NOVA Guide**, your AI travel companion. 🤖✨\n\nI can answer questions about Sri Lanka's destinations, identify uploaded photos of landmarks or food, generate day itineraries, suggest travel packages within your budget, recommend PickMe transport discounts, and help you navigate local culture. What would you like to discover today?`;
+      replyText = `Hello! I'm **NOVA Guide**, your AI travel companion. 🤖✨\n\nI can answer questions about Sri Lanka's destinations, identify uploaded photos of landmarks or food, generate day itineraries, suggest travel packages within your budget, and help you navigate local culture. What would you like to discover today?`;
       suggestions = [
         '📸 Identify an uploaded image',
         '🚗 What\'s the easiest way to get from Colombo to Galle?',
@@ -151,8 +147,7 @@ export class NOVAGuideService {
       text: replyText,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       suggestions,
-      recommendedPackage,
-      showPickMePartnerCard
+      recommendedPackage
     };
   }
 }

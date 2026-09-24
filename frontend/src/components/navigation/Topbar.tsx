@@ -31,7 +31,10 @@ export const Topbar: React.FC<TopbarProps> = ({ onToggleMobileSidebar, title }) 
       label: 'Sign Out',
       icon: <LogOut className="w-4 h-4" />,
       danger: true,
-      onClick: logout,
+      onClick: () => {
+        logout();
+        navigate('/login');
+      },
     },
   ];
 

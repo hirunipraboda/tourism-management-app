@@ -385,7 +385,7 @@ export const PublicTransportExplorer: React.FC<PublicTransportExplorerProps> = (
           <h4 className="text-base font-black text-slate-800">No public transit schedules found for this route</h4>
           <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
             {hasSearched
-              ? `No direct public transport matches found between "${origin}" and "${destination}". Try searching between major hubs like "Colombo Fort", "Kandy", "Galle", or choose PickMe private mobility.`
+              ? `No direct public transport matches found between "${origin}" and "${destination}". Try searching between major hubs like "Colombo Fort", "Kandy", "Galle", or choose private driver mobility.`
               : 'Enter an origin and destination above and click "Search Live Schedules" to find train and bus options.'}
           </p>
         </div>

@@ -53,7 +53,6 @@ import {
   AccommodationType,
   ActivityItem,
 } from '../mock/manualPlannerData';
-import pickmeLogoImg from '../assets/pickme-logo.png';
 
 // Scheduled Activity in Itinerary
 export interface ScheduledActivity {
@@ -83,7 +82,7 @@ export const ManualTripPlannerPage: React.FC = () => {
   // 1: Trip Details & Destinations
   // 2: Accommodation Preferences & Hotels/Cabanas
   // 3: Travel Styles & Preferences
-  // 4: Transportation & PickMe Integration
+  // 4: Transportation & Mobility Selection
   // 5: Drag-and-Drop Itinerary Builder & AI Recommendations
   // 6: Trip Review & Finalize
   const [step, setStep] = useState<number>(1);
@@ -167,106 +166,11 @@ export const ManualTripPlannerPage: React.FC = () => {
   };
 
   // ----------------------------------------------------
-  // STEP 4: TRANSPORTATION (PICKME & PUBLIC TRANSPORT)
+  // STEP 4: TRANSPORTATION & MOBILITY
   // ----------------------------------------------------
-  const [transportMode, setTransportMode] = useState<'PICKME' | 'PUBLIC_TRANSPORT'>('PICKME');
+  const [transportMode, setTransportMode] = useState<'PUBLIC_TRANSPORT' | 'PRIVATE'>('PUBLIC_TRANSPORT');
   const [selectedPublicTransport, setSelectedPublicTransport] = useState<TransportOption | null>(null);
-  const [usePickMeTransport, setUsePickMeTransport] = useState<boolean>(false);
-  const [pickMePassApplied, setPickMePassApplied] = useState<boolean>(false);
-  const [userPromoCode, setUserPromoCode] = useState<string>(''); // Hidden until card payment is done
-  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState<boolean>(false);
-  const [isProcessingPayment, setIsProcessingPayment] = useState<boolean>(false);
-  const [paymentSuccess, setPaymentSuccess] = useState<boolean>(false);
-  const [paymentTxnId, setPaymentTxnId] = useState<string>('');
-  const [copiedCode, setCopiedCode] = useState<boolean>(false);
-
-  // Card Payment Form states (Card option only)
-  const [cardHolder, setCardHolder] = useState<string>('');
-  const [cardNumber, setCardNumber] = useState<string>('');
-  const [cardExpiry, setCardExpiry] = useState<string>('');
-  const [cardCvv, setCardCvv] = useState<string>('');
-  const [cardError, setCardError] = useState<string>('');
-
-  // Suggested amount calculated according to the number of days for the trip:
-  // e.g. $2.50 per day (minimum $5.00)
-  const suggestedPassFee = useMemo(() => {
-    const days = durationDays > 0 ? durationDays : 3;
-    return Math.max(5, Math.round(days * 2.5 * 100) / 100);
-  }, [durationDays]);
-
-  // Generates a unique promo code for each paying user
-  const generateUniquePromoCode = () => {
-    const chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
-    let rand = '';
-    for (let i = 0; i < 6; i++) {
-      rand += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return `PICKME-${rand}`;
-  };
-
-  const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value.replace(/\D/g, '').slice(0, 16);
-    const formatted = val.replace(/(\d{4})/g, '$1 ').trim();
-    setCardNumber(formatted);
-  };
-
-  const handleExpiryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let val = e.target.value.replace(/\D/g, '').slice(0, 4);
-    if (val.length >= 3) {
-      val = `${val.slice(0, 2)}/${val.slice(2)}`;
-    }
-    setCardExpiry(val);
-  };
-
-  const handleCvvChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value.replace(/\D/g, '').slice(0, 4);
-    setCardCvv(val);
-  };
-
-  const handleAutoFillDemoCard = () => {
-    setCardHolder('Alex Morgan');
-    setCardNumber('4242 4242 4242 4242');
-    setCardExpiry('12/28');
-    setCardCvv('888');
-    setCardError('');
-  };
-
-  const handleProcessCardPayment = (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    setCardError('');
-
-    const rawNum = cardNumber.replace(/\s/g, '');
-    if (!cardHolder.trim()) {
-      setCardError('Please enter the cardholder name.');
-      return;
-    }
-    if (rawNum.length < 15) {
-      setCardError('Please enter a valid 15 or 16-digit card number.');
-      return;
-    }
-    if (cardExpiry.length < 5) {
-      setCardError('Please enter card expiry date (MM/YY).');
-      return;
-    }
-    if (cardCvv.length < 3) {
-      setCardError('Please enter card CVV (3-4 digits).');
-      return;
-    }
-
-    setIsProcessingPayment(true);
-    setTimeout(() => {
-      const generatedCode = generateUniquePromoCode();
-      const txn = `TXN-${Math.floor(100000 + Math.random() * 900000)}`;
-      
-      setUserPromoCode(generatedCode);
-      setPaymentTxnId(txn);
-      setPickMePassApplied(true);
-      setUsePickMeTransport(true);
-      setIsProcessingPayment(false);
-      setPaymentSuccess(true);
-      triggerToast(`Payment successful! Unique promo code ${generatedCode} activated.`);
-    }, 1200);
-  };
+  const [privateVehicleType, setPrivateVehicleType] = useState<string>('AC Sedan');
 
   // ----------------------------------------------------
   // STEP 5: ITINERARY BUILDER (DRAG & DROP + AI RECOMMENDATIONS)
@@ -469,12 +373,10 @@ export const ManualTripPlannerPage: React.FC = () => {
         : 6 * totalPax;
       return fareUSD;
     }
-    if (durationDays <= 0 || (!usePickMeTransport && !pickMePassApplied)) return 0;
-    const baseRideAllowance = durationDays * 25; // ~$25 per day estimated rides
-    const promoDiscount = pickMePassApplied ? baseRideAllowance * 0.2 : 0;
-    const passCost = pickMePassApplied ? suggestedPassFee : 0;
-    return Math.round(baseRideAllowance - promoDiscount + passCost);
-  }, [durationDays, usePickMeTransport, pickMePassApplied, suggestedPassFee, transportMode, selectedPublicTransport, adultsCount, childrenCount]);
+    if (durationDays <= 0) return 0;
+    const ratePerDay = privateVehicleType === 'Tourist Van' ? 55 : privateVehicleType === 'Luxury SUV' ? 75 : 35;
+    return durationDays * ratePerDay;
+  }, [durationDays, transportMode, selectedPublicTransport, privateVehicleType, adultsCount, childrenCount]);
 
   const taxesAndFees = Math.round((totalAccommodationCost + totalActivityCost + estimatedTransportCost) * 0.08); // 8% government tourism VAT/levy
   const totalEstimatedTripCost = totalAccommodationCost + totalActivityCost + estimatedTransportCost + taxesAndFees;
@@ -545,11 +447,7 @@ export const ManualTripPlannerPage: React.FC = () => {
             ? `Public Transport (${selectedPublicTransport.transportType === 'BUS' ? `Bus Route ${selectedPublicTransport.routeNumber || ''}` : `Train ${selectedPublicTransport.trainNumber || ''}`}: ${selectedPublicTransport.origin} to ${selectedPublicTransport.destination}, Fare: LKR ${(selectedPublicTransport.estimatedFare || 0).toLocaleString()})`
             : transportMode === 'PUBLIC_TRANSPORT'
             ? 'Public Transport (Self-arranged Bus / Train)'
-            : pickMePassApplied
-            ? `PickMe Ride-Hailing (Promo Code: ${userPromoCode || 'PICKME-TOURIST'})`
-            : usePickMeTransport
-            ? 'PickMe Ride-Hailing'
-            : 'Private Transport'
+            : `Private Transport (${privateVehicleType})`
         }.`,
         weatherForecast: '27°C · Pleasant & Tropical',
         progress: {
@@ -1183,7 +1081,7 @@ export const ManualTripPlannerPage: React.FC = () => {
                 }}
                 className="inline-flex items-center gap-2 bg-[#16A6A1] hover:bg-[#146C86] text-white font-extrabold text-xs uppercase tracking-wider px-8 py-4 rounded-full shadow-lg hover:shadow-xl transition-all"
               >
-                <span>Next: Transportation & PickMe</span>
+                <span>Next: Transportation & Mobility</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
@@ -1191,7 +1089,7 @@ export const ManualTripPlannerPage: React.FC = () => {
         )}
 
         {/* ========================================================================= */}
-        {/* STEP 4: TRANSPORTATION & PICKME INTEGRATION                               */}
+        {/* STEP 4: TRANSPORTATION & MOBILITY                                         */}
         {/* ========================================================================= */}
         {step === 4 && (
           <div className="space-y-8 animate-in fade-in duration-200">
@@ -1201,52 +1099,13 @@ export const ManualTripPlannerPage: React.FC = () => {
                   <Car className="w-5 h-5 text-[#16A6A1]" /> Transportation & Local Mobility
                 </h2>
                 <p className="text-xs text-slate-500 mt-1">
-                  Choose how you'd like to get around during your holiday. Pick island-wide ride-hailing (PickMe) or explore authentic Public Transport (Intercity Buses & Sri Lanka Railways scenic trains).
+                  Choose how you'd like to get around during your holiday. Explore authentic Public Transport (Intercity Buses & Sri Lanka Railways scenic trains) or arrange dedicated Private Transport.
                 </p>
               </div>
 
               {/* Transport Mode Switcher Tabs */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Mode 1: PickMe / Private Transport */}
-                <button
-                  type="button"
-                  onClick={() => setTransportMode('PICKME')}
-                  className={`p-5 rounded-2xl border-2 text-left transition-all relative flex flex-col justify-between cursor-pointer ${
-                    transportMode === 'PICKME'
-                      ? 'border-amber-400 bg-amber-50/70 shadow-md ring-2 ring-amber-400/20'
-                      : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/50'
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-3 mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-xl bg-amber-400/20 text-amber-900 flex items-center justify-center shrink-0">
-                        <Car className="w-6 h-6 text-amber-700" />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-extrabold text-slate-900 text-base">1. PickMe / Private Transport</h3>
-                          {pickMePassApplied && (
-                            <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                              Pass Active
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs text-slate-500">Tuk-tuks, metered cars & airport transfers</p>
-                      </div>
-                    </div>
-                    {transportMode === 'PICKME' && (
-                      <span className="w-6 h-6 rounded-full bg-amber-500 text-white flex items-center justify-center text-xs shrink-0">
-                        <Check className="w-3.5 h-3.5" />
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-xs text-slate-600 bg-white/80 rounded-xl p-3 border border-amber-200/70 space-y-1">
-                    <span className="font-bold text-amber-950 block">Features:</span>
-                    <span>Door-to-door island mobility, live GPS meters, and an exclusive 20% tourist promo pass.</span>
-                  </div>
-                </button>
-
-                {/* Mode 2: Public Transport (Bus & Train) */}
+                {/* Mode 1: Public Transport (Bus & Train) */}
                 <button
                   type="button"
                   onClick={() => setTransportMode('PUBLIC_TRANSPORT')}
@@ -1266,7 +1125,7 @@ export const ManualTripPlannerPage: React.FC = () => {
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <h3 className="font-extrabold text-slate-900 text-base">2. Public Transport</h3>
+                          <h3 className="font-extrabold text-slate-900 text-base">1. Public Transport</h3>
                           {selectedPublicTransport && (
                             <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-teal-100 text-teal-800">
                               Option Selected
@@ -1287,171 +1146,72 @@ export const ManualTripPlannerPage: React.FC = () => {
                     <span>Subsidized local fares, verified timetables, route intermediate stops, and mountain railways.</span>
                   </div>
                 </button>
-              </div>
 
-              {/* Mode 1 Content: PickMe & Promo Code Pass */}
-              {transportMode === 'PICKME' && (
-                <div className="space-y-6 pt-2">
-                  <div className="relative overflow-hidden bg-gradient-to-br from-amber-400 via-amber-300 to-yellow-400 border-2 border-amber-400 rounded-3xl p-6 sm:p-8 shadow-md">
-                    <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
-                      <div className="space-y-3 max-w-2xl">
-                        <div className="flex items-center gap-2.5">
-                          <div className="h-9 px-3 bg-slate-950 rounded-xl flex items-center justify-center shadow-sm">
-                            <img src={pickmeLogoImg} alt="PickMe" className="h-7 w-auto object-contain brightness-110" />
-                          </div>
-                          <span className="text-xs font-black uppercase tracking-wider bg-white/85 backdrop-blur-sm px-3 py-1.5 rounded-full text-slate-900 border border-amber-300">
-                            Official Sri Lanka Mobility Partner
+                {/* Mode 2: Private Transport */}
+                <button
+                  type="button"
+                  onClick={() => setTransportMode('PRIVATE')}
+                  className={`p-5 rounded-2xl border-2 text-left transition-all relative flex flex-col justify-between cursor-pointer ${
+                    transportMode === 'PRIVATE'
+                      ? 'border-[#16A6A1] bg-teal-50/60 shadow-md ring-2 ring-[#16A6A1]/20'
+                      : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/50'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center shrink-0">
+                        <Car className="w-6 h-6 text-[#16A6A1]" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-extrabold text-slate-900 text-base">2. Private Transport</h3>
+                          <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-slate-200 text-slate-800">
+                            {privateVehicleType}
                           </span>
                         </div>
-
-                        <h3 className="text-2xl font-black text-slate-950 leading-tight">
-                          Use PickMe App for Seamless Island Mobility
-                        </h3>
-                        <p className="text-xs sm:text-sm text-slate-800 font-medium leading-relaxed">
-                          PickMe is Sri Lanka's #1 ride-hailing app with thousands of verified drivers. Access metered <strong>Tuk-Tuks, Air-Conditioned Cars, Multi-Seat Vans, and Airport Pickups</strong> at clear, fixed rates in Colombo, Kandy, Galle, Mirissa, and beyond.
-                        </p>
-
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-2 text-xs font-extrabold text-slate-900">
-                          <span className="flex items-center gap-1.5">🛺 Instant Tuk-Tuk Hail</span>
-                          <span className="flex items-center gap-1.5">📍 Live GPS Meter</span>
-                          <span className="flex items-center gap-1.5">💳 Cash or Card</span>
-                          <span className="flex items-center gap-1.5">🛡️ 24/7 Safety SOS</span>
-                          <span className="flex items-center gap-1.5">✈️ Airport Fixed Transfer</span>
-                          <span className="flex items-center gap-1.5">⭐ English-speaking Drivers</span>
-                        </div>
-                      </div>
-
-                      {/* Promo Pass Eligibility Box */}
-                      <div className="w-full lg:w-84 bg-white/95 backdrop-blur-md rounded-2xl p-5 border border-amber-200 shadow-md space-y-4 shrink-0">
-                        <div className="flex items-center justify-between border-b border-slate-200 pb-3">
-                          <div>
-                            <span className="text-[10px] font-black uppercase text-amber-900 block">PROMO CODE PASS</span>
-                            <span className="text-sm font-black text-slate-950">20% Off 5 Rides</span>
-                          </div>
-                          {pickMePassApplied ? (
-                            <span className="text-xs font-black text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                              <Check className="w-3 h-3" /> Active & Claimed
-                            </span>
-                          ) : (
-                            <span className="text-xs font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full flex items-center gap-1">
-                              <Lock className="w-3 h-3 text-amber-700" /> Card Payment Req.
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-1.5">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-extrabold text-slate-400 block uppercase">
-                              {pickMePassApplied ? 'Your Unique Promo Code' : 'Eligible Voucher Code'}
-                            </span>
-                            {pickMePassApplied && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  navigator.clipboard.writeText(userPromoCode);
-                                  setCopiedCode(true);
-                                  setTimeout(() => setCopiedCode(false), 2000);
-                                  triggerToast('Unique promo code copied to clipboard!');
-                                }}
-                                className="text-[11px] font-bold text-[#16A6A1] hover:text-[#146C86] flex items-center gap-1 cursor-pointer"
-                              >
-                                {copiedCode ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
-                                <span>{copiedCode ? 'Copied!' : 'Copy'}</span>
-                              </button>
-                            )}
-                          </div>
-
-                          {pickMePassApplied ? (
-                            <div className="flex items-center justify-between">
-                              <span className="text-base font-black tracking-widest text-emerald-700 font-mono">
-                                {userPromoCode}
-                              </span>
-                              <span className="text-[9px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded">
-                                Unique
-                              </span>
-                            </div>
-                          ) : (
-                            <div className="flex items-center justify-between py-0.5">
-                              <span className="text-base font-black tracking-widest text-slate-400 font-mono select-none">
-                                •••• •••• ••••
-                              </span>
-                              <span className="text-[10px] text-slate-500 font-bold flex items-center gap-1 bg-slate-200/80 px-2 py-0.5 rounded">
-                                <Lock className="w-3 h-3 text-slate-500" /> Locked
-                              </span>
-                            </div>
-                          )}
-                        </div>
-
-                        <p className="text-[11px] text-slate-600 leading-relaxed">
-                          {pickMePassApplied ? (
-                            <span>
-                              Promo code unlocked and assigned! Use your unique code <strong className="text-emerald-800">{userPromoCode}</strong> in the PickMe Sri Lanka app for 20% savings.
-                            </span>
-                          ) : (
-                            <span>
-                              Pay suggested amount <strong className="text-slate-900 font-bold">${suggestedPassFee.toFixed(2)}</strong> ({durationDays > 0 ? durationDays : 3} days × $2.50/day) via credit/debit card to unlock your unique promo code. Code remains strictly hidden until card payment is completed.
-                            </span>
-                          )}
-                        </p>
-
-                        <div className="space-y-2 pt-1">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setIsPaymentModalOpen(true);
-                            }}
-                            className={`w-full py-3 px-4 font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                              pickMePassApplied
-                                ? 'bg-emerald-700 hover:bg-emerald-800 text-white'
-                                : 'bg-slate-950 hover:bg-black text-white'
-                            }`}
-                          >
-                            {pickMePassApplied ? (
-                              <>
-                                <Check className="w-4 h-4" />
-                                <span>Promo Claimed (${suggestedPassFee.toFixed(2)}) · View Pass</span>
-                              </>
-                            ) : (
-                              <>
-                                <CreditCard className="w-4 h-4 text-amber-300" />
-                                <span>Apply for PickMe Offer (${suggestedPassFee.toFixed(2)})</span>
-                              </>
-                            )}
-                          </button>
-
-                          <a
-                            href="https://pickme.lk/"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="w-full py-2.5 px-4 bg-white hover:bg-slate-50 text-slate-900 font-extrabold text-xs uppercase tracking-wider rounded-xl border border-amber-300 flex items-center justify-center gap-1.5 text-center transition-colors"
-                          >
-                            <span>Get the PickMe App</span>
-                            <ExternalLink className="w-3.5 h-3.5 text-slate-500" />
-                          </a>
-                        </div>
+                        <p className="text-xs text-slate-500">Dedicated licensed chauffeur vehicle</p>
                       </div>
                     </div>
-                  </div>
-
-                  {/* Standard Transport Option Toggle */}
-                  <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <span className="font-bold text-slate-900 text-sm block">Use PickMe as Primary Mobility</span>
-                      <span className="text-xs text-slate-500">
-                        Switch to self-arranged or private driver transport anytime.
+                    {transportMode === 'PRIVATE' && (
+                      <span className="w-6 h-6 rounded-full bg-[#16A6A1] text-white flex items-center justify-center text-xs shrink-0">
+                        <Check className="w-3.5 h-3.5" />
                       </span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setUsePickMeTransport(!usePickMeTransport)}
-                      className={`px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
-                        usePickMeTransport
-                          ? 'bg-[#16A6A1] text-white'
-                          : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
-                      }`}
-                    >
-                      {usePickMeTransport ? 'Enabled' : 'Disabled / Private Transport'}
-                    </button>
+                    )}
+                  </div>
+                  <div className="text-xs text-slate-600 bg-white/80 rounded-xl p-3 border border-slate-200 space-y-1">
+                    <span className="font-bold text-[#0B3A53] block">Features:</span>
+                    <span>Door-to-door flexibility, English-speaking driver, luggage space, and air conditioning.</span>
+                  </div>
+                </button>
+              </div>
+
+              {/* Mode 1 Content: Private Transport Options */}
+              {transportMode === 'PRIVATE' && (
+                <div className="space-y-4 pt-2">
+                  <h3 className="font-extrabold text-slate-900 text-sm">Select Vehicle Category</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    {[
+                      { type: 'AC Sedan', pax: '3 Pax', rate: '$35/day', desc: 'Compact sedan with AC, ideal for couples or solo travelers.' },
+                      { type: 'Tourist Van', pax: '7 Pax', rate: '$55/day', desc: 'Spacious high-roof mini-van, perfect for families and small groups.' },
+                      { type: 'Luxury SUV', pax: '4 Pax', rate: '$75/day', desc: 'Premium 4WD SUV with extra comfort for hill-country touring.' },
+                    ].map((v) => (
+                      <div
+                        key={v.type}
+                        onClick={() => setPrivateVehicleType(v.type)}
+                        className={`p-4 rounded-2xl border-2 transition-all cursor-pointer space-y-2 ${
+                          privateVehicleType === v.type
+                            ? 'border-[#16A6A1] bg-teal-50/50 shadow-sm'
+                            : 'border-slate-200 bg-white hover:border-slate-300'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-slate-900 text-sm">{v.type}</span>
+                          <span className="text-[10px] font-black uppercase text-slate-500">{v.pax}</span>
+                        </div>
+                        <div className="text-base font-black text-[#146C86]">{v.rate}</div>
+                        <p className="text-xs text-slate-500">{v.desc}</p>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
@@ -1987,33 +1747,18 @@ export const ManualTripPlannerPage: React.FC = () => {
                       Select Bus/Train
                     </button>
                   </div>
-                ) : pickMePassApplied ? (
-                  <div className="bg-amber-50 border border-amber-300 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <img src={pickmeLogoImg} alt="PickMe" className="h-5 w-auto object-contain" />
-                      <div>
-                        <span className="text-xs font-extrabold text-amber-950 block">PickMe App 20% Discount Pass Applied (${suggestedPassFee.toFixed(2)} Paid)</span>
-                        <span className="text-[11px] text-amber-800">
-                          Eligible for 20% off 5 island-wide rides using your unique promo code <strong>{userPromoCode || 'PICKME-PASS'}</strong>
-                        </span>
-                      </div>
-                    </div>
-                    <span className="text-xs font-black text-amber-950 bg-amber-200 px-3 py-1 rounded-full self-start sm:self-auto font-mono">
-                      {userPromoCode || 'PICKME-PASS'}
-                    </span>
-                  </div>
                 ) : (
                   <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex items-center justify-between">
                     <div>
-                      <span className="text-xs font-extrabold text-slate-700 block">Self-Arranged / Private Transport</span>
-                      <span className="text-[11px] text-slate-500">PickMe promotional mobility pass was not selected.</span>
+                      <span className="text-xs font-extrabold text-slate-700 block">Private Transport ({privateVehicleType})</span>
+                      <span className="text-[11px] text-slate-500">Dedicated licensed vehicle for your itinerary days.</span>
                     </div>
                     <button
                       type="button"
                       onClick={() => setStep(4)}
                       className="text-xs font-bold text-[#16A6A1] hover:underline cursor-pointer"
                     >
-                      Add PickMe
+                      Change
                     </button>
                   </div>
                 )}
@@ -2079,7 +1824,7 @@ export const ManualTripPlannerPage: React.FC = () => {
                     <span className="font-bold text-slate-900">${totalAccommodationCost}</span>
                   </div>
                   <div className="flex items-center justify-between text-xs text-slate-700">
-                    <span>Transportation Allowance & PickMe Pass</span>
+                    <span>Transportation Allowance & Mobility Options</span>
                     <span className="font-bold text-slate-900">${estimatedTransportCost}</span>
                   </div>
                   <div className="flex items-center justify-between text-xs text-slate-700">
@@ -2166,286 +1911,8 @@ export const ManualTripPlannerPage: React.FC = () => {
                 )}
               </button>
             </div>
-
           </div>
         )}
-
-      {/* ========================================================================= */}
-      {/* CARD PAYMENT PORTAL MODAL (PICKME PASS MOBILITY CHECKOUT)                 */}
-      {/* ========================================================================= */}
-      {isPaymentModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-200">
-          <div
-            className="bg-white w-full max-w-lg rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Modal Header */}
-            <div className="bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 p-5 text-slate-950 flex items-center justify-between relative">
-              <div className="flex items-center gap-3">
-                <div className="h-10 px-3.5 bg-slate-950 rounded-xl flex items-center justify-center shadow">
-                  <img src={pickmeLogoImg} alt="PickMe" className="h-8 w-auto object-contain brightness-110" />
-                </div>
-                <div>
-                  <h3 className="font-black text-base leading-tight">PickMe Island Mobility Pass</h3>
-                  <p className="text-[11px] font-bold text-slate-900/80">
-                    Official Ride-Hailing Partner · Sri Lanka
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setIsPaymentModalOpen(false);
-                  setCardError('');
-                }}
-                className="w-8 h-8 rounded-full bg-slate-950/10 hover:bg-slate-950/20 text-slate-950 flex items-center justify-center transition-colors cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Modal Body */}
-            <div className="p-6 overflow-y-auto space-y-5">
-              {paymentSuccess ? (
-                /* Payment Success View */
-                <div className="text-center py-4 space-y-4 animate-in fade-in duration-200">
-                  <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-inner">
-                    <CheckCircle2 className="w-9 h-9" />
-                  </div>
-                  <div>
-                    <span className="text-xs font-black uppercase tracking-wider text-emerald-600 block">
-                      Card Payment Completed
-                    </span>
-                    <h4 className="text-2xl font-black text-slate-900 mt-1">
-                      PickMe Mobility Pass Unlocked!
-                    </h4>
-                    <p className="text-xs text-slate-500 mt-1">
-                      Transaction Ref: <strong>{paymentTxnId}</strong> · Paid: <strong>${suggestedPassFee.toFixed(2)} USD</strong>
-                    </p>
-                  </div>
-
-                  {/* Revealed Unique Promo Code Box */}
-                  <div className="bg-amber-50 border-2 border-dashed border-amber-400 rounded-2xl p-5 space-y-2">
-                    <span className="text-[10px] font-black uppercase text-amber-900 tracking-widest block">
-                      YOUR EXCLUSIVE UNIQUE PROMO CODE
-                    </span>
-                    <div className="flex items-center justify-center gap-3">
-                      <span className="text-2xl sm:text-3xl font-black font-mono tracking-widest text-slate-950 bg-white px-4 py-1.5 rounded-xl border border-amber-300 shadow-sm">
-                        {userPromoCode}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          navigator.clipboard.writeText(userPromoCode);
-                          setCopiedCode(true);
-                          setTimeout(() => setCopiedCode(false), 2000);
-                          triggerToast('Unique promo code copied!');
-                        }}
-                        className="p-3 bg-slate-950 hover:bg-black text-white rounded-xl shadow transition-colors cursor-pointer flex items-center gap-1.5 text-xs font-bold"
-                        title="Copy Code"
-                      >
-                        {copiedCode ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-                        <span>{copiedCode ? 'Copied' : 'Copy'}</span>
-                      </button>
-                    </div>
-                    <p className="text-[11px] text-slate-700 font-medium pt-1">
-                      Apply this code in the PickMe mobile app to redeem <strong>20% OFF across 5 rides</strong> throughout your {durationDays > 0 ? durationDays : 3}-day stay.
-                    </p>
-                  </div>
-
-                  <div className="bg-slate-50 rounded-xl p-3 text-left text-xs text-slate-600 border border-slate-200 flex items-center gap-2.5">
-                    <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0" />
-                    <span>
-                      Pass is automatically linked to your trip plan and will be included on your final itinerary summary.
-                    </span>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => setIsPaymentModalOpen(false)}
-                    className="w-full py-3.5 px-6 rounded-xl bg-[#16A6A1] hover:bg-[#146C86] text-white font-black text-xs uppercase tracking-wider shadow-md transition-all cursor-pointer"
-                  >
-                    Done & Continue Planning
-                  </button>
-                </div>
-              ) : (
-                /* Card Payment Form View */
-                <form onSubmit={handleProcessCardPayment} className="space-y-4">
-                  {/* Dynamic Pricing Banner */}
-                  <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
-                    <div className="flex items-center justify-between border-b border-slate-200 pb-2.5 mb-2.5">
-                      <div>
-                        <span className="text-xs font-black text-slate-900 block">
-                          Suggested Pass Fee
-                        </span>
-                        <span className="text-[11px] text-slate-500">
-                          {durationDays > 0 ? `${durationDays} Days Duration` : 'Standard 3 Days'} · $2.50 / day
-                        </span>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-2xl font-black text-[#0B3A53]">
-                          ${suggestedPassFee.toFixed(2)}
-                        </span>
-                        <span className="text-[10px] text-slate-400 block font-bold">USD</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between text-[11px] text-slate-600">
-                      <span className="flex items-center gap-1">
-                        🎁 <strong>Benefit:</strong> 20% off 5 rides
-                      </span>
-                      <span className="text-amber-800 font-bold">
-                        Unlocks Unique Tourist Voucher
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Payment Method Notice: ONLY CARD OPTION AVAILABLE */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <label className="text-xs font-black uppercase text-slate-700 tracking-wider flex items-center gap-1.5">
-                        <CreditCard className="w-4 h-4 text-[#16A6A1]" />
-                        <span>Payment Method</span>
-                      </label>
-                      <span className="text-[10px] font-black uppercase tracking-wider bg-rose-50 text-rose-700 border border-rose-200 px-2 py-0.5 rounded-md">
-                        Card Only Available
-                      </span>
-                    </div>
-
-                    {/* Card Selector Option */}
-                    <div className="p-3.5 rounded-xl border-2 border-[#16A6A1] bg-teal-50/40 flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-4 h-4 rounded-full border-4 border-[#16A6A1] bg-white shrink-0" />
-                        <div>
-                          <span className="text-xs font-black text-slate-900 block">Credit / Debit Card</span>
-                          <span className="text-[10px] text-slate-500">Visa, Mastercard, American Express, JCB</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[10px] font-bold bg-white border border-slate-200 px-1.5 py-0.5 rounded text-slate-700">VISA</span>
-                        <span className="text-[10px] font-bold bg-white border border-slate-200 px-1.5 py-0.5 rounded text-slate-700">MC</span>
-                        <span className="text-[10px] font-bold bg-white border border-slate-200 px-1.5 py-0.5 rounded text-slate-700">AMEX</span>
-                      </div>
-                    </div>
-                    <p className="text-[10px] text-slate-400 italic">
-                      * Cash on Delivery and digital wallet methods are disabled for promotional pass issuance.
-                    </p>
-                  </div>
-
-                  {/* Form Inputs */}
-                  <div className="space-y-3 pt-1">
-                    <div>
-                      <label className="text-[11px] font-extrabold text-slate-700 block mb-1">
-                        Cardholder Name
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="e.g. Alex Morgan"
-                        value={cardHolder}
-                        onChange={(e) => setCardHolder(e.target.value)}
-                        className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#16A6A1] focus:bg-white transition-all"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-[11px] font-extrabold text-slate-700 block mb-1">
-                        Card Number
-                      </label>
-                      <div className="relative">
-                        <input
-                          type="text"
-                          placeholder="4242 4242 4242 4242"
-                          value={cardNumber}
-                          onChange={handleCardNumberChange}
-                          maxLength={19}
-                          className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#16A6A1] focus:bg-white transition-all tracking-wider"
-                          required
-                        />
-                        <CreditCard className="w-4 h-4 text-slate-400 absolute right-3.5 top-3" />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-[11px] font-extrabold text-slate-700 block mb-1">
-                          Expiry Date
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="MM/YY"
-                          value={cardExpiry}
-                          onChange={handleExpiryChange}
-                          maxLength={5}
-                          className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#16A6A1] focus:bg-white transition-all"
-                          required
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[11px] font-extrabold text-slate-700 block mb-1 flex items-center justify-between">
-                          <span>CVV / CVC</span>
-                          <span className="text-[9px] text-slate-400 font-normal">3 or 4 digits</span>
-                        </label>
-                        <input
-                          type="password"
-                          placeholder="•••"
-                          value={cardCvv}
-                          onChange={handleCvvChange}
-                          maxLength={4}
-                          className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#16A6A1] focus:bg-white transition-all"
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    {cardError && (
-                      <div className="p-2.5 rounded-lg bg-rose-50 border border-rose-200 text-[11px] font-bold text-rose-700 flex items-center gap-1.5">
-                        <AlertTriangle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
-                        <span>{cardError}</span>
-                      </div>
-                    )}
-
-                    {/* Convenient Auto-Fill Demo Card helper */}
-                    <div className="pt-1 flex items-center justify-between">
-                      <span className="text-[11px] text-slate-400 flex items-center gap-1">
-                        <Lock className="w-3 h-3" /> 256-Bit SSL Encrypted
-                      </span>
-                      <button
-                        type="button"
-                        onClick={handleAutoFillDemoCard}
-                        className="text-[11px] font-extrabold text-[#16A6A1] hover:underline cursor-pointer"
-                      >
-                        ⚡ 1-Click Demo Card
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Submit Pay Button */}
-                  <div className="pt-2">
-                    <button
-                      type="submit"
-                      disabled={isProcessingPayment}
-                      className="w-full py-3.5 px-6 rounded-xl bg-slate-950 hover:bg-black text-white font-black text-xs uppercase tracking-wider shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
-                    >
-                      {isProcessingPayment ? (
-                        <>
-                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                          <span>Authorizing Card & Generating Promo...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Lock className="w-4 h-4 text-amber-300" />
-                          <span>Pay ${suggestedPassFee.toFixed(2)} & Claim Promo</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </form>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
 
       </main>
 

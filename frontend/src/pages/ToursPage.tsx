@@ -34,9 +34,7 @@ import { NOVAGuideFloatingWidget } from '../components/guide/NOVAGuideFloatingWi
 import { BotWaveVector } from '../components/guide/BotWaveVector';
 import sriLankaBeautyImg from '../assets/destinations/Sri_lanka_beauty.jpg';
 import websiteLogo from '../assets/website-logo.png';
-import pickmeLogoImg from '../assets/pickme-logo.png';
-import { PickMeLogo } from '../components/icons/PickMeLogo';
-import { PickMePaymentModal } from '../components/payment/PickMePaymentModal';
+
 
 export const ToursPage: React.FC = () => {
   const navigate = useNavigate();
@@ -48,7 +46,6 @@ export const ToursPage: React.FC = () => {
   const [selectedTravelPkgModal, setSelectedTravelPkgModal] = useState<TravelPackage | null>(null);
   const [selectedPlanId, setSelectedPlanId] = useState<string>('explorer');
   const [isGuideWidgetOpen, setIsGuideWidgetOpen] = useState<boolean>(false);
-  const [isPickMePaymentOpen, setIsPickMePaymentOpen] = useState<boolean>(false);
 
   // Booking Form State inside Details Modal
   const [bookingDate, setBookingDate] = useState<string>('2026-10-15');
@@ -584,128 +581,7 @@ export const ToursPage: React.FC = () => {
         </div>
       </section>
 
-      {/* 7. TRANSPORT SECTION - PICKME PARTNER */}
-      <section id="transport-partner-section" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="space-y-12">
-          {/* Section Header */}
-          <div className="text-center max-w-3xl mx-auto space-y-4">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-400/15 text-amber-800 dark:text-amber-300 text-xs font-black uppercase tracking-wider border border-amber-400/30">
-              <Car className="w-3.5 h-3.5 text-amber-500" />
-              <span>TRANSPORTATION PARTNER</span>
-            </div>
-            <h2 className="text-3xl sm:text-4xl font-black text-[#0B3A53] tracking-tight font-heading">
-              Need a Ride? We've Got You Covered.
-            </h2>
-            <p className="text-sm sm:text-base text-slate-600 font-medium leading-relaxed">
-              Introducing PickMe, NOVA's transportation partner. Get where you need to go with ease and enjoy an exclusive 20% discount on your rides.
-            </p>
-          </div>
 
-          {/* PickMe Premium Partnership Card */}
-          <div className="bg-gradient-to-br from-[#475569] via-[#334155] to-[#1E293B] rounded-3xl p-8 sm:p-12 text-white shadow-2xl border border-slate-400/40 relative overflow-hidden">
-            {/* Ambient Background Glows */}
-            <div className="absolute -right-10 -top-10 w-72 h-72 bg-slate-300/10 rounded-full blur-3xl pointer-events-none"></div>
-            <div className="absolute -left-10 -bottom-10 w-72 h-72 bg-slate-400/10 rounded-full blur-3xl pointer-events-none"></div>
-
-            <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
-              
-              {/* Left Column: Brand & Copy */}
-              <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
-                <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-slate-800/90 border border-slate-500/70 text-amber-300 text-xs font-black uppercase tracking-wider backdrop-blur-md">
-                  <Car className="w-3.5 h-3.5 text-amber-400" />
-                  <span>YOUR JOURNEY DOESN'T STOP HERE</span>
-                </div>
-
-                <div className="space-y-3">
-                  <span className="text-xs font-extrabold uppercase tracking-wider text-amber-300 block">
-                    Meet Our Transportation Partner
-                  </span>
-                  <div className="flex items-center justify-center lg:justify-start pt-1">
-                    <img
-                      src={pickmeLogoImg}
-                      alt="PickMe Logo"
-                      className="h-28 sm:h-36 md:h-44 w-auto object-contain rounded-3xl drop-shadow-2xl hover:scale-105 transition-transform duration-300"
-                    />
-                  </div>
-                </div>
-
-                <p className="text-sm sm:text-base text-slate-100 font-medium leading-relaxed max-w-xl">
-                  Travel around Sri Lanka with ease. Download the PickMe app through NOVA and enjoy 20% off your eligible rides.
-                </p>
-
-                {/* 3 Transport Feature Items */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
-                  <div className="bg-slate-900/40 backdrop-blur-md border border-slate-400/30 rounded-2xl p-4 text-left hover:bg-slate-900/60 hover:border-slate-300/50 transition-all group">
-                    <div className="text-xl mb-1">🚗</div>
-                    <h4 className="text-xs font-black text-white font-heading group-hover:text-amber-300 transition-colors">Private Rides</h4>
-                    <p className="text-[11px] text-slate-200 font-medium leading-tight mt-1">
-                      Arrange convenient private transportation for getting around your destination.
-                    </p>
-                  </div>
-
-                  <div className="bg-slate-900/40 backdrop-blur-md border border-slate-400/30 rounded-2xl p-4 text-left hover:bg-slate-900/60 hover:border-slate-300/50 transition-all group">
-                    <div className="text-xl mb-1">📍</div>
-                    <h4 className="text-xs font-black text-white font-heading group-hover:text-amber-300 transition-colors">Destination Transfers</h4>
-                    <p className="text-[11px] text-slate-200 font-medium leading-tight mt-1">
-                      Use PickMe when travelling between attractions, hotels and other locations.
-                    </p>
-                  </div>
-
-                  <div className="bg-slate-900/40 backdrop-blur-md border border-slate-400/30 rounded-2xl p-4 text-left hover:bg-slate-900/60 hover:border-slate-300/50 transition-all group">
-                    <div className="text-xl mb-1">🧳</div>
-                    <h4 className="text-xs font-black text-white font-heading group-hover:text-amber-300 transition-colors">Easy Travel</h4>
-                    <p className="text-[11px] text-slate-200 font-medium leading-tight mt-1">
-                      Arrange transportation through PickMe while keeping your trip planning inside NOVA.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Right Column: Prominent 20% OFF Badge & CTA */}
-              <div className="lg:col-span-5 flex flex-col items-center justify-center text-center space-y-6 bg-slate-900/85 backdrop-blur-xl border border-slate-500/50 rounded-3xl p-8 shadow-2xl">
-                <div className="space-y-2">
-                  <span className="text-xs font-black uppercase tracking-widest text-amber-400 block">
-                    EXCLUSIVE PARTNER OFFER
-                  </span>
-                  <div className="inline-block bg-gradient-to-r from-[#FFD200] via-[#FFC400] to-[#FFA800] text-slate-950 font-black text-4xl sm:text-5xl px-8 py-3.5 rounded-2xl shadow-xl shadow-amber-500/20 font-heading tracking-tight border border-amber-200/50">
-                    20% OFF
-                  </div>
-                  <span className="text-sm font-extrabold text-white block pt-1">
-                    YOUR RIDES
-                  </span>
-                </div>
-
-                <p className="text-xs text-slate-200 font-medium max-w-xs leading-relaxed">
-                  Download PickMe and arrange your ride. Enjoy 20% off eligible rides with PickMe.
-                </p>
-
-                <div className="w-full space-y-3">
-                  <button
-                    type="button"
-                    onClick={() => setIsPickMePaymentOpen(true)}
-                    className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-[#FFD200] via-[#FFC400] to-[#FFA800] hover:from-[#FFE033] hover:to-[#FFC400] text-slate-950 text-sm font-black transition-all duration-300 shadow-xl shadow-amber-500/20 flex items-center justify-center gap-2 cursor-pointer group hover:scale-[1.02] active:scale-[0.98]"
-                  >
-                    <span>Get 20% Off with PickMe →</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setIsPickMePaymentOpen(true)}
-                    className="inline-flex items-center gap-1.5 text-xs font-extrabold text-amber-400 hover:text-amber-300 transition-colors cursor-pointer"
-                  >
-                    <span>Need transportation? Use PickMe →</span>
-                  </button>
-                </div>
-
-                <p className="text-[10px] text-slate-400 italic font-medium">
-                  *Terms and eligibility may apply.
-                </p>
-              </div>
-
-            </div>
-          </div>
-        </div>
-      </section>
 
 
 
@@ -893,16 +769,7 @@ export const ToursPage: React.FC = () => {
         </div>
       )}
 
-      {/* PICKME MOBILITY PASS PAYMENT PORTAL MODAL */}
-      <PickMePaymentModal
-        isOpen={isPickMePaymentOpen}
-        onClose={() => setIsPickMePaymentOpen(false)}
-        passFee={7.50}
-        durationDays={3}
-        onSuccess={(code) => {
-          triggerToast(`PickMe 20% Off Promo Pass activated: ${code}!`);
-        }}
-      />
+
 
       {/* FOOTER */}
       <Footer />

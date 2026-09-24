@@ -2,7 +2,7 @@ import { fetchApi } from './api';
 
 export interface TransportOption {
   id: string;
-  transportType: 'BUS' | 'TRAIN' | 'PICKME';
+  transportType: 'BUS' | 'TRAIN';
   origin: string;
   destination: string;
   travelDate: string;

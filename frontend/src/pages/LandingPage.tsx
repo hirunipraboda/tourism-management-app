@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { LandingNavbar } from '../components/navigation/LandingNavbar';
 import { SplashScreen } from '../components/common/SplashScreen';
+import { useAuth } from '../hooks/useAuth';
 import { MOCK_DESTINATIONS } from '../mock/destinations';
 import { BRAND } from '../constants/brand';
 import websiteLogo from '../assets/website-logo.png';
@@ -163,8 +164,12 @@ const AnimatedCounter: React.FC<CounterProps> = ({
 
 export const LandingPage: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [showSplash, setShowSplash] = useState<boolean>(() => {
-    // Show splash screen on initial session start
+    // Never show splash screen if user is logged in or marked seen in session
+    if (user || sessionStorage.getItem('nova_splash_seen') || localStorage.getItem('nova_auth_token')) {
+      return false;
+    }
     return !sessionStorage.getItem('nova_splash_seen');
   });
 

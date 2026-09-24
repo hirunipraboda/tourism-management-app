@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Package,
   Plus,
@@ -11,6 +11,9 @@ import {
   Sparkles,
   ArrowRight,
   ShieldCheck,
+  Upload,
+  Trash2,
+  Link,
 } from 'lucide-react';
 import { adminService } from '../../services/adminService';
 import { AdminTourPackage } from '../../mock/mockAdminData';
@@ -30,6 +33,27 @@ export const AdminToursPage: React.FC = () => {
   const [vehicleType, setVehicleType] = useState('Toyota KDH Luxury Van');
   const [description, setDescription] = useState('');
   const [coverImage, setCoverImage] = useState('https://images.unsplash.com/photo-1546708973-b339540b5162?auto=format&fit=crop&w=800&q=80');
+  const [tourImageInputMode, setTourImageInputMode] = useState<'upload' | 'url'>('upload');
+  const [tourUploadedPreview, setTourUploadedPreview] = useState<string | null>(null);
+  const [tourUploadedFileName, setTourUploadedFileName] = useState('');
+  const [isTourDragging, setIsTourDragging] = useState(false);
+  const tourFileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleTourImageFile = (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      alert('Please select a valid image file');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        setTourUploadedPreview(reader.result);
+        setCoverImage(reader.result);
+        setTourUploadedFileName(file.name);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleToggleStatus = (id: string) => {
     const updated = adminService.toggleTourStatus(id);
@@ -322,18 +346,157 @@ export const AdminToursPage: React.FC = () => {
 
             {wizardStep === 5 && (
               <div className="space-y-4 text-xs font-semibold">
-                <div className="space-y-1">
-                  <label className="text-slate-600 font-bold block">Cover Image URL</label>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-slate-600 font-bold block">Cover Image</label>
+                    <div className="flex items-center bg-slate-100 p-0.5 rounded-xl text-[11px] font-bold">
+                      <button
+                        type="button"
+                        onClick={() => setTourImageInputMode('upload')}
+                        className={`px-3 py-1 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+                          tourImageInputMode === 'upload'
+                            ? 'bg-white text-[#0B3A53] shadow-xs'
+                            : 'text-slate-500 hover:text-slate-700'
+                        }`}
+                      >
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>Upload File</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setTourImageInputMode('url')}
+                        className={`px-3 py-1 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+                          tourImageInputMode === 'url'
+                            ? 'bg-white text-[#0B3A53] shadow-xs'
+                            : 'text-slate-500 hover:text-slate-700'
+                        }`}
+                      >
+                        <Link className="w-3.5 h-3.5" />
+                        <span>Image URL</span>
+                      </button>
+                    </div>
+                  </div>
+
                   <input
-                    type="text"
-                    value={coverImage}
-                    onChange={(e) => setCoverImage(e.target.value)}
-                    className="w-full p-3 rounded-2xl bg-slate-50 border border-slate-200 font-bold text-[#0B3A53]"
+                    ref={tourFileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) handleTourImageFile(f);
+                    }}
+                    className="hidden"
                   />
+
+                  {tourImageInputMode === 'upload' ? (
+                    tourUploadedPreview ? (
+                      <div className="relative rounded-2xl border border-teal-200 bg-teal-50/40 p-3 overflow-hidden">
+                        <div className="flex items-center gap-4">
+                          <div className="relative w-28 h-20 rounded-xl overflow-hidden shadow-inner border border-slate-200 shrink-0 bg-slate-100">
+                            <img
+                              src={tourUploadedPreview}
+                              alt="Uploaded preview"
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <div className="flex-1 min-w-0 space-y-1">
+                            <div className="flex items-center gap-1.5 text-[#16A6A1] font-bold text-xs">
+                              <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                              <span>Image uploaded successfully</span>
+                            </div>
+                            <p className="text-slate-700 font-semibold truncate text-xs">
+                              {tourUploadedFileName || 'Uploaded tour package photo'}
+                            </p>
+                            <div className="flex items-center gap-2 pt-1">
+                              <button
+                                type="button"
+                                onClick={() => tourFileInputRef.current?.click()}
+                                className="text-[11px] font-bold text-[#0B3A53] hover:text-[#16A6A1] cursor-pointer underline transition-colors"
+                              >
+                                Change photo
+                              </button>
+                              <span className="text-slate-300">•</span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setTourUploadedPreview(null);
+                                  setTourUploadedFileName('');
+                                  setCoverImage('');
+                                  if (tourFileInputRef.current) tourFileInputRef.current.value = '';
+                                }}
+                                className="text-[11px] font-bold text-rose-500 hover:text-rose-700 cursor-pointer flex items-center gap-1 transition-colors"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                                <span>Remove</span>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          setIsTourDragging(true);
+                        }}
+                        onDragLeave={(e) => {
+                          e.preventDefault();
+                          setIsTourDragging(false);
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          setIsTourDragging(false);
+                          const f = e.dataTransfer.files?.[0];
+                          if (f) handleTourImageFile(f);
+                        }}
+                        onClick={() => tourFileInputRef.current?.click()}
+                        className={`border-2 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-200 ${
+                          isTourDragging
+                            ? 'border-[#16A6A1] bg-teal-50/60 scale-[1.01]'
+                            : 'border-slate-200 hover:border-[#16A6A1] bg-slate-50/70 hover:bg-slate-50'
+                        }`}
+                      >
+                        <div className="w-12 h-12 rounded-2xl bg-teal-50 border border-teal-100 flex items-center justify-center mb-2.5 text-[#16A6A1]">
+                          <Upload className="w-6 h-6" />
+                        </div>
+                        <p className="text-xs font-bold text-[#0B3A53]">
+                          Click to browse or drag & drop tour image
+                        </p>
+                        <p className="text-[11px] text-slate-400 mt-1 font-medium">
+                          Supports PNG, JPG, JPEG, WEBP (Max 10MB)
+                        </p>
+                      </div>
+                    )
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={coverImage}
+                          onChange={(e) => setCoverImage(e.target.value)}
+                          placeholder="https://images.unsplash.com/photo-..."
+                          className="w-full p-3 pl-9 rounded-2xl bg-slate-50 border border-slate-200 font-bold text-[#0B3A53] text-xs focus:bg-white focus:border-[#16A6A1] focus:outline-none"
+                        />
+                        <Link className="w-4 h-4 text-slate-400 absolute left-3 top-3.5" />
+                      </div>
+                      {coverImage && (
+                        <div className="relative w-full h-36 rounded-2xl overflow-hidden border border-slate-200 bg-slate-100">
+                          <img
+                            src={coverImage}
+                            alt="Preview"
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1546708973-b339540b5162?auto=format&fit=crop&w=800&q=80';
+                            }}
+                          />
+                          <div className="absolute top-2 right-2 bg-slate-900/60 backdrop-blur-xs text-white text-[10px] px-2 py-0.5 rounded-full font-bold">
+                            Live Preview
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
-                {coverImage && (
-                  <img src={coverImage} alt="Preview" className="w-full h-40 object-cover rounded-2xl border" />
-                )}
               </div>
             )}
 

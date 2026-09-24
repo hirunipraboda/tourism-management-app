@@ -9,7 +9,6 @@ import { TripsPlaceholder } from '../pages/TripsPlaceholder';
 import { ItinerariesPlaceholder } from '../pages/ItinerariesPlaceholder';
 import { ToursPlaceholder } from '../pages/ToursPlaceholder';
 import { BookingsPlaceholder } from '../pages/BookingsPlaceholder';
-import { GuidesPlaceholder } from '../pages/GuidesPlaceholder';
 import { AvailabilityPlaceholder } from '../pages/AvailabilityPlaceholder';
 import { AIWorkflowsPlaceholder } from '../pages/AIWorkflowsPlaceholder';
 import { ApprovalsPlaceholder } from '../pages/ApprovalsPlaceholder';
@@ -27,7 +26,6 @@ import { LoginPage } from '../pages/LoginPage';
 import { RegisterPage } from '../pages/RegisterPage';
 import { ForgotPasswordPage } from '../pages/ForgotPasswordPage';
 import { ProfilePage } from '../pages/ProfilePage';
-import { PaymentPortalPage } from '../pages/PaymentPortalPage';
 import { ReviewsAndRecommendationsPage } from '../pages/ReviewsAndRecommendationsPage';
 
 // Admin Console Imports
@@ -37,14 +35,14 @@ import { AdminDashboardPage } from '../pages/admin/AdminDashboardPage';
 import { AdminUsersPage } from '../pages/admin/AdminUsersPage';
 import { AdminDestinationsPage } from '../pages/admin/AdminDestinationsPage';
 import { AdminAttractionsPage } from '../pages/admin/AdminAttractionsPage';
-import { AdminToursPage } from '../pages/admin/AdminToursPage';
-import { AdminBookingsPage } from '../pages/admin/AdminBookingsPage';
-import { AdminAvailabilityPage } from '../pages/admin/AdminAvailabilityPage';
-import { AdminAIWorkflowsPage } from '../pages/admin/AdminAIWorkflowsPage';
-import { AdminAIApprovalsPage } from '../pages/admin/AdminAIApprovalsPage';
-import { AdminReportsPage } from '../pages/admin/AdminReportsPage';
-import { AdminSettingsPage } from '../pages/admin/AdminSettingsPage';
+import { AdminCategoriesPage } from '../pages/admin/AdminCategoriesPage';
+import { AdminActivitiesPage } from '../pages/admin/AdminActivitiesPage';
+import { AdminTripsPage } from '../pages/admin/AdminTripsPage';
+import { AdminChatbotPaymentsPage } from '../pages/admin/AdminChatbotPaymentsPage';
+import { AdminTransportationPage } from '../pages/admin/AdminTransportationPage';
+import { AdminAIGuidePage } from '../pages/admin/AdminAIGuidePage';
 import { AdminReviewsPage } from '../pages/admin/AdminReviewsPage';
+import { AdminSettingsPage } from '../pages/admin/AdminSettingsPage';
 
 export const AppRoutes: React.FC = () => {
   return (
@@ -62,38 +60,69 @@ export const AppRoutes: React.FC = () => {
       <Route path="/plan-trip" element={<ManualTripPlannerPage />} />
       <Route path="/manual-planner" element={<ManualTripPlannerPage />} />
       <Route path="/tours" element={<ToursPage />} />
-      <Route path="/payment" element={<PaymentPortalPage />} />
-      <Route path="/payment-portal" element={<PaymentPortalPage />} />
+      <Route path="/payment" element={<Navigate to="/tours" replace />} />
+      <Route path="/payment-portal" element={<Navigate to="/tours" replace />} />
       <Route path="/ai-workflows" element={<AITripPlannerPage />} />
       <Route path="/planner" element={<AITripPlannerPage />} />
       <Route path="/reviews" element={<ReviewsAndRecommendationsPage />} />
       <Route path="/reviews/my-reviews" element={<ReviewsAndRecommendationsPage />} />
       <Route path="/recommendations" element={<ReviewsAndRecommendationsPage />} />
       <Route path="/operator/reviews" element={<Navigate to="/admin/reviews" replace />} />
-      <Route path="/operator/customer-satisfaction" element={<Navigate to="/admin/customer-satisfaction" replace />} />
-      <Route path="/operator/recommendation-insights" element={<Navigate to="/admin/recommendation-insights" replace />} />
+      <Route path="/operator/customer-satisfaction" element={<Navigate to="/admin/reviews?tab=customer-satisfaction" replace />} />
+      <Route path="/operator/recommendation-insights" element={<Navigate to="/admin/reviews?tab=recommendation-insights" replace />} />
       <Route path="/reviews-recommendations" element={<ReviewsAndRecommendationsPage />} />
       <Route path="/profile" element={<ProfilePage />} />
 
       {/* Admin Portal Authentication */}
       <Route path="/admin/login" element={<AdminLoginPage />} />
 
-      {/* Admin Protected Console Layout Routes */}
+      {/* Admin Protected Console Layout Routes - Exactly 10 Sections */}
       <Route element={<AdminLayout />}>
+        {/* 1. Dashboard */}
         <Route path="/admin" element={<AdminDashboardPage />} />
+        <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+
+        {/* 2. User Management */}
         <Route path="/admin/users" element={<AdminUsersPage />} />
+
+        {/* 3. Destination Management (Destinations, Activities, Attractions) */}
         <Route path="/admin/destinations" element={<AdminDestinationsPage />} />
+        <Route path="/admin/activities" element={<AdminActivitiesPage />} />
         <Route path="/admin/attractions" element={<AdminAttractionsPage />} />
-        <Route path="/admin/tours" element={<AdminToursPage />} />
-        <Route path="/admin/bookings" element={<AdminBookingsPage />} />
-        <Route path="/admin/availability" element={<AdminAvailabilityPage />} />
-        <Route path="/admin/ai-workflows" element={<AdminAIWorkflowsPage />} />
-        <Route path="/admin/approvals" element={<AdminAIApprovalsPage />} />
-        <Route path="/admin/reports" element={<AdminReportsPage />} />
-        <Route path="/admin/settings" element={<AdminSettingsPage />} />
+        <Route path="/admin/categories" element={<AdminCategoriesPage />} />
+
+        {/* 4. Trip & Itinerary Management (Read-only monitoring, User Approval) */}
+        <Route path="/admin/trips" element={<AdminTripsPage />} />
+        <Route path="/admin/approvals" element={<Navigate to="/admin/trips" replace />} />
+
+        {/* 5. Chatbot Payments (Safe Masked Payment Info) */}
+        <Route path="/admin/chatbot-payments" element={<AdminChatbotPaymentsPage />} />
+
+        {/* 6. Transportation (Bus Routes, Train Schedules) */}
+        <Route path="/admin/transportation" element={<AdminTransportationPage />} />
+        <Route path="/admin/transportation/bus-routes" element={<AdminTransportationPage />} />
+        <Route path="/admin/transportation/train-schedules" element={<AdminTransportationPage />} />
+        <Route path="/admin/transportation/promo-codes" element={<Navigate to="/admin/transportation" replace />} />
+
+        {/* 8. AI Travel Guide (Purchase Details, Usage Statistics, Question & Place Analytics) */}
+        <Route path="/admin/ai-guide" element={<AdminAIGuidePage />} />
+        <Route path="/admin/ai-guide/purchases" element={<AdminAIGuidePage />} />
+        <Route path="/admin/ai-guide/usage" element={<AdminAIGuidePage />} />
+        <Route path="/admin/ai-guide/analytics" element={<AdminAIGuidePage />} />
+        <Route path="/admin/ai-guide/packages" element={<AdminAIGuidePage />} />
+        <Route path="/admin/ai-guide/photo-queries" element={<AdminAIGuidePage />} />
+        <Route path="/admin/ai-guide/activity" element={<AdminAIGuidePage />} />
+
+        {/* 9. Reviews & Feedback */}
         <Route path="/admin/reviews" element={<AdminReviewsPage defaultTab="review-management" />} />
         <Route path="/admin/customer-satisfaction" element={<AdminReviewsPage defaultTab="customer-satisfaction" />} />
         <Route path="/admin/recommendation-insights" element={<AdminReviewsPage defaultTab="recommendation-insights" />} />
+
+        <Route path="/admin/monitoring" element={<Navigate to="/admin/dashboard" replace />} />
+
+        {/* 10. Settings & Profile */}
+        <Route path="/admin/settings" element={<AdminSettingsPage />} />
+        <Route path="/admin/profile" element={<AdminSettingsPage />} />
       </Route>
 
       {/* Legacy Operator Console (App Shell) */}
@@ -102,7 +131,6 @@ export const AppRoutes: React.FC = () => {
         <Route path="/attractions" element={<AttractionsPlaceholder />} />
         <Route path="/itineraries" element={<ItinerariesPlaceholder />} />
         <Route path="/bookings" element={<BookingsPlaceholder />} />
-        <Route path="/guides" element={<GuidesPlaceholder />} />
         <Route path="/availability" element={<AvailabilityPlaceholder />} />
         <Route path="/approvals" element={<ApprovalsPlaceholder />} />
         <Route path="/reports" element={<ReportsPlaceholder />} />
@@ -114,4 +142,3 @@ export const AppRoutes: React.FC = () => {
     </Routes>
   );
 };
-

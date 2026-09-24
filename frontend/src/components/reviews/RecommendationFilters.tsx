@@ -59,7 +59,7 @@ export const RecommendationFilters: React.FC<RecommendationFiltersProps> = ({
         <button
           onClick={onUpdateClick}
           disabled={isUpdating}
-          className="px-6 py-2.5 rounded-full bg-[#16A6A1] hover:bg-[#138D89] text-white font-black text-xs shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+          className="px-6 py-2.5 rounded-full bg-[#0B3A53] hover:bg-[#146C86] text-white font-black text-xs shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${isUpdating ? 'animate-spin' : ''}`} />
           <span>Update Recommendations</span>
@@ -94,7 +94,7 @@ export const RecommendationFilters: React.FC<RecommendationFiltersProps> = ({
                   onClick={() => toggleInterest(interest)}
                   className={`px-3 py-1.5 rounded-full font-extrabold transition-all cursor-pointer ${
                     active
-                      ? 'bg-[#16A6A1] text-white shadow-2xs'
+                      ? 'bg-[#0B3A53] text-white shadow-2xs'
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
@@ -111,7 +111,7 @@ export const RecommendationFilters: React.FC<RecommendationFiltersProps> = ({
             <label className="uppercase tracking-wider text-[11px] font-black">
               Max Daily Budget
             </label>
-            <span className="text-[#16A6A1] font-black">${filters.maxBudget} / day</span>
+            <span className="text-[#0B3A53] font-black">${filters.maxBudget} / day</span>
           </div>
           <input
             type="range"
@@ -122,7 +122,7 @@ export const RecommendationFilters: React.FC<RecommendationFiltersProps> = ({
             onChange={(e) =>
               onFilterChange({ ...filters, maxBudget: Number(e.target.value) })
             }
-            className="w-full accent-[#16A6A1] cursor-pointer"
+            className="w-full accent-[#0B3A53] cursor-pointer"
           />
           <div className="flex justify-between text-[10px] text-slate-400 font-bold">
             <span>$20 (Budget)</span>
@@ -137,7 +137,7 @@ export const RecommendationFilters: React.FC<RecommendationFiltersProps> = ({
             <label className="uppercase tracking-wider text-[11px] font-black">
               Travel Distance
             </label>
-            <span className="text-[#16A6A1] font-black">Up to {filters.maxDistance} km</span>
+            <span className="text-[#0B3A53] font-black">Up to {filters.maxDistance} km</span>
           </div>
           <input
             type="range"
@@ -148,7 +148,7 @@ export const RecommendationFilters: React.FC<RecommendationFiltersProps> = ({
             onChange={(e) =>
               onFilterChange({ ...filters, maxDistance: Number(e.target.value) })
             }
-            className="w-full accent-[#16A6A1] cursor-pointer"
+            className="w-full accent-[#0B3A53] cursor-pointer"
           />
           <div className="flex justify-between text-[10px] text-slate-400 font-bold">
             <span>Nearby (20 km)</span>
@@ -189,7 +189,7 @@ export const RecommendationFilters: React.FC<RecommendationFiltersProps> = ({
                 onClick={() => onFilterChange({ ...filters, activityType: type })}
                 className={`px-3 py-1 rounded-full font-extrabold capitalize cursor-pointer transition-all ${
                   filters.activityType === type
-                    ? 'bg-[#16A6A1] text-white'
+                    ? 'bg-[#0B3A53] text-white'
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >

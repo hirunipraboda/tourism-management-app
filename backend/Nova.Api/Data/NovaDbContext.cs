@@ -21,6 +21,22 @@ public class NovaDbContext : DbContext
     public DbSet<ItineraryApproval> Approvals => Set<ItineraryApproval>();
     public DbSet<TransportOption> TransportOptions => Set<TransportOption>();
 
+    // Admin & Extended Entities
+    public DbSet<Booking> Bookings => Set<Booking>();
+    public DbSet<PromoCode> PromoCodes => Set<PromoCode>();
+    public DbSet<PromoCodeUsage> PromoCodeUsages => Set<PromoCodeUsage>();
+    public DbSet<BusRoute> BusRoutes => Set<BusRoute>();
+    public DbSet<TrainSchedule> TrainSchedules => Set<TrainSchedule>();
+    public DbSet<ChatbotPackage> ChatbotPackages => Set<ChatbotPackage>();
+    public DbSet<ChatbotPackagePurchase> ChatbotPackagePurchases => Set<ChatbotPackagePurchase>();
+    public DbSet<AIChatSession> AIChatSessions => Set<AIChatSession>();
+    public DbSet<AIPhotoQuery> AIPhotoQueries => Set<AIPhotoQuery>();
+    public DbSet<Review> Reviews => Set<Review>();
+    public DbSet<Attraction> Attractions => Set<Attraction>();
+    public DbSet<ChatbotPayment> ChatbotPayments => Set<ChatbotPayment>();
+    public DbSet<PromoPayment> PromoPayments => Set<PromoPayment>();
+    public DbSet<SystemActivity> SystemActivities => Set<SystemActivity>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -54,9 +70,57 @@ public class NovaDbContext : DbContext
             .Property(a => a.NewStatus)
             .HasConversion<string>();
 
+        modelBuilder.Entity<Booking>()
+            .Property(b => b.Status)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<PromoCode>()
+            .Property(p => p.DiscountType)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<BusRoute>()
+            .Property(b => b.Status)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<TrainSchedule>()
+            .Property(t => t.Status)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<ChatbotPackage>()
+            .Property(c => c.Status)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<ChatbotPackagePurchase>()
+            .Property(c => c.Status)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<AIChatSession>()
+            .Property(c => c.Status)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<Review>()
+            .Property(r => r.Status)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<Attraction>()
+            .Property(a => a.Status)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<ChatbotPayment>()
+            .Property(c => c.Status)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<PromoPayment>()
+            .Property(p => p.Status)
+            .HasConversion<string>();
+
         // Indexes
         modelBuilder.Entity<User>()
             .HasIndex(u => u.Email)
+            .IsUnique();
+
+        modelBuilder.Entity<PromoCode>()
+            .HasIndex(p => p.Code)
             .IsUnique();
 
         modelBuilder.Entity<Destination>()

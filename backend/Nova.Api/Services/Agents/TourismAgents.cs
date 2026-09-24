@@ -59,7 +59,7 @@ public class TransportLogisticsAssessment
 {
     public string Origin { get; set; } = string.Empty;
     public string Destination { get; set; } = string.Empty;
-    public string RecommendedMode { get; set; } = "PUBLIC_TRANSPORT"; // PICKME, BUS, TRAIN
+    public string RecommendedMode { get; set; } = "PUBLIC_TRANSPORT"; // BUS, TRAIN, PRIVATE
     public int EstimatedTravelMinutes { get; set; } = 60;
     public decimal EstimatedCost { get; set; } = 0.0m;
     public bool IsFeasible { get; set; } = true;
@@ -286,12 +286,6 @@ public class TravelLogisticsAgent : ITravelLogisticsAgent
             assessment.EstimatedTravelMinutes = 150;
             assessment.EstimatedCost = 1200.0m;
             assessment.LogisticsNotes.Add("Scenic rail connection with scheduled daily service.");
-        }
-        else if (transportType.Equals("PICKME", StringComparison.OrdinalIgnoreCase))
-        {
-            assessment.EstimatedTravelMinutes = 140;
-            assessment.EstimatedCost = 4500.0m;
-            assessment.LogisticsNotes.Add("Private ride-hailing partner option (PickMe car or van).");
         }
         else
         {

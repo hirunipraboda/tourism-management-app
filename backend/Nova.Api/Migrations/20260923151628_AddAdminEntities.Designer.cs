@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Nova.Api.Data;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Nova.Api.Migrations
 {
     [DbContext(typeof(NovaDbContext))]
-    partial class NovaDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260923151628_AddAdminEntities")]
+    partial class AddAdminEntities
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -179,74 +182,6 @@ namespace Nova.Api.Migrations
                         .HasDatabaseName("ix_activities_destination_id");
 
                     b.ToTable("activities", (string)null);
-                });
-
-            modelBuilder.Entity("Nova.Api.Entities.Attraction", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasColumnType("text")
-                        .HasColumnName("id");
-
-                    b.Property<string>("ClosingTime")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("closing_time");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("description");
-
-                    b.Property<string>("DestinationId")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("destination_id");
-
-                    b.Property<decimal>("EstimatedCost")
-                        .HasColumnType("numeric")
-                        .HasColumnName("estimated_cost");
-
-                    b.Property<string>("EstimatedDuration")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("estimated_duration");
-
-                    b.Property<string>("ImageUrl")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("image_url");
-
-                    b.Property<string>("Location")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("location");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("name");
-
-                    b.Property<string>("OpeningTime")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("opening_time");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("status");
-
-                    b.HasKey("Id")
-                        .HasName("pk_attractions");
-
-                    b.HasIndex("DestinationId")
-                        .HasDatabaseName("ix_attractions_destination_id");
-
-                    b.ToTable("attractions", (string)null);
                 });
 
             modelBuilder.Entity("Nova.Api.Entities.Booking", b =>
@@ -475,67 +410,6 @@ namespace Nova.Api.Migrations
                         .HasDatabaseName("ix_chatbot_package_purchases_user_id");
 
                     b.ToTable("chatbot_package_purchases", (string)null);
-                });
-
-            modelBuilder.Entity("Nova.Api.Entities.ChatbotPayment", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasColumnType("text")
-                        .HasColumnName("id");
-
-                    b.Property<decimal>("Amount")
-                        .HasColumnType("numeric")
-                        .HasColumnName("amount");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("MaskedCardNumber")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("masked_card_number");
-
-                    b.Property<string>("PackageName")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("package_name");
-
-                    b.Property<string>("PaymentMethod")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("payment_method");
-
-                    b.Property<string>("PurchaseId")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("purchase_id");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("status");
-
-                    b.Property<string>("TransactionReference")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("transaction_reference");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("user_id");
-
-                    b.HasKey("Id")
-                        .HasName("pk_chatbot_payments");
-
-                    b.HasIndex("PurchaseId")
-                        .HasDatabaseName("ix_chatbot_payments_purchase_id");
-
-                    b.HasIndex("UserId")
-                        .HasDatabaseName("ix_chatbot_payments_user_id");
-
-                    b.ToTable("chatbot_payments", (string)null);
                 });
 
             modelBuilder.Entity("Nova.Api.Entities.Destination", b =>
@@ -953,71 +827,6 @@ namespace Nova.Api.Migrations
                     b.ToTable("promo_code_usages", (string)null);
                 });
 
-            modelBuilder.Entity("Nova.Api.Entities.PromoPayment", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasColumnType("text")
-                        .HasColumnName("id");
-
-                    b.Property<decimal>("AmountPaid")
-                        .HasColumnType("numeric")
-                        .HasColumnName("amount_paid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("MaskedCardNumber")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("masked_card_number");
-
-                    b.Property<string>("PaymentMethod")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("payment_method");
-
-                    b.Property<string>("PromoCode")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("promo_code");
-
-                    b.Property<string>("PromoCodeId")
-                        .HasColumnType("text")
-                        .HasColumnName("promo_code_id");
-
-                    b.Property<string>("PromoCodeStatus")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("promo_code_status");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("status");
-
-                    b.Property<string>("TransactionReference")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("transaction_reference");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("user_id");
-
-                    b.HasKey("Id")
-                        .HasName("pk_promo_payments");
-
-                    b.HasIndex("PromoCodeId")
-                        .HasDatabaseName("ix_promo_payments_promo_code_id");
-
-                    b.HasIndex("UserId")
-                        .HasDatabaseName("ix_promo_payments_user_id");
-
-                    b.ToTable("promo_payments", (string)null);
-                });
-
             modelBuilder.Entity("Nova.Api.Entities.Review", b =>
                 {
                     b.Property<string>("Id")
@@ -1071,47 +880,6 @@ namespace Nova.Api.Migrations
                         .HasDatabaseName("ix_reviews_user_id");
 
                     b.ToTable("reviews", (string)null);
-                });
-
-            modelBuilder.Entity("Nova.Api.Entities.SystemActivity", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasColumnType("text")
-                        .HasColumnName("id");
-
-                    b.Property<string>("ActivityType")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("activity_type");
-
-                    b.Property<string>("ActorName")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("actor_name");
-
-                    b.Property<string>("ActorRole")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("actor_role");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("description");
-
-                    b.Property<string>("Severity")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("severity");
-
-                    b.Property<DateTime>("Timestamp")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("timestamp");
-
-                    b.HasKey("Id")
-                        .HasName("pk_system_activities");
-
-                    b.ToTable("system_activities", (string)null);
                 });
 
             modelBuilder.Entity("Nova.Api.Entities.TrainSchedule", b =>
@@ -1386,10 +1154,6 @@ namespace Nova.Api.Migrations
                         .HasColumnType("text")
                         .HasColumnName("email");
 
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_active");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text")
@@ -1506,18 +1270,6 @@ namespace Nova.Api.Migrations
                     b.Navigation("Destination");
                 });
 
-            modelBuilder.Entity("Nova.Api.Entities.Attraction", b =>
-                {
-                    b.HasOne("Nova.Api.Entities.Destination", "Destination")
-                        .WithMany()
-                        .HasForeignKey("DestinationId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_attractions_destinations_destination_id");
-
-                    b.Navigation("Destination");
-                });
-
             modelBuilder.Entity("Nova.Api.Entities.Booking", b =>
                 {
                     b.HasOne("Nova.Api.Entities.Trip", "Trip")
@@ -1554,27 +1306,6 @@ namespace Nova.Api.Migrations
                         .HasConstraintName("fk_chatbot_package_purchases_users_user_id");
 
                     b.Navigation("Package");
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("Nova.Api.Entities.ChatbotPayment", b =>
-                {
-                    b.HasOne("Nova.Api.Entities.ChatbotPackagePurchase", "Purchase")
-                        .WithMany()
-                        .HasForeignKey("PurchaseId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_chatbot_payments_chatbot_package_purchases_purchase_id");
-
-                    b.HasOne("Nova.Api.Entities.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_chatbot_payments_users_user_id");
-
-                    b.Navigation("Purchase");
 
                     b.Navigation("User");
                 });
@@ -1663,25 +1394,6 @@ namespace Nova.Api.Migrations
                         .HasConstraintName("fk_promo_code_usages_users_user_id");
 
                     b.Navigation("PromoCode");
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("Nova.Api.Entities.PromoPayment", b =>
-                {
-                    b.HasOne("Nova.Api.Entities.PromoCode", "PromoCodeEntity")
-                        .WithMany()
-                        .HasForeignKey("PromoCodeId")
-                        .HasConstraintName("fk_promo_payments_promo_codes_promo_code_id");
-
-                    b.HasOne("Nova.Api.Entities.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_promo_payments_users_user_id");
-
-                    b.Navigation("PromoCodeEntity");
 
                     b.Navigation("User");
                 });

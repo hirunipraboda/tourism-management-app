@@ -141,11 +141,12 @@ using (var scope = app.Services.CreateScope())
     try
     {
         var db = scope.ServiceProvider.GetRequiredService<NovaDbContext>();
+        await db.Database.MigrateAsync();
         await DbInitializer.SeedAsync(db);
     }
-    catch
+    catch (Exception ex)
     {
-        // Ignore in testing environments if db not reachable
+        Console.WriteLine($"[DbInitializer Seed Error] {ex}");
     }
 }
 
@@ -165,21 +166,20 @@ app.Use(async (context, next) =>
     }
 });
 
-// Configure the HTTP request pipeline
-if (app.Environment.IsDevelopment())
+// Configure the HTTP request pipeline (Swagger enabled)
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "NOVA Trip & Itinerary API v1");
-        c.RoutePrefix = "swagger";
-    });
-}
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "NOVA Trip & Itinerary API v1");
+    c.RoutePrefix = "swagger";
+});
 
 app.UseCors("AllowFrontend");
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.MapGet("/api/health", () => Results.Ok(new { status = "healthy", service = "Nova.Api", timestamp = DateTime.UtcNow }));
 
 app.MapControllers();
 

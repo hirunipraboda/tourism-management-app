@@ -12,6 +12,7 @@ public class User
     public string Email { get; set; } = string.Empty;
     public string PasswordHash { get; set; } = string.Empty;
     public UserRole Role { get; set; } = UserRole.Tourist;
+    public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
@@ -227,7 +228,7 @@ public class TransportOption
     [ForeignKey(nameof(ItineraryItemId))]
     public ItineraryItem? ItineraryItem { get; set; }
 
-    public string TransportType { get; set; } = "BUS"; // BUS, TRAIN, PICKME, PUBLIC_TRANSPORT
+    public string TransportType { get; set; } = "BUS"; // BUS, TRAIN, PUBLIC_TRANSPORT
 
     public string Origin { get; set; } = string.Empty;
     public string Destination { get; set; } = string.Empty;

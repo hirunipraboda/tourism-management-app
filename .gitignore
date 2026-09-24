@@ -8,6 +8,7 @@
 
 # Environment files
 .env
+**/.env
 *.env
 !.env.example
 
@@ -21,3 +22,17 @@
 # OS files
 Thumbs.db
 .DS_Store
+
+# Python & Caches
+.mypy_cache/
+.pytest_cache/
+__pycache__/
+*.py[cod]
+*$py.class
+.ipynb_checkpoints/
+
+# Notebook local links
+ai-agents/notebooks/tools/
+ai-agents/notebooks/agents/
+ai-agents/notebooks/data/
+

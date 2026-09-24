@@ -182,7 +182,7 @@ public class ItineraryGenerationService : IItineraryGenerationService
                 day.Items = items;
                 generatedDays.Add(day);
 
-                // Assess multimodal transport options (PickMe, Bus, Train) for logistics availability
+                // Assess multimodal transport options (Bus, Train, Public Transit) for logistics availability
                 await _logisticsAgent.AssessTransportLogisticsAsync(plan.Date, destination, plan.Location, "PUBLIC_TRANSPORT");
             }
 
@@ -191,7 +191,7 @@ public class ItineraryGenerationService : IItineraryGenerationService
                 Action = "AgentCompleted",
                 Actor = "TravelLogisticsAgent",
                 Status = "LogisticsScheduled",
-                Details = "Scheduled activities and evaluated multimodal transport logistics (PickMe, Bus, Train) across all itinerary days."
+                Details = "Scheduled activities and evaluated multimodal transport logistics (Bus, Train) across all itinerary days."
             });
             await _db.SaveChangesAsync();
 

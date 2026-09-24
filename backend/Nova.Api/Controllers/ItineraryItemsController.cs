@@ -62,7 +62,7 @@ public class ItineraryItemsController : ControllerBase
     }
 
     /// <summary>
-    /// Select and attach transport (Bus, Train, or PickMe) to a specific itinerary item.
+    /// Select and attach transport (Bus or Train) to a specific itinerary item.
     /// </summary>
     [HttpPost("api/itinerary-items/{id}/transport")]
     [ProducesResponseType(typeof(ApiResponse<SelectedTransportResponse>), StatusCodes.Status200OK)]

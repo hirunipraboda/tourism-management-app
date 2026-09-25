@@ -13,6 +13,7 @@ namespace SmartTourism.API.Domain.Entities.Infrastructure
         public DbSet<TourPackage> TourPackages { get; set; }
         public DbSet<GuideAvailability> GuideAvailabilities { get; set; }
         public DbSet<TourOperation> TourOperations { get; set; }
+        public DbSet<User> Users => Set<User>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -38,6 +39,15 @@ namespace SmartTourism.API.Domain.Entities.Infrastructure
                 .WithMany(tp => tp.TourOperations)
                 .HasForeignKey(to => to.TourPackageId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // Guide → TourPackage (one-to-many)
+            modelBuilder.Entity<TourPackage>()
+                .HasOne(tp => tp.Guide)
+                .WithMany(g => g.TourPackages)
+                .HasForeignKey(tp => tp.GuideId)
+                .OnDelete(DeleteBehavior.Cascade);
+                
+            modelBuilder.Entity<User>().HasIndex(u => u.Email).IsUnique();
         }
     }
 }

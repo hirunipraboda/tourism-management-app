@@ -10,10 +10,11 @@
 using System;
 using System.Reflection;
 
+[assembly: Microsoft.Extensions.Configuration.UserSecrets.UserSecretsIdAttribute("e969670e-7435-4856-bb5d-87cb4981e6a2")]
 [assembly: System.Reflection.AssemblyCompanyAttribute("SmartTourism.API")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+14da3f3f71530ec378a8aa681339664daeb81a58")]
 [assembly: System.Reflection.AssemblyProductAttribute("SmartTourism.API")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SmartTourism.API")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

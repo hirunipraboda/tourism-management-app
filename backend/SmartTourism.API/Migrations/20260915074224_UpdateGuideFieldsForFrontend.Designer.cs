@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using SmartTourism.API.Domain.Entities.Infrastructure;
@@ -12,9 +13,11 @@ using SmartTourism.API.Domain.Entities.Infrastructure;
 namespace SmartTourism.API.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260915074224_UpdateGuideFieldsForFrontend")]
+    partial class UpdateGuideFieldsForFrontend
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -54,6 +57,9 @@ namespace SmartTourism.API.Migrations
                     b.Property<string>("Phone")
                         .HasColumnType("text");
 
+                    b.Property<Guid?>("ProviderId")
+                        .HasColumnType("uuid");
+
                     b.Property<decimal>("RatingAvg")
                         .HasColumnType("numeric");
 
@@ -66,10 +72,6 @@ namespace SmartTourism.API.Migrations
                     b.Property<int>("ToursCompleted")
                         .HasColumnType("integer");
 
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("ProviderId");
-
                     b.Property<int>("VerificationStatus")
                         .HasColumnType("integer");
 
@@ -77,8 +79,6 @@ namespace SmartTourism.API.Migrations
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("UserId");
 
                     b.ToTable("Guides");
                 });
@@ -111,65 +111,6 @@ namespace SmartTourism.API.Migrations
                     b.HasIndex("GuideId");
 
                     b.ToTable("GuideAvailabilities");
-                });
-
-            modelBuilder.Entity("SmartTourism.API.Domain.Entities.Payment", b =>
-                {
-                    b.Property<Guid>("PaymentId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<decimal>("Amount")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("CardHolderName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<string>("CardLast4")
-                        .IsRequired()
-                        .HasMaxLength(4)
-                        .HasColumnType("character varying(4)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Period")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
-
-                    b.Property<string>("PlanId")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<string>("PlanName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<string>("TransactionId")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<string>("UserEmail")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)");
-
-                    b.HasKey("PaymentId");
-
-                    b.HasIndex("UserEmail");
-
-                    b.ToTable("Payments");
                 });
 
             modelBuilder.Entity("SmartTourism.API.Domain.Entities.TourOperation", b =>
@@ -239,7 +180,7 @@ namespace SmartTourism.API.Migrations
                     b.Property<int>("DurationDays")
                         .HasColumnType("integer");
 
-                    b.Property<int>("GuideId")
+                    b.Property<int?>("GuideId")
                         .HasColumnType("integer");
 
                     b.Property<bool>("IsActive")
@@ -261,55 +202,6 @@ namespace SmartTourism.API.Migrations
                     b.HasIndex("GuideId");
 
                     b.ToTable("TourPackages");
-                });
-
-            modelBuilder.Entity("SmartTourism.API.Domain.Entities.User", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("FullName")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("PasswordHash")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Phone")
-                        .HasColumnType("text");
-
-                    b.Property<int>("Role")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Email")
-                        .IsUnique();
-
-                    b.ToTable("Users");
-                });
-
-            modelBuilder.Entity("SmartTourism.API.Domain.Entities.Guide", b =>
-                {
-                    b.HasOne("SmartTourism.API.Domain.Entities.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("SmartTourism.API.Domain.Entities.GuideAvailability", b =>
@@ -344,13 +236,9 @@ namespace SmartTourism.API.Migrations
 
             modelBuilder.Entity("SmartTourism.API.Domain.Entities.TourPackage", b =>
                 {
-                    b.HasOne("SmartTourism.API.Domain.Entities.Guide", "Guide")
+                    b.HasOne("SmartTourism.API.Domain.Entities.Guide", null)
                         .WithMany("TourPackages")
-                        .HasForeignKey("GuideId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Guide");
+                        .HasForeignKey("GuideId");
                 });
 
             modelBuilder.Entity("SmartTourism.API.Domain.Entities.Guide", b =>

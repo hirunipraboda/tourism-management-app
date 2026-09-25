@@ -1,0 +1,164 @@
+@import "tailwindcss";
+
+@theme {
+  --color-nova-primary: #0B3A53;
+  --color-nova-primary-dark: #072537;
+  --color-nova-primary-light: #154E6E;
+  
+  --color-nova-secondary: #146C86;
+  --color-nova-secondary-light: #1C85A4;
+  
+  --color-nova-accent: #16A6A1;
+  --color-nova-accent-hover: #138D89;
+  --color-nova-accent-light: #E6F7F7;
+
+  --color-nova-amber: #F59E0B;
+  --color-nova-amber-light: #FFFBEB;
+  
+  --color-nova-neutral: #767779;
+  --color-nova-neutral-dark: #1E293B;
+  --color-nova-neutral-light: #F8FAFC;
+
+  --font-sans: 'Inter', 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-heading: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+}
+
+@layer base {
+  body {
+    font-family: var(--font-sans);
+    background-color: #F8FAFC;
+    color: #0F172A;
+    -webkit-font-smoothing: antialiased;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+  }
+}
+
+/* Custom Utilities for NOVA UI */
+.bg-nova-navy {
+  background-color: #0B3A53;
+}
+
+.text-nova-navy {
+  color: #0B3A53;
+}
+
+.border-nova-navy {
+  border-color: #0B3A53;
+}
+
+.bg-nova-teal-secondary {
+  background-color: #146C86;
+}
+
+.text-nova-teal-secondary {
+  color: #146C86;
+}
+
+.bg-nova-teal-accent {
+  background-color: #16A6A1;
+}
+
+.text-nova-teal-accent {
+  color: #16A6A1;
+}
+
+.border-nova-teal-accent {
+  border-color: #16A6A1;
+}
+
+.bg-nova-amber {
+  background-color: #F59E0B;
+}
+
+.text-nova-amber {
+  color: #F59E0B;
+}
+
+.nova-card-hover {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.nova-card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px rgba(11, 58, 83, 0.08), 0 8px 10px -6px rgba(11, 58, 83, 0.04);
+}
+
+.nova-glass {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.nova-glass-dark {
+  background: rgba(11, 58, 83, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Staggered Text Reveal Animations for Hero */
+@keyframes heroTextReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-hero-stagger-1 {
+  animation: heroTextReveal 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.05s forwards;
+  opacity: 0;
+}
+
+.animate-hero-stagger-2 {
+  animation: heroTextReveal 0.65s cubic-bezier(0.16, 1, 0.3, 1) 0.15s forwards;
+  opacity: 0;
+}
+
+.animate-hero-stagger-3 {
+  animation: heroTextReveal 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.25s forwards;
+  opacity: 0;
+}
+
+.animate-hero-stagger-4 {
+  animation: heroTextReveal 0.75s cubic-bezier(0.16, 1, 0.3, 1) 0.35s forwards;
+  opacity: 0;
+}
+
+.nova-gradient-primary {
+  background: linear-gradient(135deg, #0B3A53 0%, #146C86 100%);
+}
+
+.nova-gradient-accent {
+  background: linear-gradient(135deg, #146C86 0%, #16A6A1 100%);
+}
+
+.nova-gradient-amber {
+  background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F1F5F9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}

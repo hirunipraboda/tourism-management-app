@@ -1,0 +1,40 @@
+import { Guide } from '../types/travel';
+
+export const MOCK_GUIDES: Guide[] = [
+  {
+    id: 'gd-1',
+    name: 'Kenji Takahashi',
+    email: 'kenji.t@nova-guides.net',
+    phone: '+81 90 1234 5678',
+    languages: ['English', 'Japanese', 'Mandarin'],
+    specialties: ['Tea Ceremony', 'Shinto History', 'Culinary Trails'],
+    rating: 4.98,
+    toursCompleted: 142,
+    status: 'Available',
+    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+  },
+  {
+    id: 'gd-2',
+    name: 'Chiara Moretti',
+    email: 'chiara.m@nova-guides.net',
+    phone: '+39 340 987 6543',
+    languages: ['Italian', 'English', 'French'],
+    specialties: ['Coastal Trekking', 'Vineyard Tasting', 'Architecture'],
+    rating: 4.94,
+    toursCompleted: 98,
+    status: 'Assigned',
+    avatarUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=200&q=80',
+  },
+  {
+    id: 'gd-3',
+    name: 'Lukas Weber',
+    email: 'lukas.w@nova-guides.net',
+    phone: '+41 79 555 1234',
+    languages: ['German', 'English', 'Spanish'],
+    specialties: ['Alpine Mountaineering', 'Photography', 'Glacier Science'],
+    rating: 4.96,
+    toursCompleted: 115,
+    status: 'Available',
+    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
+  },
+];

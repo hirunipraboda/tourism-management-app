@@ -1,0 +1,43 @@
+import { Attraction } from '../types/travel';
+
+export const MOCK_ATTRACTIONS: Attraction[] = [
+  {
+    id: 'attr-1',
+    destinationId: 'dest-1',
+    destinationName: 'Kyoto Ancient Sanctuaries',
+    name: 'Fushimi Inari Shrine Trail',
+    category: 'Cultural Landmark',
+    imageUrl: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=800&q=80',
+    durationHours: 3,
+    pricePerPerson: 0,
+    rating: 4.95,
+    reviewsCount: 1240,
+    status: 'Active',
+  },
+  {
+    id: 'attr-2',
+    destinationId: 'dest-1',
+    destinationName: 'Kyoto Ancient Sanctuaries',
+    name: 'Arashiyama Bamboo Sanctuary',
+    category: 'Nature & Parks',
+    imageUrl: 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=800&q=80',
+    durationHours: 2,
+    pricePerPerson: 25,
+    rating: 4.88,
+    reviewsCount: 980,
+    status: 'Active',
+  },
+  {
+    id: 'attr-3',
+    destinationId: 'dest-2',
+    destinationName: 'Amalfi Coastal Route',
+    name: 'Path of the Gods Trek',
+    category: 'Adventure Trail',
+    imageUrl: 'https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=800&q=80',
+    durationHours: 4.5,
+    pricePerPerson: 65,
+    rating: 4.91,
+    reviewsCount: 650,
+    status: 'Active',
+  },
+];

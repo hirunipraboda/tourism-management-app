@@ -32,12 +32,74 @@ using (var scope = app.Services.CreateScope())
             ""Email"" text NOT NULL,
             ""PasswordHash"" text NOT NULL,
             ""Role"" integer NOT NULL,
+            ""Status"" integer NOT NULL DEFAULT 0,
             ""Phone"" text NULL,
             ""CreatedAt"" timestamp with time zone NOT NULL,
             ""UpdatedAt"" timestamp with time zone NOT NULL
         );
+        ALTER TABLE ""Users"" ADD COLUMN IF NOT EXISTS ""Status"" integer NOT NULL DEFAULT 0;
         CREATE UNIQUE INDEX IF NOT EXISTS ""IX_Users_Email"" ON ""Users"" (""Email"");
+        ALTER TABLE ""TourPackages"" ADD COLUMN IF NOT EXISTS ""ImageUrl"" text NULL;
+        UPDATE ""TourPackages"" SET ""ImageUrl"" = '' WHERE ""ImageUrl"" IS NULL;
     ");
+
+    // Seed default database users if table is empty
+    if (!db.Users.Any())
+    {
+        var defaultPasswordHash = BCrypt.Net.BCrypt.HashPassword("Password123!");
+        db.Users.AddRange(new[]
+        {
+            new SmartTourism.API.Domain.Entities.User
+            {
+                Id = Guid.NewGuid(),
+                FullName = "Admin Desk Officer",
+                Email = "admin@travellink.lk",
+                PasswordHash = defaultPasswordHash,
+                Role = SmartTourism.API.Domain.Entities.Enums.UserRole.Admin,
+                Status = SmartTourism.API.Domain.Entities.UserStatus.Active,
+                Phone = "+94 11 777 0000",
+                CreatedAt = DateTime.UtcNow.AddMonths(-5),
+                UpdatedAt = DateTime.UtcNow
+            },
+            new SmartTourism.API.Domain.Entities.User
+            {
+                Id = Guid.NewGuid(),
+                FullName = "Ceylon Travels Operator",
+                Email = "operator@ceylontravels.lk",
+                PasswordHash = defaultPasswordHash,
+                Role = SmartTourism.API.Domain.Entities.Enums.UserRole.Provider,
+                Status = SmartTourism.API.Domain.Entities.UserStatus.Active,
+                Phone = "+94 11 234 5678",
+                CreatedAt = DateTime.UtcNow.AddMonths(-3),
+                UpdatedAt = DateTime.UtcNow
+            },
+            new SmartTourism.API.Domain.Entities.User
+            {
+                Id = Guid.NewGuid(),
+                FullName = "Sanath Wickramasinghe",
+                Email = "sanath.w@gmail.com",
+                PasswordHash = defaultPasswordHash,
+                Role = SmartTourism.API.Domain.Entities.Enums.UserRole.Tourist,
+                Status = SmartTourism.API.Domain.Entities.UserStatus.Active,
+                Phone = "+94 77 123 4567",
+                CreatedAt = DateTime.UtcNow.AddMonths(-2),
+                UpdatedAt = DateTime.UtcNow
+            },
+            new SmartTourism.API.Domain.Entities.User
+            {
+                Id = Guid.NewGuid(),
+                FullName = "Anula Wickramasinghe",
+                Email = "anula.w@gmail.com",
+                PasswordHash = defaultPasswordHash,
+                Role = SmartTourism.API.Domain.Entities.Enums.UserRole.Tourist,
+                Status = SmartTourism.API.Domain.Entities.UserStatus.Active,
+                Phone = "+94 71 987 6543",
+                CreatedAt = DateTime.UtcNow.AddMonths(-1),
+                UpdatedAt = DateTime.UtcNow
+            }
+        });
+        db.SaveChanges();
+    }
 }
 
 app.UseCors("AllowFrontend");

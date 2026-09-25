@@ -8,6 +8,10 @@ namespace SmartTourism.API.Domain.Entities
         [Key]
         public int TourPackageId { get; set; }
 
+        // FK — the guide who owns this package
+        [ForeignKey("Guide")]
+        public int GuideId { get; set; }
+
         [Required]
         [MaxLength(150)]
         public string PackageName { get; set; } = string.Empty;
@@ -27,9 +31,13 @@ namespace SmartTourism.API.Domain.Entities
 
         public bool IsActive { get; set; } = true;
 
+        [MaxLength(1000)]
+        public string? ImageUrl { get; set; }
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         // Navigation properties
+        public Guide Guide { get; set; } = null!;
         public ICollection<TourOperation> TourOperations { get; set; } = new List<TourOperation>();
     }
 }

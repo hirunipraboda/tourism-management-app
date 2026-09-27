@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Nova.Api.Data;
 using Nova.Api.DTOs;
 using Nova.Api.Models;
+using Nova.Api.Services;
 
 namespace Nova.Api.Controllers
 {
@@ -11,10 +12,12 @@ namespace Nova.Api.Controllers
     public class AttractionsController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly IAttractionAiAgentService _aiAgentService;
 
-        public AttractionsController(AppDbContext context)
+        public AttractionsController(AppDbContext context, IAttractionAiAgentService aiAgentService)
         {
             _context = context;
+            _aiAgentService = aiAgentService;
         }
 
         [HttpGet]
@@ -110,6 +113,87 @@ namespace Nova.Api.Controllers
             _context.Attractions.Remove(attraction);
             await _context.SaveChangesAsync();
             return NoContent();
+        }
+
+        // ===================================================================
+        // Python LangGraph AI Service Integration Endpoints
+        // ===================================================================
+
+        [HttpPost("ai/curate")]
+        public async Task<ActionResult<AttractionAiStateDto>> CurateAttractions([FromBody] CurateAttractionsRequestDto request)
+        {
+            var destination = await _context.Destinations.FindAsync(request.DestinationId);
+            if (destination != null && string.IsNullOrWhiteSpace(request.DestinationName))
+            {
+                request.DestinationName = destination.Name;
+            }
+
+            var result = await _aiAgentService.CurateAttractionsAsync(request);
+            if (result == null)
+                return StatusCode(500, "Failed to execute AI attraction curation.");
+
+            return Ok(result);
+        }
+
+        [HttpPost("ai/approve")]
+        public async Task<ActionResult<AttractionAiStateDto>> SubmitHumanApproval([FromBody] HumanApprovalRequestDto request)
+        {
+            var result = await _aiAgentService.SubmitHumanApprovalAsync(request);
+            if (result == null)
+                return StatusCode(500, "Failed to submit human approval to AI service.");
+
+            return Ok(result);
+        }
+
+        [HttpGet("ai/status/{threadId}")]
+        public async Task<ActionResult<AttractionAiStateDto>> GetAiStateStatus(string threadId)
+        {
+            var result = await _aiAgentService.GetStateStatusAsync(threadId);
+            if (result == null)
+                return NotFound($"AI thread '{threadId}' not found.");
+
+            return Ok(result);
+        }
+
+        [HttpPost("ai/save-approved/{threadId}")]
+        public async Task<ActionResult<IEnumerable<AttractionReadDto>>> SaveApprovedAttractions(string threadId)
+        {
+            var state = await _aiAgentService.GetStateStatusAsync(threadId);
+            if (state == null)
+                return NotFound($"AI thread '{threadId}' not found.");
+
+            if (!string.Equals(state.Status, "APPROVED", StringComparison.OrdinalIgnoreCase))
+                return BadRequest($"Thread is in status '{state.Status}'. Only 'APPROVED' plans can be saved.");
+
+            if (!Guid.TryParse(state.DestinationId, out Guid destinationId))
+                return BadRequest("Invalid Destination ID in AI state.");
+
+            var destinationExists = await _context.Destinations.AnyAsync(d => d.Id == destinationId);
+            if (!destinationExists)
+                return BadRequest("Associated Destination does not exist in database.");
+
+            var createdAttractions = new List<AttractionReadDto>();
+            foreach (var item in state.CuratedPlan)
+            {
+                var attraction = new Attraction
+                {
+                    DestinationId = destinationId,
+                    Name = item.Name,
+                    Category = item.Category,
+                    OpeningHours = item.OpeningHours,
+                    EntryFee = item.EntryFee,
+                    VisitDurationMinutes = item.VisitDurationMinutes,
+                    Latitude = item.Latitude,
+                    Longitude = item.Longitude,
+                    IsAccessible = item.IsAccessible
+                };
+
+                _context.Attractions.Add(attraction);
+                await _context.SaveChangesAsync();
+                createdAttractions.Add(ToReadDto(attraction));
+            }
+
+            return Ok(createdAttractions);
         }
 
         private static AttractionReadDto ToReadDto(Attraction a) => new()

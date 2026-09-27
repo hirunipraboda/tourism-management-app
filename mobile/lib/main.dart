@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'screens/home_screen.dart';
 import 'screens/ai_planner_screen.dart';
 import 'screens/bookings_screen.dart';
+import 'screens/destinations_attractions_screen.dart';
 
 void main() {
   runApp(const NovaTouristApp());
@@ -43,6 +44,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   final List<Widget> _screens = const [
     HomeScreen(),
+    DestinationsAttractionsScreen(),
     AiPlannerScreen(),
     BookingsScreen(),
   ];
@@ -66,6 +68,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             icon: Icon(Icons.explore_outlined),
             selectedIcon: Icon(Icons.explore),
             label: 'Explore',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.place_outlined),
+            selectedIcon: Icon(Icons.place),
+            label: 'Attractions',
           ),
           NavigationDestination(
             icon: Icon(Icons.auto_awesome_outlined),

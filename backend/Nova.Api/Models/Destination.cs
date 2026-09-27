@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace Nova.Api.Models
@@ -10,17 +12,29 @@ namespace Nova.Api.Models
         [MaxLength(200)]
         public string Name { get; set; } = string.Empty;
 
-        [Required]
         [MaxLength(100)]
-        public string Country { get; set; } = string.Empty;
+        public string Country { get; set; } = "Sri Lanka";
 
-        [Required]
         [MaxLength(100)]
         public string City { get; set; } = string.Empty;
 
+        [MaxLength(200)]
+        public string? Location { get; set; }
+
+        [MaxLength(100)]
+        public string? Category { get; set; } = "Cultural";
+
         public string? Description { get; set; }
 
+        public string? ImageUrl { get; set; }
+
+        public bool IsAccessible { get; set; } = true;
+
+        public bool IsAvailable { get; set; } = true;
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
         public ICollection<Attraction> Attractions { get; set; } = new List<Attraction>();
     }

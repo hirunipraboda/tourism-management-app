@@ -29,7 +29,15 @@ import { LandingNavbar } from '../components/navigation/LandingNavbar';
 import { Footer } from '../components/navigation/Footer';
 import { tripPlannerService } from '../services/tripPlannerService';
 import { TripPlan, ItineraryDayItem, ItineraryActivityItem } from '../types/tripPlanner';
-import pickmeLogoImg from '../assets/pickme-logo.png';
+import { UserTrip } from '../mock/tripsData';
+import kandyImg from '../assets/destinations/Kandy.jpg';
+import ellaImg from '../assets/destinations/Ella.jpg';
+import galleImg from '../assets/destinations/Galle.jpg';
+import sigiriyaImg from '../assets/destinations/sigiriya.jpg';
+import yalaImg from '../assets/destinations/Yala.jpg';
+import mirissaImg from '../assets/destinations/Mirissa.jpg';
+import anuradhapuraImg from '../assets/destinations/Anuradhapura.jpg';
+import hortonPlainsImg from '../assets/destinations/Horton Plains.jpg';
 
 export const AITripPlannerPage: React.FC = () => {
   const navigate = useNavigate();
@@ -42,24 +50,26 @@ export const AITripPlannerPage: React.FC = () => {
 
   // Form Inputs
   const [destination, setDestination] = useState<string>('Sri Lanka');
-  const [selectedDestinations, setSelectedDestinations] = useState<string[]>(['Kandy', 'Ella']);
-  const [startDate, setStartDate] = useState<string>('2026-09-12');
-  const [endDate, setEndDate] = useState<string>('2026-09-17');
+  const [selectedDestinations, setSelectedDestinations] = useState<string[]>([]);
+  const [letAiRecommend, setLetAiRecommend] = useState<boolean>(false);
+  const [customDestinations, setCustomDestinations] = useState<string[]>([]);
+  const [customDestinationInput, setCustomDestinationInput] = useState<string>('');
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
   const [travelersCount, setTravelersCount] = useState<number>(2);
   const [adultsCount, setAdultsCount] = useState<number>(2);
   const [childrenCount, setChildrenCount] = useState<number>(0);
 
   const [currency, setCurrency] = useState<string>('USD');
   const [budgetAmount, setBudgetAmount] = useState<number>(600);
-  const [budgetCategory, setBudgetCategory] = useState<'Budget' | 'Moderate' | 'Luxury'>('Moderate');
+  const [budgetCategory, setBudgetCategory] = useState<'Budget' | 'Moderate' | 'Luxury' | ''>('');
 
-  const [selectedTravelStyles, setSelectedTravelStyles] = useState<string[]>(['Cultural', 'Nature', 'Photography']);
-  const [selectedActivities, setSelectedActivities] = useState<string[]>(['Hiking', 'Temples', 'Beaches']);
+  const [selectedTravelStyles, setSelectedTravelStyles] = useState<string[]>([]);
+  const [selectedActivities, setSelectedActivities] = useState<string[]>([]);
   const [specialRequirements, setSpecialRequirements] = useState<string>('');
 
-  const [accommodationPref, setAccommodationPref] = useState<string>('3 Star');
-  const [transportPref, setTransportPref] = useState<string>('PickMe Mobility & Rides');
-  const [pickMeOfferApplied, setPickMeOfferApplied] = useState<boolean>(false);
+  const [accommodationPref, setAccommodationPref] = useState<string>('');
+  const [transportPref, setTransportPref] = useState<string>('');
 
   // AI Animation State
   const [aiStepIndex, setAiStepIndex] = useState<number>(0);
@@ -81,10 +91,11 @@ export const AITripPlannerPage: React.FC = () => {
 
   // Duration helper
   const calculateDurationDays = () => {
+    if (!startDate || !endDate) return 0;
     const s = new Date(startDate);
     const e = new Date(endDate);
     const diff = Math.ceil((e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24));
-    return isNaN(diff) || diff <= 0 ? 1 : diff;
+    return isNaN(diff) || diff <= 0 ? 0 : diff;
   };
 
   const durationDays = calculateDurationDays();
@@ -97,6 +108,41 @@ export const AITripPlannerPage: React.FC = () => {
     } else {
       setSelectedDestinations([...selectedDestinations, dest]);
     }
+  };
+
+  const handleAddCustomDestination = () => {
+    const trimmed = customDestinationInput.trim();
+    if (!trimmed) return;
+
+    const newPlaces = trimmed
+      .split(',')
+      .map((p) => p.trim())
+      .filter((p) => p.length > 0);
+
+    let updatedSelected = [...selectedDestinations];
+    let updatedCustom = [...customDestinations];
+
+    newPlaces.forEach((place) => {
+      const formatted = place.charAt(0).toUpperCase() + place.slice(1);
+      if (!updatedSelected.some((d) => d.toLowerCase() === formatted.toLowerCase())) {
+        updatedSelected.push(formatted);
+      }
+      if (!updatedCustom.some((d) => d.toLowerCase() === formatted.toLowerCase())) {
+        updatedCustom.push(formatted);
+      }
+    });
+
+    if (letAiRecommend) setLetAiRecommend(false);
+    setSelectedDestinations(updatedSelected);
+    setCustomDestinations(updatedCustom);
+    setCustomDestinationInput('');
+    triggerToast(`Added ${newPlaces.length > 1 ? 'destinations' : `"${newPlaces[0]}"`} to your trip!`);
+  };
+
+  const handleRemoveCustomDestination = (placeToRemove: string) => {
+    setCustomDestinations(customDestinations.filter((d) => d !== placeToRemove));
+    setSelectedDestinations(selectedDestinations.filter((d) => d !== placeToRemove));
+    triggerToast(`Removed "${placeToRemove}"`);
   };
 
   const travelStyleOptions = [
@@ -170,20 +216,20 @@ export const AITripPlannerPage: React.FC = () => {
       const plan = await tripPlannerService.generateTripPlan({
         destination,
         destinations: selectedDestinations.length > 0 ? selectedDestinations : ['Sigiriya', 'Kandy', 'Ella'],
-        startDate,
-        endDate,
+        startDate: startDate || new Date().toISOString().split('T')[0],
+        endDate: endDate || new Date(Date.now() + 5 * 86400000).toISOString().split('T')[0],
         travelers: travelersCount,
         adults: adultsCount,
         children: childrenCount,
         budget: {
           amount: budgetAmount,
           currency,
-          category: budgetCategory,
+          category: (budgetCategory as any) || 'Moderate',
         },
-        travelStyle: selectedTravelStyles,
-        activities: selectedActivities,
-        accommodationPreference: accommodationPref,
-        transportPreference: transportPref,
+        travelStyle: selectedTravelStyles.length > 0 ? selectedTravelStyles : ['Cultural', 'Nature'],
+        activities: selectedActivities.length > 0 ? selectedActivities : ['Hiking', 'Temples'],
+        accommodationPreference: accommodationPref || '3 Star',
+        transportPreference: transportPref || 'Public Transport (Trains & Buses)',
         specialRequirements,
       });
 
@@ -284,32 +330,146 @@ export const AITripPlannerPage: React.FC = () => {
     }
   };
 
+  // Helper to select realistic destination image
+  const getDestinationImage = (dest: string) => {
+    const d = dest.toLowerCase();
+    if (d.includes('sigiriya')) return sigiriyaImg;
+    if (d.includes('ella')) return ellaImg;
+    if (d.includes('galle')) return galleImg;
+    if (d.includes('yala')) return yalaImg;
+    if (d.includes('mirissa')) return mirissaImg;
+    if (d.includes('anuradhapura')) return anuradhapuraImg;
+    if (d.includes('horton')) return hortonPlainsImg;
+    return kandyImg;
+  };
+
+  // Helper to format dates
+  const formatTripDates = (startStr: string, endStr: string) => {
+    try {
+      const s = new Date(startStr);
+      const e = new Date(endStr);
+      if (!isNaN(s.getTime()) && !isNaN(e.getTime())) {
+        const sDay = s.getDate();
+        const eDay = e.getDate();
+        const sMonth = s.toLocaleDateString('en-US', { month: 'short' });
+        const eMonth = e.toLocaleDateString('en-US', { month: 'short' });
+        const year = s.getFullYear();
+        if (sMonth === eMonth) {
+          return `${sDay} – ${eDay} ${sMonth} ${year}`;
+        }
+        return `${sDay} ${sMonth} – ${eDay} ${eMonth} ${year}`;
+      }
+    } catch {}
+    return `${startStr} – ${endStr}`;
+  };
+
   // Save Trip Handler
   const handleSaveTrip = async () => {
     if (!generatedPlan) return;
     setIsSaving(true);
     try {
-      await tripPlannerService.saveTripPlan(generatedPlan, {
+      // 1. Persist to PostgreSQL database via backend API
+      const savedRes = await tripPlannerService.saveTripPlan(generatedPlan, {
         destination,
-        destinations: selectedDestinations,
-        startDate,
-        endDate,
+        destinations: selectedDestinations.length > 0 ? selectedDestinations : [destination],
+        startDate: startDate || new Date().toISOString().split('T')[0],
+        endDate: endDate || new Date(Date.now() + 5 * 86400000).toISOString().split('T')[0],
         travelers: travelersCount,
-        budget: { amount: budgetAmount, currency, category: budgetCategory },
+        budget: { amount: budgetAmount, currency, category: (budgetCategory as any) || 'Moderate' },
         travelStyle: selectedTravelStyles,
         activities: selectedActivities,
-        accommodationPreference: accommodationPref,
-        transportPreference: transportPref,
+        accommodationPreference: accommodationPref || '3 Star',
+        transportPreference: transportPref || 'Public Transport (Trains & Buses)',
         specialRequirements,
       });
 
+      // 2. Build full UserTrip object for instant display on the Trips section
+      const destList = generatedPlan.trip.destinations.length > 0 ? generatedPlan.trip.destinations : [destination];
+      const primaryDest = destList[0] || 'Sri Lanka';
+      const destTitle = destList.join(' & ');
+      const newTripId = (savedRes && (savedRes as any).tripId) || `trip-ai-${Date.now()}`;
+
+      const savedUserTrip: UserTrip = {
+        id: newTripId,
+        name: generatedPlan.trip.title || `${generatedPlan.trip.duration}-Day Tour: ${destTitle}`,
+        destination: `${destTitle}, Sri Lanka`,
+        destinationId: primaryDest.toLowerCase().replace(/\s+/g, '-'),
+        dates: formatTripDates(startDate, endDate),
+        duration: `${generatedPlan.trip.duration || durationDays} Days`,
+        travelers: generatedPlan.trip.travelers || travelersCount,
+        travelerNames: ['Tourist Explorer', 'Travel Companion'],
+        status: 'Upcoming',
+        imageUrl: getDestinationImage(primaryDest),
+        budget: `$${generatedPlan.budget.total} ${generatedPlan.budget.currency || 'USD'}`,
+        spentBudget: '$0',
+        isFeatured: true,
+        progress: {
+          destination: true,
+          preferences: true,
+          aiPlanning: true,
+          itinerary: true,
+          bookings: true,
+        },
+        interests: selectedTravelStyles.length > 0 ? selectedTravelStyles : ['Culture', 'Nature', 'AI Guided'],
+        notes: `${generatedPlan.trip.description}. Transport: ${generatedPlan.trip.transportPreference}. Accommodation: ${generatedPlan.trip.accommodationPreference}.`,
+        weatherForecast: '26°C · Pleasant & Mild',
+        aiNotes: `AI-Synthesized multi-agent journey with Feasibility Score of ${generatedPlan.metadata.aiScore}%.`,
+        dailyItinerary: generatedPlan.days.map((d) => ({
+          day: d.day,
+          date: d.date,
+          title: d.title,
+          activities: d.activities.map((a) => ({
+            time: a.time,
+            title: a.title,
+            location: a.location,
+            description: a.description || a.notes || 'Activity curated by AI.',
+            status: 'Planned',
+            type: a.type === 'Dining' ? 'Dining'
+              : a.type === 'Transport' ? 'Transit'
+              : a.type === 'Lodging' ? 'Stay'
+              : a.type === 'Attraction' ? 'Sightseeing'
+              : 'Activity',
+          })),
+        })),
+        budgetBreakdown: [
+          { category: 'Accommodation', amount: `$${generatedPlan.budget.accommodation}` },
+          { category: 'Transportation', amount: `$${generatedPlan.budget.transportation}` },
+          { category: 'Activities', amount: `$${generatedPlan.budget.activities}` },
+          { category: 'Food & Dining', amount: `$${generatedPlan.budget.food}` },
+          { category: 'Sundry / Other', amount: `$${generatedPlan.budget.other}` },
+        ],
+      };
+
+      // 3. Persist in localStorage 'nova_user_trips' so TripsPage displays it immediately
+      try {
+        const existingRaw = localStorage.getItem('nova_user_trips');
+        let existingList: UserTrip[] = [];
+        if (existingRaw) {
+          try {
+            existingList = JSON.parse(existingRaw);
+          } catch {
+            existingList = [];
+          }
+        }
+        const updatedList = [savedUserTrip, ...existingList.filter((t) => t.id !== newTripId)];
+        localStorage.setItem('nova_user_trips', JSON.stringify(updatedList));
+        window.dispatchEvent(new Event('storage'));
+      } catch (storageErr) {
+        console.warn('LocalStorage save error:', storageErr);
+      }
+
       setSaveSuccess(true);
-      triggerToast('Trip saved to PostgreSQL database! Redirecting to Trips...');
+      triggerToast('Trip saved! Redirecting to Your Trips...');
       setTimeout(() => {
-        navigate('/trips');
-      }, 1800);
+        navigate('/trips', {
+          state: {
+            highlightedTripId: newTripId,
+            message: `🎉 "${savedUserTrip.name}" has been added to Your Trips!`,
+          },
+        });
+      }, 1000);
     } catch (err: any) {
-      triggerToast(err.message || 'Failed to save trip. Please log in first.');
+      triggerToast(err.message || 'Failed to save trip. Please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -372,15 +532,22 @@ export const AITripPlannerPage: React.FC = () => {
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   <button
                     type="button"
-                    onClick={() => setSelectedDestinations([])}
+                    onClick={() => {
+                      if (letAiRecommend) {
+                        setLetAiRecommend(false);
+                      } else {
+                        setLetAiRecommend(true);
+                        setSelectedDestinations([]);
+                      }
+                    }}
                     className={`p-3.5 rounded-xl border text-sm font-semibold transition-all text-left flex items-center justify-between ${
-                      selectedDestinations.length === 0
+                      letAiRecommend
                         ? 'bg-teal-50 border-2 border-teal-600 text-teal-900 shadow-sm'
                         : 'bg-white border-slate-200 text-slate-600 hover:border-teal-500/50 hover:bg-slate-50'
                     }`}
                   >
                     <span>✨ Let AI Recommend</span>
-                    {selectedDestinations.length === 0 && <Check className="w-4 h-4 text-teal-700" />}
+                    {letAiRecommend && <Check className="w-4 h-4 text-teal-700" />}
                   </button>
 
                   {destinationOptions.map((dest) => {
@@ -389,7 +556,10 @@ export const AITripPlannerPage: React.FC = () => {
                       <button
                         key={dest}
                         type="button"
-                        onClick={() => toggleDestination(dest)}
+                        onClick={() => {
+                          setLetAiRecommend(false);
+                          toggleDestination(dest);
+                        }}
                         className={`p-3.5 rounded-xl border text-sm font-semibold transition-all text-left flex items-center justify-between ${
                           isSelected
                             ? 'bg-teal-50 border-2 border-teal-600 text-teal-900 shadow-sm'
@@ -402,6 +572,79 @@ export const AITripPlannerPage: React.FC = () => {
                     );
                   })}
                 </div>
+              </div>
+
+              {/* Custom Destination Write Section */}
+              <div className="bg-slate-50/90 border border-slate-200/90 rounded-2xl p-5 transition-all">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 bg-teal-100/70 text-teal-800 rounded-lg">
+                      <Plus className="w-4 h-4" />
+                    </div>
+                    <label className="text-slate-900 font-bold text-sm">
+                      Can't find your destination? Type a custom place
+                    </label>
+                  </div>
+                  {customDestinations.length > 0 && (
+                    <span className="text-xs font-semibold px-2.5 py-0.5 bg-teal-100 text-teal-800 rounded-full">
+                      {customDestinations.length} custom {customDestinations.length === 1 ? 'place' : 'places'}
+                    </span>
+                  )}
+                </div>
+
+                <p className="text-xs text-slate-500 mb-3">
+                  Write any specific town, city, beach, or national park (e.g. Jaffna, Bentota, Arugam Bay, Polonnaruwa, Wilpattu, Tangalle) if not listed above.
+                </p>
+
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={customDestinationInput}
+                    onChange={(e) => setCustomDestinationInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddCustomDestination();
+                      }
+                    }}
+                    placeholder="Enter place name (e.g. Jaffna, Bentota)..."
+                    className="flex-1 bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-slate-900 text-sm font-medium focus:outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-500/20 shadow-xs"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddCustomDestination}
+                    disabled={!customDestinationInput.trim()}
+                    className="px-4 py-2.5 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold text-sm rounded-xl flex items-center gap-1.5 shadow-sm transition-all whitespace-nowrap cursor-pointer"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add Place
+                  </button>
+                </div>
+
+                {/* Display custom destinations badges */}
+                {customDestinations.length > 0 && (
+                  <div className="mt-4 pt-3 border-t border-slate-200/80">
+                    <span className="text-xs font-bold text-slate-600 block mb-2">Custom destinations in your trip:</span>
+                    <div className="flex flex-wrap gap-2">
+                      {customDestinations.map((place) => (
+                        <span
+                          key={place}
+                          className="inline-flex items-center gap-2 px-3 py-1.5 bg-teal-50 text-teal-900 border border-teal-300/80 rounded-xl text-xs font-semibold shadow-xs"
+                        >
+                          <span>📍 {place}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveCustomDestination(place)}
+                            className="p-0.5 hover:bg-teal-200/80 rounded-full text-teal-700 hover:text-teal-900 transition-colors"
+                            title={`Remove ${place}`}
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -458,7 +701,7 @@ export const AITripPlannerPage: React.FC = () => {
                 <span className="text-slate-700 font-medium text-sm">Calculated Duration:</span>
               </div>
               <span className="text-teal-800 font-extrabold text-base bg-white px-3 py-1 rounded-xl border border-teal-200 shadow-sm">
-                {durationDays} Days / {Math.max(1, durationDays - 1)} Nights
+                {durationDays > 0 ? `${durationDays} Days / ${Math.max(1, durationDays - 1)} Nights` : 'Select dates to calculate'}
               </span>
             </div>
 
@@ -706,16 +949,16 @@ export const AITripPlannerPage: React.FC = () => {
           </div>
         )}
 
-        {/* STEP 6: ACCOMMODATION & PICKME MOBILITY OFFER */}
+        {/* STEP 6: ACCOMMODATION & MOBILITY SELECTION */}
         {step === 6 && (
           <div className="bg-white border border-slate-200/80 rounded-3xl p-6 sm:p-10 shadow-xl backdrop-blur-sm">
             <div className="flex items-center gap-4 mb-6">
-              <div className="p-3.5 bg-amber-50 rounded-2xl text-amber-700 border border-amber-200/80">
-                <Car className="w-7 h-7" />
+              <div className="p-3.5 bg-teal-50 rounded-2xl text-teal-700 border border-teal-200/80">
+                <Car className="w-7 h-7 text-[#16A6A1]" />
               </div>
               <div>
                 <h2 className="text-xl sm:text-2xl font-bold text-slate-900">Accommodation & Transport</h2>
-                <p className="text-slate-600 text-sm">Choose your stay style and claim an exclusive PickMe tourist ride offer across Sri Lanka.</p>
+                <p className="text-slate-600 text-sm">Choose your stay style and preferred mode of getting around Sri Lanka.</p>
               </div>
             </div>
 
@@ -735,6 +978,7 @@ export const AITripPlannerPage: React.FC = () => {
                     onChange={(e) => setAccommodationPref(e.target.value)}
                     className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3.5 text-slate-900 font-semibold focus:outline-none focus:border-teal-600 shadow-sm"
                   >
+                    <option value="">Select accommodation preference (or let AI decide)</option>
                     {accommodationOptions.map((opt) => (
                       <option key={opt} value={opt}>
                         {opt}
@@ -751,88 +995,33 @@ export const AITripPlannerPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* PickMe Offer & Get the App Card */}
-              <div className="relative overflow-hidden bg-gradient-to-br from-amber-400 via-amber-300 to-yellow-400 border-2 border-amber-400/90 rounded-2xl p-6 shadow-md flex flex-col justify-between">
-                {/* Background decorative elements */}
-                <div className="absolute -right-6 -bottom-6 w-28 h-28 bg-white/25 rounded-full blur-lg pointer-events-none" />
-
+              {/* Transport Preference */}
+              <div className="flex flex-col justify-between p-6 bg-slate-50 border border-slate-200/90 rounded-2xl">
                 <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2.5">
-                      <div className="h-9 px-3 bg-slate-950 rounded-xl flex items-center justify-center shadow-sm">
-                        <img src={pickmeLogoImg} alt="PickMe" className="h-7 w-auto object-contain brightness-110" />
-                      </div>
-                      <span className="text-xs font-black uppercase tracking-wider text-slate-900 bg-white/85 backdrop-blur-sm px-2.5 py-1 rounded-full border border-amber-300">
-                        Official Mobility Partner
-                      </span>
-                    </div>
-                    {pickMeOfferApplied && (
-                      <span className="flex items-center gap-1 text-[11px] font-extrabold bg-emerald-600 text-white px-2.5 py-0.5 rounded-full shadow-sm animate-pulse">
-                        <Check className="w-3.5 h-3.5" /> Applied
-                      </span>
-                    )}
+                  <div className="flex items-center gap-2 mb-2">
+                    <Car className="w-5 h-5 text-[#16A6A1]" />
+                    <label className="text-slate-900 font-bold text-base">Transportation Preference</label>
                   </div>
-
-                  <h3 className="text-xl font-black text-slate-950 mb-1.5 leading-tight">
-                    Apply for PickMe Offer
-                  </h3>
-                  <p className="text-xs text-slate-800 font-medium mb-4 leading-relaxed">
-                    Get <strong>20% OFF</strong> your first 5 rides across Sri Lanka. Instant on-demand Tuk-Tuks, air-conditioned Cars, Vans, and Airport Transfers everywhere you travel.
+                  <p className="text-xs text-slate-500 mb-4">
+                    Select your preferred mobility method for intercity travel and sightseeing.
                   </p>
-
-                  <div className="bg-white/95 backdrop-blur-sm rounded-xl p-3.5 border border-amber-200/90 flex items-center justify-between mb-4 shadow-sm">
-                    <div>
-                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 block">Tourist Promo Code</span>
-                      <span className="text-base font-black tracking-widest text-slate-950 font-mono">NOVAPICKME20</span>
-                    </div>
-                    <span className="text-xs font-bold text-amber-950 bg-amber-100 border border-amber-300 px-2.5 py-1 rounded-md">
-                      20% Discount
-                    </span>
-                  </div>
+                  <select
+                    value={transportPref}
+                    onChange={(e) => setTransportPref(e.target.value)}
+                    className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3.5 text-slate-900 font-semibold focus:outline-none focus:border-teal-600 shadow-sm"
+                  >
+                    <option value="">Select transportation preference (or let AI decide)</option>
+                    <option value="Public Transport (Trains & Buses)">Public Transport (Scenic Trains & Express Buses)</option>
+                    <option value="Private Chauffeur / Dedicated Van">Private Licensed Chauffeur / Dedicated Car</option>
+                    <option value="Self-Arranged Travel">Self-Arranged Local Transit & Taxis</option>
+                  </select>
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const nextState = !pickMeOfferApplied;
-                      setPickMeOfferApplied(nextState);
-                      setTransportPref(nextState ? 'PickMe Rides (Promo: NOVAPICKME20 Applied)' : 'PickMe Mobility & Rides');
-                      triggerToast(
-                        nextState
-                          ? '🎉 PickMe 20% Tourist Offer applied to your trip!'
-                          : 'PickMe offer removed from trip.'
-                      );
-                    }}
-                    className={`flex-1 py-3 px-4 font-extrabold text-sm rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 ${
-                      pickMeOfferApplied
-                        ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                        : 'bg-slate-950 hover:bg-slate-900 text-white'
-                    }`}
-                  >
-                    {pickMeOfferApplied ? (
-                      <>
-                        <Check className="w-4 h-4 text-white" />
-                        <span>Offer Applied (20% OFF)</span>
-                      </>
-                    ) : (
-                      <>
-                        <Gift className="w-4 h-4 text-amber-300" />
-                        <span>Apply for PickMe Offer</span>
-                      </>
-                    )}
-                  </button>
-
-                  <a
-                    href="https://pickme.lk/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 py-3 px-4 bg-white hover:bg-slate-50 text-slate-950 font-extrabold text-sm rounded-xl shadow-sm border border-amber-300/80 transition-all text-center"
-                  >
-                    <Smartphone className="w-4 h-4 text-slate-800" />
-                    <span>Get the App</span>
-                    <ExternalLink className="w-3.5 h-3.5 text-slate-500" />
-                  </a>
+                <div className="mt-6 pt-4 border-t border-slate-200/80">
+                  <div className="flex items-center gap-2 text-xs font-medium text-slate-600">
+                    <span className="w-2 h-2 rounded-full bg-[#16A6A1]"></span>
+                    <span>Automated multi-agent routing based on your choice</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -877,7 +1066,9 @@ export const AITripPlannerPage: React.FC = () => {
                 </div>
                 <div>
                   <span className="text-slate-500 block text-xs font-semibold">DURATION</span>
-                  <span className="text-slate-900 font-bold">{durationDays} Days ({startDate} to {endDate})</span>
+                  <span className="text-slate-900 font-bold">
+                    {durationDays > 0 && startDate && endDate ? `${durationDays} Days (${startDate} to ${endDate})` : 'Flexible / AI Optimized'}
+                  </span>
                 </div>
                 <div>
                   <span className="text-slate-500 block text-xs font-semibold">TRAVELERS</span>
@@ -885,7 +1076,9 @@ export const AITripPlannerPage: React.FC = () => {
                 </div>
                 <div>
                   <span className="text-slate-500 block text-xs font-semibold">BUDGET</span>
-                  <span className="text-teal-700 font-extrabold">${budgetAmount} {currency} ({budgetCategory})</span>
+                  <span className="text-teal-700 font-extrabold">
+                    ${budgetAmount} {currency} {budgetCategory ? `(${budgetCategory})` : ''}
+                  </span>
                 </div>
               </div>
 
@@ -907,11 +1100,22 @@ export const AITripPlannerPage: React.FC = () => {
                 <div>
                   <span className="text-slate-500 block text-xs font-semibold mb-1">STYLES & ACTIVITIES</span>
                   <div className="flex flex-wrap gap-1">
-                    {selectedTravelStyles.map((s) => (
-                      <span key={s} className="px-2.5 py-0.5 bg-teal-50 border border-teal-200 text-teal-800 rounded text-xs font-medium">
-                        {s}
-                      </span>
-                    ))}
+                    {selectedTravelStyles.length > 0 || selectedActivities.length > 0 ? (
+                      <>
+                        {selectedTravelStyles.map((s) => (
+                          <span key={s} className="px-2.5 py-0.5 bg-teal-50 border border-teal-200 text-teal-800 rounded text-xs font-medium">
+                            {s}
+                          </span>
+                        ))}
+                        {selectedActivities.map((a) => (
+                          <span key={a} className="px-2.5 py-0.5 bg-slate-100 border border-slate-200 text-slate-700 rounded text-xs font-medium">
+                            {a}
+                          </span>
+                        ))}
+                      </>
+                    ) : (
+                      <span className="text-slate-500 text-xs italic">All travel styles (General Discovery)</span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -919,19 +1123,11 @@ export const AITripPlannerPage: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm border-t border-slate-200 pt-3">
                 <div>
                   <span className="text-slate-500 block text-xs font-semibold mb-1">ACCOMMODATION</span>
-                  <span className="text-slate-900 font-bold">{accommodationPref}</span>
+                  <span className="text-slate-900 font-bold">{accommodationPref || 'Let AI decide'}</span>
                 </div>
                 <div>
                   <span className="text-slate-500 block text-xs font-semibold mb-1">LOCAL TRANSPORT & MOBILITY</span>
-                  {pickMeOfferApplied ? (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-100 border border-amber-300 text-amber-950 rounded-lg text-xs font-bold">
-                      <Tag className="w-3 h-3 text-amber-700" /> PickMe 20% Off Applied (NOVAPICKME20)
-                    </span>
-                  ) : (
-                    <span className="text-slate-700 font-medium text-xs">
-                      PickMe Mobility & Rides
-                    </span>
-                  )}
+                  <span className="text-slate-900 font-bold text-xs">{transportPref || 'Let AI decide'}</span>
                 </div>
               </div>
             </div>
@@ -987,7 +1183,7 @@ export const AITripPlannerPage: React.FC = () => {
                 <CheckCircle2 className="w-4 h-4 text-teal-600" /> Scheduling daily activities & timings
               </div>
               <div className={`flex items-center gap-2 ${aiStepIndex >= 4 ? 'text-teal-800 font-bold' : 'opacity-40'}`}>
-                <CheckCircle2 className="w-4 h-4 text-teal-600" /> Evaluating budget & constraint rules
+                <CheckCircle2 className="w-4 h-4 text-teal-600" /> Evaluating budget & travel pacing
               </div>
               <div className={`flex items-center gap-2 ${aiStepIndex >= 5 ? 'text-teal-800 font-bold' : 'opacity-40'}`}>
                 <CheckCircle2 className="w-4 h-4 text-teal-600" /> Validating final itinerary plan
@@ -1003,7 +1199,7 @@ export const AITripPlannerPage: React.FC = () => {
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white border border-slate-200/80 p-6 sm:p-8 rounded-3xl shadow-xl">
               <div>
                 <div className="flex items-center gap-2 text-teal-700 text-xs font-extrabold uppercase tracking-wider mb-1">
-                  <ShieldCheck className="w-4 h-4 text-teal-600" /> AI Score: {generatedPlan.metadata.aiScore}% Validated
+                  <ShieldCheck className="w-4 h-4 text-teal-600" /> Quality Verified: {generatedPlan.metadata.aiScore}% Match
                 </div>
                 <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">{generatedPlan.trip.title}</h1>
                 <p className="text-slate-600 text-sm mt-1">{generatedPlan.trip.description}</p>
@@ -1030,20 +1226,33 @@ export const AITripPlannerPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Warnings Alert Banner */}
-            {generatedPlan.warnings && generatedPlan.warnings.length > 0 && (
-              <div className="space-y-3">
-                {generatedPlan.warnings.map((w) => (
-                  <div key={w.id} className="bg-amber-50 border border-amber-200 p-4 rounded-2xl flex items-start gap-3 text-amber-900 text-sm">
-                    <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-                    <div>
-                      <span className="font-bold text-amber-950 block">{w.title}</span>
-                      <span>{w.message}</span>
+            {/* Travel Advisories & Warnings Alert Banner (Filters out internal constraint checks) */}
+            {(() => {
+              const realWarnings = (generatedPlan.warnings || []).filter((w) => {
+                const text = `${w.title || ''} ${w.message || ''}`.toLowerCase();
+                return (
+                  !text.includes('constraint') &&
+                  !text.includes('deterministic') &&
+                  !text.includes('buffer') &&
+                  !text.includes('safety check') &&
+                  !text.includes('verification')
+                );
+              });
+              if (realWarnings.length === 0) return null;
+              return (
+                <div className="space-y-3">
+                  {realWarnings.map((w) => (
+                    <div key={w.id} className="bg-amber-50 border border-amber-200 p-4 rounded-2xl flex items-start gap-3 text-amber-900 text-sm">
+                      <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-bold text-amber-950 block">{w.title}</span>
+                        <span>{w.message}</span>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
+                  ))}
+                </div>
+              );
+            })()}
 
             {/* Main Content Layout (Itinerary Days + Budget Breakdown Sidebar) */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

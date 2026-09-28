@@ -1,0 +1,43 @@
+import { Booking } from '../types/travel';
+
+export const MOCK_BOOKINGS: Booking[] = [
+  {
+    id: 'bk-1001',
+    bookingRef: 'NV-2026-8812',
+    customerName: 'Elena Rostova',
+    customerEmail: 'elena.r@example.com',
+    tourName: 'Grand Kyoto & Nara Autumn Odyssey',
+    bookingDate: '2026-08-15',
+    travelDate: '2026-10-12',
+    pax: 2,
+    totalAmount: 3450,
+    paymentStatus: 'Paid',
+    bookingStatus: 'Confirmed',
+  },
+  {
+    id: 'bk-1002',
+    bookingRef: 'NV-2026-8813',
+    customerName: 'Marcus Vance',
+    customerEmail: 'm.vance@techcorp.io',
+    tourName: 'Swiss Alpine Glacier & Lakes Express',
+    bookingDate: '2026-08-17',
+    travelDate: '2026-09-04',
+    pax: 4,
+    totalAmount: 7800,
+    paymentStatus: 'Paid',
+    bookingStatus: 'Confirmed',
+  },
+  {
+    id: 'bk-1003',
+    bookingRef: 'NV-2026-8814',
+    customerName: 'Aria Montgomery',
+    customerEmail: 'aria.m@designlab.org',
+    tourName: 'Amalfi Lemon Groves & Yacht Charter',
+    bookingDate: '2026-08-18',
+    travelDate: '2026-09-20',
+    pax: 2,
+    totalAmount: 4900,
+    paymentStatus: 'Pending',
+    bookingStatus: 'Pending',
+  },
+];

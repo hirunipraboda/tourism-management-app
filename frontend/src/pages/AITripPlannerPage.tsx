@@ -24,12 +24,17 @@ import {
   ExternalLink,
   Gift,
   Building2,
+  BedDouble,
+  Shield,
 } from 'lucide-react';
 import { LandingNavbar } from '../components/navigation/LandingNavbar';
 import { Footer } from '../components/navigation/Footer';
 import { tripPlannerService } from '../services/tripPlannerService';
 import { TripPlan, ItineraryDayItem, ItineraryActivityItem } from '../types/tripPlanner';
-import { UserTrip } from '../mock/tripsData';
+import { UserTrip, TripBookingDetail } from '../mock/tripsData';
+import { AccommodationItem, ACCOMMODATIONS_CATALOG } from '../mock/manualPlannerData';
+import { StaycationSelector } from '../components/staycations/StaycationSelector';
+import { StaycationBookingModal } from '../components/staycations/StaycationBookingModal';
 import kandyImg from '../assets/destinations/Kandy.jpg';
 import ellaImg from '../assets/destinations/Ella.jpg';
 import galleImg from '../assets/destinations/Galle.jpg';
@@ -71,6 +76,12 @@ export const AITripPlannerPage: React.FC = () => {
 
   const [accommodationPref, setAccommodationPref] = useState<string>('');
   const [transportPref, setTransportPref] = useState<string>('');
+
+  // Staycation Selection & Booking State
+  const [selectedStaycations, setSelectedStaycations] = useState<Record<string, AccommodationItem>>({});
+  const [aiDecidesStaycation, setAiDecidesStaycation] = useState<boolean>(true);
+  const [bookedStaycations, setBookedStaycations] = useState<Record<string, TripBookingDetail>>({});
+  const [activeStaycationToBook, setActiveStaycationToBook] = useState<AccommodationItem | null>(null);
 
   // AI Animation State
   const [aiStepIndex, setAiStepIndex] = useState<number>(0);
@@ -443,6 +454,7 @@ export const AITripPlannerPage: React.FC = () => {
               : 'Activity',
           })),
         })),
+        bookingsList: Object.values(bookedStaycations),
         budgetBreakdown: [
           { category: 'Accommodation', amount: `$${generatedPlan.budget.accommodation}` },
           { category: 'Transportation', amount: `$${generatedPlan.budget.transportation}` },
@@ -451,6 +463,14 @@ export const AITripPlannerPage: React.FC = () => {
           { category: 'Sundry / Other', amount: `$${generatedPlan.budget.other}` },
         ],
       };
+
+      if (Object.values(bookedStaycations).length > 0) {
+        const bookedTotal = Object.values(bookedStaycations).reduce((sum, b) => {
+          const num = parseInt(b.amount.replace(/[^0-9]/g, '') || '0', 10);
+          return sum + num;
+        }, 0);
+        savedUserTrip.spentBudget = `$${bookedTotal}`;
+      }
 
       // 3. Persist in localStorage 'nova_user_trips' so TripsPage displays it immediately
       try {
@@ -985,79 +1005,69 @@ export const AITripPlannerPage: React.FC = () => {
 
         {/* STEP 6: ACCOMMODATION & MOBILITY SELECTION */}
         {step === 6 && (
-          <div className="bg-white border border-slate-200/80 rounded-3xl p-6 sm:p-10 shadow-xl backdrop-blur-sm">
-            <div className="flex items-center gap-4 mb-6">
+          <div className="bg-white border border-slate-200/80 rounded-3xl p-6 sm:p-10 shadow-xl backdrop-blur-sm space-y-8">
+            <div className="flex items-center gap-4 border-b border-slate-200/80 pb-5">
               <div className="p-3.5 bg-teal-50 rounded-2xl text-teal-700 border border-teal-200/80">
-                <Car className="w-7 h-7 text-[#16A6A1]" />
+                <Building2 className="w-7 h-7 text-[#16A6A1]" />
               </div>
               <div>
-                <h2 className="text-xl sm:text-2xl font-bold text-slate-900">Accommodation & Transport</h2>
-                <p className="text-slate-600 text-sm">Choose your stay style and preferred mode of getting around Sri Lanka.</p>
+                <h2 className="text-xl sm:text-2xl font-bold text-slate-900">Destination Staycations & Transport</h2>
+                <p className="text-slate-600 text-sm">
+                  Select best available luxury hotels, boutique villas, and private cabanas according to packages & prices, plus your mobility preference.
+                </p>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-              {/* Accommodation Preference */}
-              <div className="flex flex-col justify-between p-6 bg-slate-50 border border-slate-200/90 rounded-2xl">
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <Building2 className="w-5 h-5 text-teal-700" />
-                    <label className="text-slate-900 font-bold text-base">Accommodation Preference</label>
-                  </div>
-                  <p className="text-xs text-slate-500 mb-4">
-                    Choose the standard and atmosphere of lodging you prefer during your holiday.
-                  </p>
-                  <select
-                    value={accommodationPref}
-                    onChange={(e) => setAccommodationPref(e.target.value)}
-                    className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3.5 text-slate-900 font-semibold focus:outline-none focus:border-teal-600 shadow-sm"
-                  >
-                    <option value="">Select accommodation preference (or let AI decide)</option>
-                    {accommodationOptions.map((opt) => (
-                      <option key={opt} value={opt}>
-                        {opt}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+            {/* Staycation Selector Component */}
+            <div>
+              <StaycationSelector
+                destinations={selectedDestinations.length > 0 ? selectedDestinations : ['Sigiriya', 'Kandy', 'Ella']}
+                selectedStaycations={selectedStaycations}
+                onSelectStaycation={(dest, stay) => {
+                  setAiDecidesStaycation(false);
+                  if (selectedStaycations[dest]?.id === stay.id) {
+                    const next = { ...selectedStaycations };
+                    delete next[dest];
+                    setSelectedStaycations(next);
+                    triggerToast(`Deselected ${stay.name}`);
+                  } else {
+                    setSelectedStaycations((prev) => ({ ...prev, [dest]: stay }));
+                    setAccommodationPref(stay.type);
+                    triggerToast(`Selected ${stay.name} (${stay.packageName}) for ${dest}!`);
+                  }
+                }}
+                allowAiOption={true}
+                aiDecidesStaycation={aiDecidesStaycation}
+                onToggleAiDecides={() => {
+                  const nextVal = !aiDecidesStaycation;
+                  setAiDecidesStaycation(nextVal);
+                  if (nextVal) {
+                    setSelectedStaycations({});
+                    triggerToast('AI will select optimal staycations matched to your budget.');
+                  }
+                }}
+              />
+            </div>
 
-                <div className="mt-6 pt-4 border-t border-slate-200/80">
-                  <div className="flex items-center gap-2 text-xs font-medium text-slate-600">
-                    <span className="w-2 h-2 rounded-full bg-teal-600"></span>
-                    <span>Curated boutique villas, eco-lodges, & star hotels</span>
-                  </div>
-                </div>
+            {/* Transport Preference Card */}
+            <div className="p-6 bg-slate-50 border border-slate-200/90 rounded-2xl">
+              <div className="flex items-center gap-2 mb-2">
+                <Car className="w-5 h-5 text-[#16A6A1]" />
+                <label className="text-slate-900 font-bold text-base">Transportation Preference</label>
               </div>
-
-              {/* Transport Preference */}
-              <div className="flex flex-col justify-between p-6 bg-slate-50 border border-slate-200/90 rounded-2xl">
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <Car className="w-5 h-5 text-[#16A6A1]" />
-                    <label className="text-slate-900 font-bold text-base">Transportation Preference</label>
-                  </div>
-                  <p className="text-xs text-slate-500 mb-4">
-                    Select your preferred mobility method for intercity travel and sightseeing.
-                  </p>
-                  <select
-                    value={transportPref}
-                    onChange={(e) => setTransportPref(e.target.value)}
-                    className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3.5 text-slate-900 font-semibold focus:outline-none focus:border-teal-600 shadow-sm"
-                  >
-                    <option value="">Select transportation preference (or let AI decide)</option>
-                    <option value="Public Transport (Trains & Buses)">Public Transport (Scenic Trains & Express Buses)</option>
-                    <option value="Private Chauffeur / Dedicated Van">Private Licensed Chauffeur / Dedicated Car</option>
-                    <option value="Self-Arranged Travel">Self-Arranged Local Transit & Taxis</option>
-                  </select>
-                </div>
-
-                <div className="mt-6 pt-4 border-t border-slate-200/80">
-                  <div className="flex items-center gap-2 text-xs font-medium text-slate-600">
-                    <span className="w-2 h-2 rounded-full bg-[#16A6A1]"></span>
-                    <span>Automated multi-agent routing based on your choice</span>
-                  </div>
-                </div>
-              </div>
+              <p className="text-xs text-slate-500 mb-4">
+                Select your preferred mobility method for scenic intercity travel and sightseeing.
+              </p>
+              <select
+                value={transportPref}
+                onChange={(e) => setTransportPref(e.target.value)}
+                className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3.5 text-slate-900 font-semibold focus:outline-none focus:border-teal-600 shadow-sm"
+              >
+                <option value="">Select transportation preference (or let AI decide)</option>
+                <option value="Public Transport (Trains & Buses)">Public Transport (Scenic Trains & Express Buses)</option>
+                <option value="Private Chauffeur / Dedicated Van">Private Licensed Chauffeur / Dedicated Car</option>
+                <option value="Self-Arranged Travel">Self-Arranged Local Transit & Taxis</option>
+              </select>
             </div>
 
             <div className="flex justify-between mt-8">
@@ -1175,12 +1185,27 @@ export const AITripPlannerPage: React.FC = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm border-t border-slate-200 pt-3">
                 <div>
-                  <span className="text-slate-500 block text-xs font-semibold mb-1">ACCOMMODATION</span>
-                  <span className="text-slate-900 font-bold">{accommodationPref || 'Let AI decide'}</span>
+                  <span className="text-slate-500 block text-xs font-semibold mb-1">SELECTED STAYCATIONS & HOTELS</span>
+                  {Object.keys(selectedStaycations).length > 0 ? (
+                    <div className="space-y-1.5">
+                      {Object.entries(selectedStaycations).map(([dest, stay]) => (
+                        <div key={dest} className="text-xs bg-white p-2 rounded-lg border border-slate-200">
+                          <span className="font-extrabold text-teal-800">{dest}:</span> {stay.name} ({stay.type})
+                          <div className="text-[11px] text-slate-600 font-semibold">
+                            {stay.packageName} · ${stay.pricePerNight}/night
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="text-slate-900 font-bold">
+                      {aiDecidesStaycation ? 'AI Curated Best Hotels & Cabanas (Optimal Budget)' : accommodationPref || 'Standard Hotels'}
+                    </span>
+                  )}
                 </div>
                 <div>
                   <span className="text-slate-500 block text-xs font-semibold mb-1">LOCAL TRANSPORT & MOBILITY</span>
-                  <span className="text-slate-900 font-bold text-xs">{transportPref || 'Let AI decide'}</span>
+                  <span className="text-slate-900 font-bold text-xs">{transportPref || 'AI Optimized Scenic Routing'}</span>
                 </div>
               </div>
             </div>
@@ -1354,6 +1379,149 @@ export const AITripPlannerPage: React.FC = () => {
                       </div>
                     </div>
                   ))}
+                </div>
+              );
+            })()}
+
+            {/* Staycations & Lodging Booking Section */}
+            {(() => {
+              const tripDestinations = (generatedPlan.trip.destinations && generatedPlan.trip.destinations.length > 0)
+                ? generatedPlan.trip.destinations
+                : selectedDestinations.length > 0
+                ? selectedDestinations
+                : ['Sigiriya', 'Kandy', 'Ella'];
+
+              // Stays list: User chosen stays + default best recommendations for destinations
+              const displayStays: AccommodationItem[] = [];
+              tripDestinations.forEach((dest) => {
+                if (selectedStaycations[dest]) {
+                  displayStays.push(selectedStaycations[dest]);
+                } else {
+                  const match = ACCOMMODATIONS_CATALOG.find(
+                    (a) => a.destination.toLowerCase() === dest.toLowerCase()
+                  );
+                  if (match && !displayStays.some((s) => s.id === match.id)) {
+                    displayStays.push(match);
+                  }
+                }
+              });
+
+              if (displayStays.length === 0) {
+                displayStays.push(...ACCOMMODATIONS_CATALOG.slice(0, 3));
+              }
+
+              return (
+                <div className="bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-4">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <Building2 className="w-5 h-5 text-teal-700" />
+                        <h2 className="text-xl font-bold text-slate-900">
+                          Selected Staycations & Lodging Bookings
+                        </h2>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-1">
+                        Review your chosen staycation packages and reserve rooms directly to lock in availability for your trip.
+                      </p>
+                    </div>
+
+                    <div className="text-xs font-bold px-3 py-1 bg-teal-50 border border-teal-200 text-teal-800 rounded-xl self-start sm:self-auto">
+                      {Object.keys(bookedStaycations).length} of {displayStays.length} Stays Reserved
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    {displayStays.map((stay) => {
+                      const isBooked = !!bookedStaycations[stay.id];
+                      const booking = bookedStaycations[stay.id];
+
+                      return (
+                        <div
+                          key={stay.id}
+                          className={`rounded-2xl border-2 transition-all flex flex-col justify-between overflow-hidden bg-white ${
+                            isBooked
+                              ? 'border-emerald-600 ring-2 ring-emerald-500/20 shadow-md'
+                              : 'border-slate-200 hover:border-teal-500 shadow-xs'
+                          }`}
+                        >
+                          <div>
+                            {/* Photo & Badges */}
+                            <div className="relative h-44 w-full overflow-hidden">
+                              <img src={stay.image} alt={stay.name} className="w-full h-full object-cover" />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+
+                              <div className="absolute top-3 left-3 flex items-center gap-1.5">
+                                <span className="px-2.5 py-1 bg-black/70 backdrop-blur-md text-white text-[10px] font-black uppercase rounded-lg">
+                                  {stay.type}
+                                </span>
+                                {isBooked && (
+                                  <span className="px-2 py-0.5 bg-emerald-600 text-white text-[10px] font-black rounded-md flex items-center gap-1">
+                                    <Check className="w-3 h-3" /> Booked
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="absolute bottom-3 left-3 right-3 text-white">
+                                <h3 className="font-extrabold text-sm leading-tight">{stay.name}</h3>
+                                <p className="text-[11px] text-slate-200">📍 {stay.destination}</p>
+                              </div>
+                            </div>
+
+                            {/* Package Details */}
+                            <div className="p-4 space-y-3">
+                              <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase block">Selected Package</span>
+                                <p className="text-xs font-extrabold text-slate-900">{stay.packageName}</p>
+                                <p className="text-[10px] text-teal-700 font-semibold">{stay.packageDuration}</p>
+                              </div>
+
+                              <div>
+                                <span className="text-[10px] font-bold text-slate-500 uppercase block mb-1">
+                                  Included Facilities:
+                                </span>
+                                <ul className="text-[11px] text-slate-600 space-y-1">
+                                  {stay.includedFacilities.slice(0, 3).map((f, i) => (
+                                    <li key={i} className="flex items-center gap-1.5 truncate">
+                                      <Check className="w-3 h-3 text-emerald-600 shrink-0" />
+                                      <span className="truncate">{f}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Price & Action Button */}
+                          <div className="p-4 border-t border-slate-100 bg-slate-50/60 flex items-center justify-between gap-2">
+                            <div>
+                              <span className="text-xs font-bold text-slate-400 block">Rate</span>
+                              <span className="text-sm font-extrabold text-slate-900">${stay.pricePerNight}<span className="text-xs font-normal text-slate-500">/nt</span></span>
+                            </div>
+
+                            {isBooked ? (
+                              <button
+                                type="button"
+                                onClick={() => setActiveStaycationToBook(stay)}
+                                className="px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                              >
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                <span>Code: {booking.confirmationCode}</span>
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => setActiveStaycationToBook(stay)}
+                                className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
+                              >
+                                <Sparkles className="w-3.5 h-3.5" />
+                                <span>Book Staycation Now</span>
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               );
             })()}
@@ -1665,6 +1833,26 @@ export const AITripPlannerPage: React.FC = () => {
             </div>
           </div>
         )}
+        {/* STAYCATION RESERVATION MODAL */}
+        <StaycationBookingModal
+          isOpen={activeStaycationToBook !== null}
+          onClose={() => setActiveStaycationToBook(null)}
+          staycation={activeStaycationToBook}
+          tripName={(isEditingTitle && customTitleInput.trim()) ? customTitleInput.trim() : generatedPlan?.trip.title || tripName}
+          startDate={startDate}
+          endDate={endDate}
+          travelersCount={travelersCount}
+          onConfirmBooking={(booking) => {
+            if (activeStaycationToBook) {
+              setBookedStaycations((prev) => ({
+                ...prev,
+                [activeStaycationToBook.id]: booking,
+              }));
+              triggerToast(`🎉 Reserved ${booking.provider}! Confirmation Code: ${booking.confirmationCode}`);
+            }
+            setActiveStaycationToBook(null);
+          }}
+        />
       </main>
 
       <Footer />

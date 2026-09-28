@@ -58,6 +58,10 @@ public class TripPlannerController : ControllerBase
                 var pythonPlan = await _aiAgentClient.PlanTripAsync(request);
                 if (pythonPlan != null && pythonPlan.Days.Count > 0)
                 {
+                    if (!string.IsNullOrWhiteSpace(request.TripName) && pythonPlan.Trip != null)
+                    {
+                        pythonPlan.Trip.Title = request.TripName.Trim();
+                    }
                     _logger.LogInformation("Successfully generated trip plan via Python LangGraph Multi-Agent Engine");
                     return Ok(ApiResponse<TripPlanDto>.Ok(pythonPlan, "AI trip itinerary generated successfully by LangGraph Multi-Agent Engine."));
                 }
@@ -468,7 +472,7 @@ public class TripPlannerController : ControllerBase
         {
             Trip = new TripDetailsDto
             {
-                Title = $"{durationDays}-Day Tour: {string.Join(" & ", destinations)}",
+                Title = !string.IsNullOrWhiteSpace(request.TripName) ? request.TripName.Trim() : $"{durationDays}-Day Tour: {string.Join(" & ", destinations)}",
                 Description = $"Curated journey across {string.Join(", ", destinations)}.",
                 Duration = durationDays,
                 Destinations = destinations,

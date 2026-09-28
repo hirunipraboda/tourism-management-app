@@ -5,6 +5,7 @@ export interface TripBudgetInput {
 }
 
 export interface TripPlanningRequest {
+  tripName?: string;
   destination: string;
   destinations?: string[];
   startDate: string;

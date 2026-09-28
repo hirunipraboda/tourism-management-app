@@ -100,6 +100,7 @@ class DestinationResearchApiRequest(BaseModel):
     requested_information: Optional[str] = "top attractions, estimated costs, opening hours, and visit duration"
 
 class PlanTripApiRequest(BaseModel):
+    tripName: Optional[str] = None
     destination: str
     destinations: Optional[List[str]] = None
     startDate: Optional[str] = None
@@ -649,7 +650,7 @@ def plan_trip(req: PlanTripApiRequest):
 
         trip_plan_result = {
             "trip": {
-                "title": f"{num_days}-Day AI Guided Tour: {', '.join(dest_list)}",
+                "title": req.tripName.strip() if req.tripName and req.tripName.strip() else f"{num_days}-Day AI Guided Tour: {', '.join(dest_list)}",
                 "description": itinerary.get("trip_summary") or f"Autonomous multi-agent synthesized itinerary for {', '.join(dest_list)}.",
                 "duration": num_days,
                 "destinations": dest_list,
@@ -893,7 +894,7 @@ def _generate_fallback_trip_plan(req: PlanTripApiRequest, dest_list: List[str], 
 
     return {
         "trip": {
-            "title": f"{num_days}-Day Curated Journey: {', '.join(dest_list)}",
+            "title": req.tripName.strip() if req.tripName and req.tripName.strip() else f"{num_days}-Day Curated Journey: {', '.join(dest_list)}",
             "description": f"Authentic multi-agent travel plan grounded in verified locations across {', '.join(dest_list)}.",
             "duration": num_days,
             "destinations": dest_list,

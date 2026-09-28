@@ -9,6 +9,7 @@ public class TripBudgetInputDto
 
 public class TripPlanningRequestDto
 {
+    public string? TripName { get; set; }
     public string Destination { get; set; } = string.Empty;
     public List<string>? Destinations { get; set; }
     public string? StartDate { get; set; }

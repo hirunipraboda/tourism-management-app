@@ -49,6 +49,7 @@ export const AITripPlannerPage: React.FC = () => {
   const [saveSuccess, setSaveSuccess] = useState<boolean>(false);
 
   // Form Inputs
+  const [tripName, setTripName] = useState<string>('');
   const [destination, setDestination] = useState<string>('Sri Lanka');
   const [selectedDestinations, setSelectedDestinations] = useState<string[]>([]);
   const [letAiRecommend, setLetAiRecommend] = useState<boolean>(false);
@@ -77,6 +78,8 @@ export const AITripPlannerPage: React.FC = () => {
 
   // Generated Plan & Editing State
   const [generatedPlan, setGeneratedPlan] = useState<TripPlan | null>(null);
+  const [isEditingTitle, setIsEditingTitle] = useState<boolean>(false);
+  const [customTitleInput, setCustomTitleInput] = useState<string>('');
   const [editingActivity, setEditingActivity] = useState<{ dayIndex: number; activityIndex: number; activity: ItineraryActivityItem } | null>(null);
   const [showAddActivityModal, setShowAddActivityModal] = useState<number | null>(null); // day index
   const [newActivityTitle, setNewActivityTitle] = useState<string>('');
@@ -214,6 +217,7 @@ export const AITripPlannerPage: React.FC = () => {
 
     try {
       const plan = await tripPlannerService.generateTripPlan({
+        tripName: tripName.trim() || undefined,
         destination,
         destinations: selectedDestinations.length > 0 ? selectedDestinations : ['Sigiriya', 'Kandy', 'Ella'],
         startDate: startDate || new Date().toISOString().split('T')[0],
@@ -234,6 +238,10 @@ export const AITripPlannerPage: React.FC = () => {
       });
 
       clearInterval(stepInterval);
+      if (tripName.trim() && plan && plan.trip) {
+        plan.trip.title = tripName.trim();
+      }
+      setCustomTitleInput(plan.trip?.title || tripName.trim());
       setGeneratedPlan(plan);
       setStep(9); // Show Result Page
       triggerToast('AI Trip Plan generated successfully!');
@@ -389,9 +397,13 @@ export const AITripPlannerPage: React.FC = () => {
       const destTitle = destList.join(' & ');
       const newTripId = (savedRes && (savedRes as any).tripId) || `trip-ai-${Date.now()}`;
 
+      const finalTripName = (isEditingTitle && customTitleInput.trim())
+        ? customTitleInput.trim()
+        : generatedPlan.trip.title || tripName.trim() || `${generatedPlan.trip.duration}-Day Tour: ${destTitle}`;
+
       const savedUserTrip: UserTrip = {
         id: newTripId,
-        name: generatedPlan.trip.title || `${generatedPlan.trip.duration}-Day Tour: ${destTitle}`,
+        name: finalTripName,
         destination: `${destTitle}, Sri Lanka`,
         destinationId: primaryDest.toLowerCase().replace(/\s+/g, '-'),
         dates: formatTripDates(startDate, endDate),
@@ -516,6 +528,28 @@ export const AITripPlannerPage: React.FC = () => {
             </div>
 
             <div className="space-y-6">
+              {/* Trip Name Customization */}
+              <div className="bg-gradient-to-r from-teal-50/70 to-slate-50 border border-teal-200/80 rounded-2xl p-5 shadow-xs">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-slate-900 font-bold text-sm">
+                    Name Your Trip
+                  </label>
+                  <span className="text-[11px] font-bold text-teal-700 bg-teal-100/70 border border-teal-200/60 px-2.5 py-0.5 rounded-full">
+                    Optional · Custom Name
+                  </span>
+                </div>
+                <input
+                  type="text"
+                  value={tripName}
+                  onChange={(e) => setTripName(e.target.value)}
+                  placeholder="e.g. My Ceylon Adventure, Tropical Honeymoon, Kandy & Ella Discovery..."
+                  className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-slate-900 font-bold text-sm focus:outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-500/20 placeholder:text-slate-400 placeholder:font-normal"
+                />
+                <p className="text-xs text-slate-500 mt-2">
+                  Give your journey a personalized name of your choice, or leave it blank and NOVA will automatically generate one for you.
+                </p>
+              </div>
+
               <div>
                 <label className="block text-slate-700 font-semibold text-sm mb-2">Target Island Country</label>
                 <select
@@ -1059,6 +1093,25 @@ export const AITripPlannerPage: React.FC = () => {
             </div>
 
             <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 mb-8 space-y-4">
+              {/* Trip Name Display & Fast Edit in Step 7 */}
+              <div className="bg-teal-50/80 border border-teal-200/90 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="flex-1 w-full">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[11px] font-bold text-teal-800 uppercase tracking-wider block">
+                      Trip Name
+                    </span>
+                    <span className="text-[10px] text-teal-600 font-semibold">Click to customize</span>
+                  </div>
+                  <input
+                    type="text"
+                    value={tripName}
+                    onChange={(e) => setTripName(e.target.value)}
+                    placeholder="e.g. My Ceylon Adventure (or leave blank for AI generated name)..."
+                    className="w-full bg-white border border-teal-300 rounded-lg px-3.5 py-2 text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500 placeholder:text-slate-400 placeholder:font-normal"
+                  />
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm border-b border-slate-200 pb-4">
                 <div>
                   <span className="text-slate-500 block text-xs font-semibold">DESTINATION</span>
@@ -1197,11 +1250,62 @@ export const AITripPlannerPage: React.FC = () => {
           <div className="space-y-8 animate-fadeIn">
             {/* Header Controls */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white border border-slate-200/80 p-6 sm:p-8 rounded-3xl shadow-xl">
-              <div>
+              <div className="flex-1">
                 <div className="flex items-center gap-2 text-teal-700 text-xs font-extrabold uppercase tracking-wider mb-1">
                   <ShieldCheck className="w-4 h-4 text-teal-600" /> Quality Verified: {generatedPlan.metadata.aiScore}% Match
                 </div>
-                <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">{generatedPlan.trip.title}</h1>
+                {isEditingTitle ? (
+                  <div className="flex items-center gap-2 mt-1">
+                    <input
+                      type="text"
+                      value={customTitleInput}
+                      onChange={(e) => setCustomTitleInput(e.target.value)}
+                      className="text-xl sm:text-2xl font-extrabold text-slate-900 border-2 border-teal-500 rounded-xl px-3 py-1.5 bg-teal-50/40 focus:outline-none w-full max-w-md"
+                      autoFocus
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newTitle = customTitleInput.trim() || generatedPlan.trip.title;
+                        setGeneratedPlan({
+                          ...generatedPlan,
+                          trip: { ...generatedPlan.trip, title: newTitle },
+                        });
+                        setTripName(newTitle);
+                        setIsEditingTitle(false);
+                        triggerToast(`Trip renamed to "${newTitle}"!`);
+                      }}
+                      className="px-3.5 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer shadow-xs"
+                    >
+                      Save
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCustomTitleInput(generatedPlan.trip.title);
+                        setIsEditingTitle(false);
+                      }}
+                      className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-xl transition-colors cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-3 group mt-1">
+                    <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">{generatedPlan.trip.title}</h1>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCustomTitleInput(generatedPlan.trip.title);
+                        setIsEditingTitle(true);
+                      }}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-teal-600 hover:bg-teal-50 transition-colors cursor-pointer"
+                      title="Rename your trip"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
                 <p className="text-slate-600 text-sm mt-1">{generatedPlan.trip.description}</p>
               </div>
 

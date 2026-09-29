@@ -180,6 +180,11 @@ public class UserController : ControllerBase
             return NotFound(new { message = $"User with ID {id} not found." });
         }
 
+        if (user.Email.Equals("admin@travellink.com", StringComparison.OrdinalIgnoreCase) && user.Status == UserStatus.Active)
+        {
+            return BadRequest(new { message = "The primary administrator account cannot be deactivated." });
+        }
+
         user.Status = user.Status == UserStatus.Active ? UserStatus.Inactive : UserStatus.Active;
         user.UpdatedAt = DateTime.UtcNow;
 

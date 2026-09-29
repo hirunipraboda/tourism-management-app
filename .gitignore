@@ -1,0 +1,38 @@
+# Build and output directories
+**/bin/
+**/obj/
+**/dist/
+**/node_modules/
+.dart_tool/
+.packages
+
+# Environment files
+.env
+**/.env
+*.env
+!.env.example
+
+# IDE files
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Python & Caches
+.mypy_cache/
+.pytest_cache/
+__pycache__/
+*.py[cod]
+*$py.class
+.ipynb_checkpoints/
+
+# Notebook local links
+ai-agents/notebooks/tools/
+ai-agents/notebooks/agents/
+ai-agents/notebooks/data/
+

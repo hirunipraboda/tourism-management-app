@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { CURRENT_USER } from '../mock/users';
 import { User, UserRole } from '../types/auth';
-import { authService, AuthApiResponse } from '../services/authService';
+import { authService } from '../services/authService';
 
 interface AuthContextType {
   user: User | null;
@@ -8,103 +9,101 @@ interface AuthContextType {
   isAuthenticated: boolean;
   setRole: (role: UserRole) => void;
   updateUser: (updatedFields: Partial<User>) => void;
-  login: (email: string, password?: string) => Promise<AuthApiResponse>;
-  register: (name: string, email: string, password?: string, role?: string, phone?: string) => Promise<AuthApiResponse>;
+  login: (userOrEmail: string | User, tokenOrName?: string) => void;
+  register: (name: string, email: string) => void;
   logout: () => void;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(() => {
-    try {
-      const saved = localStorage.getItem('nova_user_session');
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
+    const stored = authService.getStoredUser();
+    if (stored) return stored;
+    // If token exists, return stored or fallback; if no token, allow CURRENT_USER for preview demo if needed
+    return authService.getToken() ? null : CURRENT_USER;
   });
 
+  // Verify and sync current user on mount with backend
   useEffect(() => {
-    if (user) {
-      localStorage.setItem('nova_user_session', JSON.stringify(user));
-    } else {
-      localStorage.removeItem('nova_user_session');
+    const syncCurrentUser = async () => {
+      if (authService.getToken()) {
+        try {
+          const freshUser = await authService.getCurrentUser();
+          if (freshUser) {
+            setUser(freshUser);
+          } else {
+            // Token expired or invalid
+            setUser(null);
+          }
+        } catch (e) {
+          console.warn('[useAuth] Failed to refresh current user session:', e);
+        }
+      }
+    };
+
+    syncCurrentUser();
+  }, []);
+
+  const refreshUser = async () => {
+    if (authService.getToken()) {
+      const freshUser = await authService.getCurrentUser();
+      if (freshUser) {
+        setUser(freshUser);
+      } else {
+        setUser(null);
+      }
     }
-  }, [user]);
+  };
 
   const setRole = (role: UserRole) => {
     if (user) {
-      setUser({ ...user, role });
+      const updated = { ...user, role };
+      setUser(updated);
+      localStorage.setItem('nova_auth_user', JSON.stringify(updated));
     }
   };
 
   const updateUser = (updatedFields: Partial<User>) => {
     if (user) {
-      setUser({ ...user, ...updatedFields });
+      const updated = { ...user, ...updatedFields };
+      setUser(updated);
+      localStorage.setItem('nova_auth_user', JSON.stringify(updated));
     }
   };
 
-  const login = async (email: string, password?: string): Promise<AuthApiResponse> => {
-    if (password) {
-      const res = await authService.login(email, password);
-      if (res.success && res.user) {
-        const loggedInUser: User = {
-          id: res.user.id,
-          name: res.user.fullName,
-          email: res.user.email,
-          role: (res.user.role as any) || 'Tourist',
-          avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=250&q=80',
-          status: 'Active',
-          createdAt: res.user.createdAt,
-          lastActive: 'Just now',
-        };
-        setUser(loggedInUser);
+  const login = (userOrEmail: string | User, tokenOrName?: string) => {
+    if (typeof userOrEmail === 'object' && userOrEmail !== null) {
+      setUser(userOrEmail);
+      localStorage.setItem('nova_auth_user', JSON.stringify(userOrEmail));
+      if (tokenOrName) {
+        localStorage.setItem('nova_auth_token', tokenOrName);
       }
-      return res;
+      return;
     }
 
-    // Social / Quick Login fallback
-    const mockUser: User = {
+    const email = userOrEmail;
+    const name = tokenOrName;
+    const isSystemAdmin = email.trim().toLowerCase().includes('admin');
+    const newUser: User = {
       id: 'usr-' + Date.now(),
-      name: email.split('@')[0],
+      name: name || (email.split('@')[0].charAt(0).toUpperCase() + email.split('@')[0].slice(1)),
       email,
-      role: 'Tourist',
-      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=250&q=80',
+      role: isSystemAdmin ? 'Administrator' : 'Tourist',
+      avatarUrl: isSystemAdmin
+        ? 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80'
+        : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=250&q=80',
       status: 'Active',
       createdAt: new Date().toISOString(),
       lastActive: 'Just now',
     };
-    setUser(mockUser);
-    return { success: true, message: 'Login successful', user: { id: mockUser.id, fullName: mockUser.name, email: mockUser.email, role: 'Tourist', status: 'Active', createdAt: mockUser.createdAt } };
+    setUser(newUser);
+    localStorage.setItem('nova_auth_user', JSON.stringify(newUser));
   };
 
-  const register = async (
-    name: string,
-    email: string,
-    password?: string,
-    role = 'Tourist',
-    phone?: string
-  ): Promise<AuthApiResponse> => {
-    if (password) {
-      const res = await authService.register(name, email, password, role, phone);
-      if (res.success && res.user) {
-        const registeredUser: User = {
-          id: res.user.id,
-          name: res.user.fullName,
-          email: res.user.email,
-          role: (res.user.role as any) || 'Tourist',
-          avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=250&q=80',
-          status: 'Active',
-          createdAt: res.user.createdAt,
-          lastActive: 'Just now',
-        };
-        setUser(registeredUser);
-      }
-      return res;
-    }
-
-    const mockUser: User = {
+  const register = (name: string, email: string) => {
+    const newUser: User = {
       id: 'usr-' + Date.now(),
       name,
       email,
@@ -114,8 +113,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       createdAt: new Date().toISOString(),
       lastActive: 'Just now',
     };
-    setUser(mockUser);
-    return { success: true, message: 'Registration successful', user: { id: mockUser.id, fullName: mockUser.name, email: mockUser.email, role: 'Tourist', status: 'Active', createdAt: mockUser.createdAt } };
+    setUser(newUser);
+    localStorage.setItem('nova_auth_user', JSON.stringify(newUser));
   };
 
   const logout = () => {
@@ -128,12 +127,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         user,
         role: user?.role || 'Tourist',
-        isAuthenticated: !!user,
+        isAuthenticated: !!user && (!!authService.getToken() || user.id === CURRENT_USER.id),
         setRole,
         updateUser,
         login,
         register,
         logout,
+        refreshUser,
       }}
     >
       {children}

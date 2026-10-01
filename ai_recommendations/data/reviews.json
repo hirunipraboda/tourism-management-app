@@ -1,0 +1,2818 @@
+[
+  {
+    "reviewId": 1,
+    "userId": 2,
+    "attractionId": 1,
+    "rating": 1,
+    "text": "Terrible experience during monsoon season. Trails were washed out and operations were disorganized.",
+    "date": "2026-01-21"
+  },
+  {
+    "reviewId": 2,
+    "userId": 48,
+    "attractionId": 1,
+    "rating": 4,
+    "text": "Very impressive destination with fantastic photo opportunities. Can get a bit crowded around midday.",
+    "date": "2025-02-19"
+  },
+  {
+    "reviewId": 3,
+    "userId": 18,
+    "attractionId": 1,
+    "rating": 3,
+    "text": "Decent stopover for an hour or two. Nice scenery, but quite hot in the afternoon.",
+    "date": "2026-02-03"
+  },
+  {
+    "reviewId": 4,
+    "userId": 16,
+    "attractionId": 1,
+    "rating": 4,
+    "text": "Thoroughly enjoyed our visit to Sigiriya Ancient Rock Fortress. Wear comfortable shoes and bring sunscreen!",
+    "date": "2026-09-10"
+  },
+  {
+    "reviewId": 5,
+    "userId": 15,
+    "attractionId": 1,
+    "rating": 5,
+    "text": "A must-visit in Sri Lanka. Incredible history, tranquil atmosphere, and great value for $36/day.",
+    "date": "2024-10-02"
+  },
+  {
+    "reviewId": 6,
+    "userId": 9,
+    "attractionId": 1,
+    "rating": 4,
+    "text": "Thoroughly enjoyed our visit to Sigiriya Ancient Rock Fortress. Wear comfortable shoes and bring sunscreen!",
+    "date": "2026-04-10"
+  },
+  {
+    "reviewId": 7,
+    "userId": 7,
+    "attractionId": 1,
+    "rating": 4,
+    "text": "Thoroughly enjoyed our visit to Sigiriya Ancient Rock Fortress. Wear comfortable shoes and bring sunscreen!",
+    "date": "2026-06-04"
+  },
+  {
+    "reviewId": 8,
+    "userId": 35,
+    "attractionId": 1,
+    "rating": 3,
+    "text": "Nice place, but definitely overrun with tourists on weekends. Go early in the morning to avoid queues.",
+    "date": "2025-09-14"
+  },
+  {
+    "reviewId": 9,
+    "userId": 6,
+    "attractionId": 1,
+    "rating": 5,
+    "text": "Exceeded all expectations. World-class destination with authentic cultural depth and friendly local guides.",
+    "date": "2025-12-20"
+  },
+  {
+    "reviewId": 10,
+    "userId": 38,
+    "attractionId": 1,
+    "rating": 5,
+    "text": "Outstanding! Beautiful scenery and great facilities. Clean, safe, and truly magical for travelers.",
+    "date": "2025-03-16"
+  },
+  {
+    "reviewId": 11,
+    "userId": 28,
+    "attractionId": 1,
+    "rating": 3,
+    "text": "Decent stopover for an hour or two. Nice scenery, but quite hot in the afternoon.",
+    "date": "2026-06-28"
+  },
+  {
+    "reviewId": 12,
+    "userId": 3,
+    "attractionId": 1,
+    "rating": 5,
+    "text": "Exceeded all expectations. World-class destination with authentic cultural depth and friendly local guides.",
+    "date": "2025-09-11"
+  },
+  {
+    "reviewId": 13,
+    "userId": 13,
+    "attractionId": 2,
+    "rating": 4,
+    "text": "Thoroughly enjoyed our visit to Galle Dutch Fort & Lighthouse. Wear comfortable shoes and bring sunscreen!",
+    "date": "2024-09-28"
+  },
+  {
+    "reviewId": 14,
+    "userId": 46,
+    "attractionId": 2,
+    "rating": 5,
+    "text": "Absolutely breathtaking experience! The views at Galle Dutch Fort & Lighthouse were unforgettable and the staff was so friendly.",
+    "date": "2025-01-01"
+  },
+  {
+    "reviewId": 15,
+    "userId": 5,
+    "attractionId": 2,
+    "rating": 5,
+    "text": "Exceeded all expectations. World-class destination with authentic cultural depth and friendly local guides.",
+    "date": "2026-01-09"
+  },
+  {
+    "reviewId": 16,
+    "userId": 3,
+    "attractionId": 2,
+    "rating": 3,
+    "text": "Decent stopover for an hour or two. Nice scenery, but quite hot in the afternoon.",
+    "date": "2025-12-14"
+  },
+  {
+    "reviewId": 17,
+    "userId": 43,
+    "attractionId": 2,
+    "rating": 5,
+    "text": "Exceeded all expectations. World-class destination with authentic cultural depth and friendly local guides.",
+    "date": "2026-02-04"
+  },
+  {
+    "reviewId": 18,
+    "userId": 15,
+    "attractionId": 2,
+    "rating": 5,
+    "text": "Absolutely breathtaking experience! The views at Galle Dutch Fort & Lighthouse were unforgettable and the staff was so friendly.",
+    "date": "2026-01-25"
+  },
+  {
+    "reviewId": 19,
+    "userId": 19,
+    "attractionId": 2,
+    "rating": 5,
+    "text": "Highlight of our 2-week vacation! Loved every single minute. Perfect for anyone interested in Culture.",
+    "date": "2025-08-02"
+  },
+  {
+    "reviewId": 20,
+    "userId": 6,
+    "attractionId": 2,
+    "rating": 4,
+    "text": "Great experience overall. Well maintained and lovely surroundings. Worth the entrance fee.",
+    "date": "2025-02-13"
+  },
+  {
+    "reviewId": 21,
+    "userId": 45,
+    "attractionId": 2,
+    "rating": 5,
+    "text": "Highlight of our 2-week vacation! Loved every single minute. Perfect for anyone interested in Culture.",
+    "date": "2026-02-11"
+  },
+  {
+    "reviewId": 22,
+    "userId": 7,
+    "attractionId": 2,
+    "rating": 5,
+    "text": "Outstanding! Beautiful scenery and great facilities. Clean, safe, and truly magical for travelers.",
+    "date": "2024-11-27"
+  },
+  {
+    "reviewId": 23,
+    "userId": 25,
+    "attractionId": 2,
+    "rating": 4,
+    "text": "Thoroughly enjoyed our visit to Galle Dutch Fort & Lighthouse. Wear comfortable shoes and bring sunscreen!",
+    "date": "2026-04-27"
+  },
+  {
+    "reviewId": 24,
+    "userId": 18,
+    "attractionId": 2,
+    "rating": 4,
+    "text": "Solid 4 stars. Great adventure and beautiful nature, though ticket prices have increased slightly.",
+    "date": "2025-03-14"
+  },
+  {
+    "reviewId": 25,
+    "userId": 30,
+    "attractionId": 2,
+    "rating": 4,
+    "text": "Solid 4 stars. Great adventure and beautiful nature, though ticket prices have increased slightly.",
+    "date": "2025-07-05"
+  },
+  {
+    "reviewId": 26,
+    "userId": 24,
+    "attractionId": 2,
+    "rating": 5,
+    "text": "Outstanding! Beautiful scenery and great facilities. Clean, safe, and truly magical for travelers.",
+    "date": "2025-09-11"
+  },
+  {
+    "reviewId": 27,
+    "userId": 11,
+    "attractionId": 2,
+    "rating": 4,
+    "text": "Great experience overall. Well maintained and lovely surroundings. Worth the entrance fee.",
+    "date": "2025-04-13"
+  },
+  {
+    "reviewId": 28,
+    "userId": 37,
+    "attractionId": 2,
+    "rating": 4,
+    "text": "Very impressive destination with fantastic photo opportunities. Can get a bit crowded around midday.",
+    "date": "2026-05-27"
+  },
+  {
+    "reviewId": 29,
+    "userId": 41,
+    "attractionId": 3,
+    "rating": 5,
+    "text": "Absolutely breathtaking experience! The views at Yala National Park Safari were unforgettable and the staff was so friendly.",
+    "date": "2024-10-20"
+  },
+  {
+    "reviewId": 30,
+    "userId": 11,
+    "attractionId": 3,
+    "rating": 5,
+    "text": "Exceeded all expectations. World-class destination with authentic cultural depth and friendly local guides.",
+    "date": "2025-12-17"
+  },
+  {
+    "reviewId": 31,
+    "userId": 44,
+    "attractionId": 3,
+    "rating": 5,
+    "text": "Highlight of our 2-week vacation! Loved every single minute. Perfect for anyone interested in Wildlife.",
+    "date": "2026-05-25"
+  },
+  {
+    "reviewId": 32,
+    "userId": 28,
+    "attractionId": 3,
+    "rating": 4,
+    "text": "Great experience overall. Well maintained and lovely surroundings. Worth the entrance fee.",
+    "date": "2025-06-09"
+  },
+  {
+    "reviewId": 33,
+    "userId": 39,
+    "attractionId": 3,
+    "rating": 1,
+    "text": "Way too expensive for basic amenities. Felt like a tourist trap with zero preservation care.",
+    "date": "2025-04-22"
+  },
+  {
+    "reviewId": 34,
+    "userId": 5,
+    "attractionId": 3,
+    "rating": 5,
+    "text": "Exceeded all expectations. World-class destination with authentic cultural depth and friendly local guides.",
+    "date": "2026-05-31"
+  },
+  {
+    "reviewId": 35,
+    "userId": 25,
+    "attractionId": 3,
+    "rating": 5,
+    "text": "Highlight of our 2-week vacation! Loved every single minute. Perfect for anyone interested in Wildlife.",
+    "date": "2024-12-01"
+  },
+  {
+    "reviewId": 36,
+    "userId": 48,
+    "attractionId": 3,
+    "rating": 4,
+    "text": "Great experience overall. Well maintained and lovely surroundings. Worth the entrance fee.",
+    "date": "2026-04-13"
+  },
+  {
+    "reviewId": 37,
+    "userId": 46,
+    "attractionId": 3,
+    "rating": 4,
+    "text": "Great experience overall. Well maintained and lovely surroundings. Worth the entrance fee.",
+    "date": "2025-03-13"
+  },
+  {
+    "reviewId": 38,
+    "userId": 30,
+    "attractionId": 3,
+    "rating": 5,
+    "text": "Exceeded all expectations. World-class destination with authentic cultural depth and friendly local guides.",
+    "date": "2026-09-16"
+  },
+  {
+    "reviewId": 39,
+    "userId": 34,
+    "attractionId": 3,
+    "rating": 5,
+    "text": "Outstanding! Beautiful scenery and great facilities. Clean, safe, and truly magical for travelers.",
+    "date": "2026-08-28"
+  },
+  {
+    "reviewId": 40,
+    "userId": 17,
+    "attractionId": 3,
+    "rating": 3,
+    "text": "Average maintenance. The natural beauty is undeniable, but signage and guidance could be improved.",
+    "date": "2025-11-06"
+  },
+  {
+    "reviewId": 41,
+    "userId": 36,
+    "attractionId": 3,
+    "rating": 4,
+    "text": "Great experience overall. Well maintained and lovely surroundings. Worth the entrance fee.",
+    "date": "2025-02-13"
+  },
+  {
+    "reviewId": 42,
+    "userId": 6,
+    "attractionId": 4,
+    "rating": 4,
+    "text": "Solid 4 stars. Great adventure and beautiful nature, though ticket prices have increased slightly.",
+    "date": "2025-07-10"
+  },
+  {
+    "reviewId": 43,
+    "userId": 47,
+    "attractionId": 4,
+    "rating": 5,
+    "text": "Exceeded all expectations. World-class destination with authentic cultural depth and friendly local guides.",
+    "date": "2024-10-10"
+  },
+  {
+    "reviewId": 44,
+    "userId": 32,
+    "attractionId": 4,
+    "rating": 4,
+    "text": "Thoroughly enjoyed our visit to Ella Nine Arch Bridge & Little Adam's Peak. Wear comfortable shoes and bring sunscreen!",
+    "date": "2025-08-04"
+  },
+  {
+    "reviewId": 45,
+    "userId": 5,
+    "attractionId": 4,
+    "rating": 5,
+    "text": "Highlight of our 2-week vacation! Loved every single minute. Perfect for anyone interested in Nature.",
+    "date": "2025-06-25"
+  },
+  {
+    "reviewId": 46,
+    "userId": 35,
+    "attractionId": 4,
+    "rating": 5,
+    "text": "Outstanding! Beautiful scenery and great facilities. Clean, safe, and truly magical for travelers.",
+    "date": "2026-05-16"
+  },
+  {
+    "reviewId": 47,
+    "userId": 9,
+    "attractionId": 4,
+    "rating": 4,
+    "text": "Very impressive destination with fantastic photo opportunities. Can get a bit crowded around midday.",
+    "date": "2025-10-05"
+  },
+  {
+    "reviewId": 48,
+    "userId": 45,
+    "attractionId": 4,
+    "rating": 1,
+    "text": "Terrible experience during monsoon season. Trails were washed out and operations were disorganized.",
+    "date": "2025-01-22"
+  },
+  {
+    "reviewId": 49,
+    "userId": 43,
+    "attractionId": 4,
+    "rating": 4,
+    "text": "Very impressive destination with fantastic photo opportunities. Can get a bit crowded around midday.",
+    "date": "2024-09-22"
+  },
+  {
+    "reviewId": 50,
+    "userId": 31,
+    "attractionId": 4,
+    "rating": 5,
+    "text": "A must-visit in Sri Lanka. Incredible history, tranquil atmosphere, and great value for $30/day.",
+    "date": "2026-07-09"
+  },
+  {
+    "reviewId": 51,
+    "userId": 36,
+    "attractionId": 4,
+    "rating": 5,
+    "text": "Highlight of our 2-week vacation! Loved every single minute. Perfect for anyone interested in Nature.",
+    "date": "2026-07-06"
+  },
+  {
+    "reviewId": 52,
+    "userId": 11,
+    "attractionId": 4,
+    "rating": 4,
+    "text": "Thoroughly enjoyed our visit to Ella Nine Arch Bridge & Little Adam's Peak. Wear comfortable shoes and bring sunscreen!",
+    "date": "2024-10-31"
+  },
+  {
+    "reviewId": 53,
+    "userId": 17,
+    "attractionId": 4,
+    "rating": 4,
+    "text": "Solid 4 stars. Great adventure and beautiful nature, though ticket prices have increased slightly.",
+    "date": "2026-05-04"
+  },
+  {
+    "reviewId": 54,
+    "userId": 37,
+    "attractionId": 5,
+    "rating": 4,
+    "text": "Thoroughly enjoyed our visit to Mirissa Blue Whale Watching & Coconut Tree Hill. Wear comfortable shoes and bring sunscreen!",
+    "date": "2026-05-28"
+  },
+  {
+    "reviewId": 55,
+    "userId": 31,
+    "attractionId": 5,
+    "rating": 4,
+    "text": "Great experience overall. Well maintained and lovely surroundings. Worth the entrance fee.",
+    "date": "2025-03-16"
+  },
+  {
+    "reviewId": 56,
+    "userId": 16,
+    "attractionId": 5,
+    "rating": 4,
+    "text": "Lovely spot for Beaches lovers. Good facilities nearby and easy to reach with a driver.",
+    "date": "2026-03-13"
+  },
+  {
+    "reviewId": 57,
+    "userId": 49,
+    "attractionId": 5,
+    "rating": 4,
+    "text": "Great experience overall. Well maintained and lovely surroundings. Worth the entrance fee.",
+    "date": "2026-07-01"
+  },
+  {
+    "reviewId": 58,
+    "userId": 27,
+    "attractionId": 5,
+    "rating": 4,
+    "text": "Solid 4 stars. Great adventure and beautiful nature, though ticket prices have increased slightly.",
+    "date": "2026-06-08"
+  },
+  {
+    "reviewId": 59,
+    "userId": 13,
+    "attractionId": 5,
+    "rating": 2,
+    "text": "Expected much more given the hype. Would recommend looking for quieter alternatives nearby.",
+    "date": "2026-09-01"
+  },
+  {
+    "reviewId": 60,
+    "userId": 7,
+    "attractionId": 5,
+    "rating": 5,
+    "text": "A must-visit in Sri Lanka. Incredible history, tranquil atmosphere, and great value for $55/day.",
+    "date": "2026-03-30"
+  },
+  {
+    "reviewId": 61,
+    "userId": 44,
+    "attractionId": 5,
+    "rating": 4,
+    "text": "Lovely spot for Beaches lovers. Good facilities nearby and easy to reach with a driver.",
+    "date": "2026-02-10"
+  },
+  {
+    "reviewId": 62,
+    "userId": 28,
+    "attractionId": 5,
+    "rating": 5,
+    "text": "Absolutely breathtaking experience! The views at Mirissa Blue Whale Watching & Coconut Tree Hill were unforgettable and the staff was so friendly.",
+    "date": "2026-04-01"
+  },
+  {
+    "reviewId": 63,
+    "userId": 23,
+    "attractionId": 5,
+    "rating": 4,
+    "text": "Lovely spot for Beaches lovers. Good facilities nearby and easy to reach with a driver.",
+    "date": "2025-12-19"
+  },
+  {
+    "reviewId": 64,
+    "userId": 42,
+    "attractionId": 5,
+    "rating": 5,
+    "text": "Outstanding! Beautiful scenery and great facilities. Clean, safe, and truly magical for travelers.",
+    "date": "2025-11-28"
+  },
+  {
+    "reviewId": 65,
+    "userId": 46,
+    "attractionId": 5,
+    "rating": 4,
+    "text": "Solid 4 stars. Great adventure and beautiful nature, though ticket prices have increased slightly.",
+    "date": "2024-11-08"
+  },
+  {
+    "reviewId": 66,
+    "userId": 30,
+    "attractionId": 5,
+    "rating": 5,
+    "text": "A must-visit in Sri Lanka. Incredible history, tranquil atmosphere, and great value for $55/day.",
+    "date": "2026-03-06"
+  },
+  {
+    "reviewId": 67,
+    "userId": 4,
+    "attractionId": 5,
+    "rating": 4,
+    "text": "Very impressive destination with fantastic photo opportunities. Can get a bit crowded around midday.",
+    "date": "2025-01-31"
+  },
+  {
+    "reviewId": 68,
+    "userId": 43,
+    "attractionId": 5,
+    "rating": 5,
+    "text": "Absolutely breathtaking experience! The views at Mirissa Blue Whale Watching & Coconut Tree Hill were unforgettable and the staff was so friendly.",
+    "date": "2025-10-30"
+  },
+  {
+    "reviewId": 69,
+    "userId": 50,
+    "attractionId": 5,
+    "rating": 2,
+    "text": "Expected much more given the hype. Would recommend looking for quieter alternatives nearby.",
+    "date": "2025-05-16"
+  },
+  {
+    "reviewId": 70,
+    "userId": 34,
+    "attractionId": 6,
+    "rating": 4,
+    "text": "Solid 4 stars. Great adventure and beautiful nature, though ticket prices have increased slightly.",
+    "date": "2025-02-15"
+  },
+  {
+    "reviewId": 71,
+    "userId": 11,
+    "attractionId": 6,
+    "rating": 4,
+    "text": "Thoroughly enjoyed our visit to Temple of the Sacred Tooth Relic (Sri Dalada Maligawa). Wear comfortable shoes and bring sunscreen!",
+    "date": "2026-02-19"
+  },
+  {
+    "reviewId": 72,
+    "userId": 4,
+    "attractionId": 6,
+    "rating": 5,
+    "text": "Highlight of our 2-week vacation! Loved every single minute. Perfect for anyone interested in Culture.",
+    "date": "2026-01-15"
+  },
+  {
+    "reviewId": 73,
+    "userId": 33,
+    "attractionId": 6,
+    "rating": 4,
+    "text": "Great experience overall. Well maintained and lovely surroundings. Worth the entrance fee.",
+    "date": "2024-10-29"
+  },
+  {
+    "reviewId": 74,
+    "userId": 6,
+    "attractionId": 6,
+    "rating": 5,
+    "text": "Outstanding! Beautiful scenery and great facilities. Clean, safe, and truly magical for travelers.",
+    "date": "2025-10-28"
+  },
+  {
+    "reviewId": 75,
+    "userId": 12,
+    "attractionId": 6,
+    "rating": 5,
+    "text": "Absolutely breathtaking experience! The views at Temple of the Sacred Tooth Relic (Sri Dalada Maligawa) were unforgettable and the staff was so friendly.",
+    "date": "2026-09-07"
+  },
+  {
+    "reviewId": 76,
+    "userId": 5,
+    "attractionId": 6,
+    "rating": 4,
+    "text": "Solid 4 stars. Great adventure and beautiful nature, though ticket prices have increased slightly.",
+    "date": "2026-06-06"
+  },
+  {
+    "reviewId": 77,
+    "userId": 39,
+    "attractionId": 6,
+    "rating": 2,
+    "text": "A bit disappointed. Too crowded and vendors can be quite pushy near the entrance.",
+    "date": "2025-04-16"
+  },
+  {
+    "reviewId": 78,
+    "userId": 44,
+    "attractionId": 6,
+    "rating": 4,
+    "text": "Thoroughly enjoyed our visit to Temple of the Sacred Tooth Relic (Sri Dalada Maligawa). Wear comfortable shoes and bring sunscreen!",
+    "date": "2026-07-08"
+  },
+  {
+    "reviewId": 79,
+    "userId": 16,
+    "attractionId": 6,
+    "rating": 5,
+    "text": "Highlight of our 2-week vacation! Loved every single minute. Perfect for anyone interested in Culture.",
+    "date": "2025-11-29"
+  },
+  {
+    "reviewId": 80,
+    "userId": 26,
+    "attractionId": 6,
+    "rating": 3,
+    "text": "Average maintenance. The natural beauty is undeniable, but signage and guidance could be improved.",
+    "date": "2024-12-29"
+  },
+  {
+    "reviewId": 81,
+    "userId": 8,
+    "attractionId": 6,
+    "rating": 5,
+    "text": "Exceeded all expectations. World-class destination with authentic cultural depth and friendly local guides.",
+    "date": "2026-09-08"
+  },
+  {
+    "reviewId": 82,
+    "userId": 37,
+    "attractionId": 6,
+    "rating": 5,
+    "text": "Exceeded all expectations. World-class destination with authentic cultural depth and friendly local guides.",
+    "date": "2025-11-14"
+  },
+  {
+    "reviewId": 83,
+    "userId": 41,
+    "attractionId": 6,
+    "rating": 5,
+    "text": "Absolutely breathtaking experience! The views at Temple of the Sacred Tooth Relic (Sri Dalada Maligawa) were unforgettable and the staff was so friendly.",
+    "date": "2026-05-02"
+  },
+  {
+    "reviewId": 84,
+    "userId": 3,
+    "attractionId": 6,
+    "rating": 4,
+    "text": "Very impressive destination with fantastic photo opportunities. Can get a bit crowded around midday.",
+    "date": "2025-02-27"
+  },
+  {
+    "reviewId": 85,
+    "userId": 46,
+    "attractionId": 6,
+    "rating": 3,
+    "text": "Average maintenance. The natural beauty is undeniable, but signage and guidance could be improved.",
+    "date": "2025-01-05"
+  },
+  {
+    "reviewId": 86,
+    "userId": 46,
+    "attractionId": 7,
+    "rating": 2,
+    "text": "Overpriced compared to what is offered. Long waiting times and limited shade.",
+    "date": "2025-12-07"
+  },
+  {
+    "reviewId": 87,
+    "userId": 22,
+    "attractionId": 7,
+    "rating": 2,
+    "text": "Overpriced compared to what is offered. Long waiting times and limited shade.",
+    "date": "2026-05-06"
+  },
+  {
+    "reviewId": 88,
+    "userId": 14,
+    "attractionId": 7,
+    "rating": 4,
+    "text": "Thoroughly enjoyed our visit to Kitulgala White Water Rafting. Wear comfortable shoes and bring sunscreen!",
+    "date": "2026-04-04"
+  },
+  {
+    "reviewId": 89,
+    "userId": 44,
+    "attractionId": 7,
+    "rating": 5,
+    "text": "Exceeded all expectations. World-class destination with authentic cultural depth and friendly local guides.",
+    "date": "2024-09-24"
+  },
+  {
+    "reviewId": 90,
+    "userId": 41,
+    "attractionId": 7,
+    "rating": 4,
+    "text": "Very impressive destination with fantastic photo opportunities. Can get a bit crowded around midday.",
+    "date": "2026-05-25"
+  },
+  {
+    "reviewId": 91,
+    "userId": 17,
+    "attractionId": 7,
+    "rating": 2,
+    "text": "Expected much more given the hype. Would recommend looking for quieter alternatives nearby.",
+    "date": "2026-04-17"
+  },
+  {
+    "reviewId": 92,
+    "userId": 33,
+    "attractionId": 7,
+    "rating": 4,
+    "text": "Thoroughly enjoyed our visit to Kitulgala White Water Rafting. Wear comfortable shoes and bring sunscreen!",
+    "date": "2025-01-28"
+  },
+  {
+    "reviewId": 93,
+    "userId": 32,
+    "attractionId": 7,
+    "rating": 4,
+    "text": "Lovely spot for Adventure lovers. Good facilities nearby and easy to reach with a driver.",
+    "date": "2026-05-09"
+  },
+  {
+    "reviewId": 94,
+    "userId": 45,
+    "attractionId": 7,
+    "rating": 2,
+    "text": "Overpriced compared to what is offered. Long waiting times and limited shade.",
+    "date": "2026-08-07"
+  },
+  {
+    "reviewId": 95,
+    "userId": 4,
+    "attractionId": 7,
+    "rating": 5,
+    "text": "A must-visit in Sri Lanka. Incredible history, tranquil atmosphere, and great value for $48/day.",
+    "date": "2024-10-18"
+  },
+  {
+    "reviewId": 96,
+    "userId": 43,
+    "attractionId": 8,
+    "rating": 5,
+    "text": "Absolutely breathtaking experience! The views at Colombo Street Food & Pettah Market Tour were unforgettable and the staff was so friendly.",
+    "date": "2026-03-17"
+  },
+  {
+    "reviewId": 97,
+    "userId": 7,
+    "attractionId": 8,
+    "rating": 5,
+    "text": "Highlight of our 2-week vacation! Loved every single minute. Perfect for anyone interested in Food.",
+    "date": "2025-07-22"
+  },
+  {
+    "reviewId": 98,
+    "userId": 23,
+    "attractionId": 8,
+    "rating": 5,
+    "text": "A must-visit in Sri Lanka. Incredible history, tranquil atmosphere, and great value for $28/day.",
+    "date": "2025-12-17"
+  },
+  {
+    "reviewId": 99,
+    "userId": 36,
+    "attractionId": 8,
+    "rating": 3,
+    "text": "Nice place, but definitely overrun with tourists on weekends. Go early in the morning to avoid queues.",
+    "date": "2025-08-21"
+  },
+  {
+    "reviewId": 100,
+    "userId": 27,
+    "attractionId": 8,
+    "rating": 5,
+    "text": "Outstanding! Beautiful scenery and great facilities. Clean, safe, and truly magical for travelers.",
+    "date": "2026-02-01"
+  },
+  {
+    "reviewId": 101,
+    "userId": 40,
+    "attractionId": 8,
+    "rating": 3,
+    "text": "Decent stopover for an hour or two. Nice scenery, but quite hot in the afternoon.",
+    "date": "2025-09-23"
+  },
+  {
+    "reviewId": 102,
+    "userId": 10,
+    "attractionId": 8,
+    "rating": 4,
+    "text": "Great experience overall. Well maintained and lovely surroundings. Worth the entrance fee.",
+    "date": "2026-01-31"
+  },
+  {
+    "reviewId": 103,
+    "userId": 16,
+    "attractionId": 8,
+    "rating": 1,
+    "text": "Terrible experience during monsoon season. Trails were washed out and operations were disorganized.",
+    "date": "2025-08-04"
+  },
+  {
+    "reviewId": 104,
+    "userId": 11,
+    "attractionId": 8,
+    "rating": 4,
+    "text": "Very impressive destination with fantastic photo opportunities. Can get a bit crowded around midday.",
+    "date": "2025-12-05"
+  },
+  {
+    "reviewId": 105,
+    "userId": 12,
+    "attractionId": 8,
+    "rating": 4,
+    "text": "Solid 4 stars. Great adventure and beautiful nature, though ticket prices have increased slightly.",
+    "date": "2025-08-03"
+  },
+  {
+    "reviewId": 106,
+    "userId": 22,
+    "attractionId": 9,
+    "rating": 4,
+    "text": "Solid 4 stars. Great adventure and beautiful nature, though ticket prices have increased slightly.",
+    "date": "2026-03-06"
+  },
+  {
+    "reviewId": 107,
+    "userId": 2,
+    "attractionId": 9,
+    "rating": 4,
+    "text": "Lovely spot for Nature lovers. Good facilities nearby and easy to reach with a driver.",
+    "date": "2026-09-15"
+  },
+  {
+    "reviewId": 108,
+    "userId": 8,
+    "attractionId": 9,
+    "rating": 4,
+    "text": "Solid 4 stars. Great adventure and beautiful nature, though ticket prices have increased slightly.",
+    "date": "2024-10-13"
+  },
+  {
+    "reviewId": 109,
+    "userId": 17,
+    "attractionId": 9,
+    "rating": 5,
+    "text": "A must-visit in Sri Lanka. Incredible history, tranquil atmosphere, and great value for $45/day.",
+    "date": "2025-09-09"
+  },
+  {
+    "reviewId": 110,
+    "userId": 12,
+    "attractionId": 9,
+    "rating": 4,
+    "text": "Thoroughly enjoyed our visit to Horton Plains & World's End Precipice. Wear comfortable shoes and bring sunscreen!",
+    "date": "2024-12-17"
+  },
+  {
+    "reviewId": 111,
+    "userId": 38,
+    "attractionId": 9,
+    "rating": 4,
+    "text": "Very impressive destination with fantastic photo opportunities. Can get a bit crowded around midday.",
+    "date": "2025-11-13"
+  },
+  {
+    "reviewId": 112,
+    "userId": 47,
+    "attractionId": 9,
+    "rating": 4,
+    "text": "Lovely spot for Nature lovers. Good facilities nearby and easy to reach with a driver.",
+    "date": "2025-10-17"
+  },
+  {
+    "reviewId": 113,
+    "userId": 3,
+    "attractionId": 9,
+    "rating": 4,
+    "text": "Thoroughly enjoyed our visit to Horton Plains & World's End Precipice. Wear comfortable shoes and bring sunscreen!",
+    "date": "2025-02-26"
+  },
+  {
+    "reviewId": 114,
+    "userId": 7,
+    "attractionId": 9,
+    "rating": 3,
+    "text": "Decent stopover for an hour or two. Nice scenery, but quite hot in the afternoon.",
+    "date": "2024-11-05"
+  },
+  {
+    "reviewId": 115,
+    "userId": 39,
+    "attractionId": 9,
+    "rating": 5,
+    "text": "A must-visit in Sri Lanka. Incredible history, tranquil atmosphere, and great value for $45/day.",
+    "date": "2024-12-25"
+  },
+  {
+    "reviewId": 116,
+    "userId": 28,
+    "attractionId": 9,
+    "rating": 5,
+    "text": "Outstanding! Beautiful scenery and great facilities. Clean, safe, and truly magical for travelers.",
+    "date": "2025-03-04"
+  },
+  {
+    "reviewId": 117,
+    "userId": 23,
+    "attractionId": 9,
+    "rating": 5,
+    "text": "Highlight of our 2-week vacation! Loved every single minute. Perfect for anyone interested in Nature.",
+    "date": "2025-11-27"
+  },
+  {
+    "reviewId": 118,
+    "userId": 21,
+    "attractionId": 9,
+    "rating": 4,
+    "text": "Solid 4 stars. Great adventure and beautiful nature, though ticket prices have increased slightly.",
+    "date": "2025-01-03"
+  },
+  {
+    "reviewId": 119,
+    "userId": 40,
+    "attractionId": 9,
+    "rating": 5,
+    "text": "Outstanding! Beautiful scenery and great facilities. Clean, safe, and truly magical for travelers.",
+    "date": "2025-06-21"
+  },
+  {
+    "reviewId": 120,
+    "userId": 33,
+    "attractionId": 9,
+    "rating": 4,
+    "text": "Great experience overall. Well maintained and lovely surroundings. Worth the entrance fee.",
+    "date": "2025-04-11"
+  },
+  {
+    "reviewId": 121,
+    "userId": 48,
+    "attractionId": 9,
+    "rating": 4,
+    "text": "Great experience overall. Well maintained and lovely surroundings. Worth the entrance fee.",
+    "date": "2024-11-11"
+  },
+  {
+    "reviewId": 122,
+    "userId": 19,
+    "attractionId": 10,
+    "rating": 3,
+    "text": "Good experience overall, though a bit pricey for foreign tourists compared to other sights.",
+    "date": "2026-04-19"
+  },
+  {
+    "reviewId": 123,
+    "userId": 33,
+    "attractionId": 10,
+    "rating": 1,
+    "text": "Terrible experience during monsoon season. Trails were washed out and operations were disorganized.",
+    "date": "2025-05-18"
+  },
+  {
+    "reviewId": 124,
+    "userId": 43,
+    "attractionId": 10,
+    "rating": 4,
+    "text": "Very impressive destination with fantastic photo opportunities. Can get a bit crowded around midday.",
+    "date": "2025-06-07"
+  },
+  {
+    "reviewId": 125,
+    "userId": 41,
+    "attractionId": 10,
+    "rating": 4,
+    "text": "Solid 4 stars. Great adventure and beautiful nature, though ticket prices have increased slightly.",
+    "date": "2026-03-01"
+  },
+  {
+    "reviewId": 126,
+    "userId": 40,
+    "attractionId": 10,
+    "rating": 5,
+    "text": "Outstanding! Beautiful scenery and great facilities. Clean, safe, and truly magical for travelers.",
+    "date": "2025-04-28"
+  },
+  {
+    "reviewId": 127,
+    "userId": 22,
+    "attractionId": 10,
+    "rating": 4,
+    "text": "Great experience overall. Well maintained and lovely surroundings. Worth the entrance fee.",
+    "date": "2024-11-14"
+  },
+  {
+    "reviewId": 128,
+    "userId": 6,
+    "attractionId": 10,
+    "rating": 4,
+    "text": "Very impressive destination with fantastic photo opportunities. Can get a bit crowded around midday.",
+    "date": "2025-07-08"
+  },
+  {
+    "reviewId": 129,
+    "userId": 16,
+    "attractionId": 10,
+    "rating": 3,
+    "text": "Decent stopover for an hour or two. Nice scenery, but quite hot in the afternoon.",
+    "date": "2026-07-27"
+  },
+  {
+    "reviewId": 130,
+    "userId": 20,
+    "attractionId": 10,
+    "rating": 4,
+    "text": "Very impressive destination with fantastic photo opportunities. Can get a bit crowded around midday.",
+    "date": "2025-06-06"
+  },
+  {
+    "reviewId": 131,
+    "userId": 30,
+    "attractionId": 11,
+    "rating": 5,
+    "text": "Outstanding! Beautiful scenery and great facilities. Clean, safe, and truly magical for travelers.",
+    "date": "2025-06-13"
+  },
+  {
+    "reviewId": 132,
+    "userId": 43,
+    "attractionId": 11,
+    "rating": 4,
+    "text": "Great experience overall. Well maintained and lovely surroundings. Worth the entrance fee.",
+    "date": "2024-12-03"
+  },
+  {
+    "reviewId": 133,
+    "userId": 34,
+    "attractionId": 11,
+    "rating": 4,
+    "text": "Solid 4 stars. Great adventure and beautiful nature, though ticket prices have increased slightly.",
+    "date": "2025-05-08"
+  },
+  {
+    "reviewId": 134,
+    "userId": 36,
+    "attractionId": 11,
+    "rating": 5,
+    "text": "Highlight of our 2-week vacation! Loved every single minute. Perfect for anyone interested in Wildlife.",
+    "date": "2025-06-23"
+  },
+  {
+    "reviewId": 135,
+    "userId": 39,
+    "attractionId": 11,
+    "rating": 2,
+    "text": "Overpriced compared to what is offered. Long waiting times and limited shade.",
+    "date": "2026-01-19"
+  },
+  {
+    "reviewId": 136,
+    "userId": 21,
+    "attractionId": 11,
+    "rating": 4,
+    "text": "Thoroughly enjoyed our visit to Udawalawe Elephant Sanctuary Safari. Wear comfortable shoes and bring sunscreen!",
+    "date": "2025-03-12"
+  },
+  {
+    "reviewId": 137,
+    "userId": 29,
+    "attractionId": 11,
+    "rating": 3,
+    "text": "Good experience overall, though a bit pricey for foreign tourists compared to other sights.",
+    "date": "2026-01-23"
+  },
+  {
+    "reviewId": 138,
+    "userId": 40,
+    "attractionId": 11,
+    "rating": 4,
+    "text": "Great experience overall. Well maintained and lovely surroundings. Worth the entrance fee.",
+    "date": "2024-09-23"
+  },
+  {
+    "reviewId": 139,
+    "userId": 33,
+    "attractionId": 11,
+    "rating": 4,
+    "text": "Lovely spot for Wildlife lovers. Good facilities nearby and easy to reach with a driver.",
+    "date": "2025-07-26"
+  },
+  {
+    "reviewId": 140,
+    "userId": 28,
+    "attractionId": 11,
+    "rating": 4,
+    "text": "Lovely spot for Wildlife lovers. Good facilities nearby and easy to reach with a driver.",
+    "date": "2025-07-18"
+  },
+  {
+    "reviewId": 141,
+    "userId": 47,
+    "attractionId": 11,
+    "rating": 2,
+    "text": "Overpriced compared to what is offered. Long waiting times and limited shade.",
+    "date": "2025-08-14"
+  },
+  {
+    "reviewId": 142,
+    "userId": 44,
+    "attractionId": 11,
+    "rating": 5,
+    "text": "Exceeded all expectations. World-class destination with authentic cultural depth and friendly local guides.",
+    "date": "2024-10-04"
+  },
+  {
+    "reviewId": 143,
+    "userId": 11,
+    "attractionId": 11,
+    "rating": 1,
+    "text": "Way too expensive for basic amenities. Felt like a tourist trap with zero preservation care.",
+    "date": "2025-05-16"
+  },
+  {
+    "reviewId": 144,
+    "userId": 23,
+    "attractionId": 12,
+    "rating": 3,
+    "text": "Decent stopover for an hour or two. Nice scenery, but quite hot in the afternoon.",
+    "date": "2025-05-07"
+  },
+  {
+    "reviewId": 145,
+    "userId": 20,
+    "attractionId": 12,
+    "rating": 1,
+    "text": "Way too expensive for basic amenities. Felt like a tourist trap with zero preservation care.",
+    "date": "2024-11-01"
+  },
+  {
+    "reviewId": 146,
+    "userId": 25,
+    "attractionId": 12,
+    "rating": 4,
+    "text": "Lovely spot for Adventure lovers. Good facilities nearby and easy to reach with a driver.",
+    "date": "2026-03-31"
+  },
+  {
+    "reviewId": 147,
+    "userId": 27,
+    "attractionId": 12,
+    "rating": 5,
+    "text": "A must-visit in Sri Lanka. Incredible history, tranquil atmosphere, and great value for $52/day.",
+    "date": "2024-12-18"
+  },
+  {
+    "reviewId": 148,
+    "userId": 35,
+    "attractionId": 12,
+    "rating": 4,
+    "text": "Lovely spot for Adventure lovers. Good facilities nearby and easy to reach with a driver.",
+    "date": "2025-01-18"
+  },
+  {
+    "reviewId": 149,
+    "userId": 46,
+    "attractionId": 12,
+    "rating": 4,
+    "text": "Very impressive destination with fantastic photo opportunities. Can get a bit crowded around midday.",
+    "date": "2026-06-23"
+  },
+  {
+    "reviewId": 150,
+    "userId": 39,
+    "attractionId": 12,
+    "rating": 4,
+    "text": "Great experience overall. Well maintained and lovely surroundings. Worth the entrance fee.",
+    "date": "2025-06-01"
+  },
+  {
+    "reviewId": 151,
+    "userId": 15,
+    "attractionId": 12,
+    "rating": 3,
+    "text": "Average maintenance. The natural beauty is undeniable, but signage and guidance could be improved.",
+    "date": "2025-08-24"
+  },
+  {
+    "reviewId": 152,
+    "userId": 32,
+    "attractionId": 12,
+    "rating": 4,
+    "text": "Lovely spot for Adventure lovers. Good facilities nearby and easy to reach with a driver.",
+    "date": "2025-10-17"
+  },
+  {
+    "reviewId": 153,
+    "userId": 49,
+    "attractionId": 13,
+    "rating": 3,
+    "text": "Nice place, but definitely overrun with tourists on weekends. Go early in the morning to avoid queues.",
+    "date": "2024-11-18"
+  },
+  {
+    "reviewId": 154,
+    "userId": 25,
+    "attractionId": 13,
+    "rating": 2,
+    "text": "A bit disappointed. Too crowded and vendors can be quite pushy near the entrance.",
+    "date": "2026-01-06"
+  },
+  {
+    "reviewId": 155,
+    "userId": 18,
+    "attractionId": 13,
+    "rating": 3,
+    "text": "Nice place, but definitely overrun with tourists on weekends. Go early in the morning to avoid queues.",
+    "date": "2024-12-19"
+  },
+  {
+    "reviewId": 156,
+    "userId": 27,
+    "attractionId": 13,
+    "rating": 3,
+    "text": "Good experience overall, though a bit pricey for foreign tourists compared to other sights.",
+    "date": "2025-05-20"
+  },
+  {
+    "reviewId": 157,
+    "userId": 17,
+    "attractionId": 13,
+    "rating": 4,
+    "text": "Solid 4 stars. Great adventure and beautiful nature, though ticket prices have increased slightly.",
+    "date": "2026-02-05"
+  },
+  {
+    "reviewId": 158,
+    "userId": 6,
+    "attractionId": 13,
+    "rating": 4,
+    "text": "Thoroughly enjoyed our visit to Adam's Peak (Sri Pada) Sacred Sunrise Pilgrimage. Wear comfortable shoes and bring sunscreen!",
+    "date": "2025-09-04"
+  },
+  {
+    "reviewId": 159,
+    "userId": 31,
+    "attractionId": 13,
+    "rating": 3,
+    "text": "Nice place, but definitely overrun with tourists on weekends. Go early in the morning to avoid queues.",
+    "date": "2026-04-02"
+  },
+  {
+    "reviewId": 160,
+    "userId": 2,
+    "attractionId": 13,
+    "rating": 5,
+    "text": "Absolutely breathtaking experience! The views at Adam's Peak (Sri Pada) Sacred Sunrise Pilgrimage were unforgettable and the staff was so friendly.",
+    "date": "2025-02-01"
+  },
+  {
+    "reviewId": 161,
+    "userId": 35,
+    "attractionId": 13,
+    "rating": 1,
+    "text": "Way too expensive for basic amenities. Felt like a tourist trap with zero preservation care.",
+    "date": "2025-02-04"
+  },
+  {
+    "reviewId": 162,
+    "userId": 4,
+    "attractionId": 13,
+    "rating": 4,
+    "text": "Lovely spot for Adventure lovers. Good facilities nearby and easy to reach with a driver.",
+    "date": "2025-08-06"
+  },
+  {
+    "reviewId": 163,
+    "userId": 23,
+    "attractionId": 13,
+    "rating": 5,
+    "text": "A must-visit in Sri Lanka. Incredible history, tranquil atmosphere, and great value for $18/day.",
+    "date": "2026-07-01"
+  },
+  {
+    "reviewId": 164,
+    "userId": 45,
+    "attractionId": 14,
+    "rating": 4,
+    "text": "Thoroughly enjoyed our visit to Bentota Golden Beach & Water Sports Haven. Wear comfortable shoes and bring sunscreen!",
+    "date": "2026-07-08"
+  },
+  {
+    "reviewId": 165,
+    "userId": 41,
+    "attractionId": 14,
+    "rating": 4,
+    "text": "Thoroughly enjoyed our visit to Bentota Golden Beach & Water Sports Haven. Wear comfortable shoes and bring sunscreen!",
+    "date": "2026-09-04"
+  },
+  {
+    "reviewId": 166,
+    "userId": 16,
+    "attractionId": 14,
+    "rating": 5,
+    "text": "Outstanding! Beautiful scenery and great facilities. Clean, safe, and truly magical for travelers.",
+    "date": "2026-05-31"
+  },
+  {
+    "reviewId": 167,
+    "userId": 7,
+    "attractionId": 14,
+    "rating": 4,
+    "text": "Thoroughly enjoyed our visit to Bentota Golden Beach & Water Sports Haven. Wear comfortable shoes and bring sunscreen!",
+    "date": "2024-12-05"
+  },
+  {
+    "reviewId": 168,
+    "userId": 50,
+    "attractionId": 14,
+    "rating": 5,
+    "text": "Outstanding! Beautiful scenery and great facilities. Clean, safe, and truly magical for travelers.",
+    "date": "2024-09-22"
+  },
+  {
+    "reviewId": 169,
+    "userId": 20,
+    "attractionId": 14,
+    "rating": 3,
+    "text": "Good experience overall, though a bit pricey for foreign tourists compared to other sights.",
+    "date": "2025-03-31"
+  },
+  {
+    "reviewId": 170,
+    "userId": 44,
+    "attractionId": 14,
+    "rating": 5,
+    "text": "Highlight of our 2-week vacation! Loved every single minute. Perfect for anyone interested in Beaches.",
+    "date": "2024-12-25"
+  },
+  {
+    "reviewId": 171,
+    "userId": 39,
+    "attractionId": 14,
+    "rating": 5,
+    "text": "Exceeded all expectations. World-class destination with authentic cultural depth and friendly local guides.",
+    "date": "2025-05-09"
+  },
+  {
+    "reviewId": 172,
+    "userId": 8,
+    "attractionId": 14,
+    "rating": 4,
+    "text": "Solid 4 stars. Great adventure and beautiful nature, though ticket prices have increased slightly.",
+    "date": "2025-12-16"
+  },
+  {
+    "reviewId": 173,
+    "userId": 37,
+    "attractionId": 14,
+    "rating": 4,
+    "text": "Great experience overall. Well maintained and lovely surroundings. Worth the entrance fee.",
+    "date": "2026-06-20"
+  },
+  {
+    "reviewId": 174,
+    "userId": 3,
+    "attractionId": 14,
+    "rating": 3,
+    "text": "Decent stopover for an hour or two. Nice scenery, but quite hot in the afternoon.",
+    "date": "2026-01-10"
+  },
+  {
+    "reviewId": 175,
+    "userId": 23,
+    "attractionId": 14,
+    "rating": 5,
+    "text": "Exceeded all expectations. World-class destination with authentic cultural depth and friendly local guides.",
+    "date": "2024-12-31"
+  },
+  {
+    "reviewId": 176,
+    "userId": 35,
+    "attractionId": 14,
+    "rating": 4,
+    "text": "Thoroughly enjoyed our visit to Bentota Golden Beach & Water Sports Haven. Wear comfortable shoes and bring sunscreen!",
+    "date": "2026-08-18"
+  },
+  {
+    "reviewId": 177,
+    "userId": 21,
+    "attractionId": 15,
+    "rating": 4,
+    "text": "Great experience overall. Well maintained and lovely surroundings. Worth the entrance fee.",
+    "date": "2026-06-21"
+  },
+  {
+    "reviewId": 178,
+    "userId": 12,
+    "attractionId": 15,
+    "rating": 3,
+    "text": "Decent stopover for an hour or two. Nice scenery, but quite hot in the afternoon.",
+    "date": "2025-05-04"
+  },
+  {
+    "reviewId": 179,
+    "userId": 32,
+    "attractionId": 15,
+    "rating": 4,
+    "text": "Great experience overall. Well maintained and lovely surroundings. Worth the entrance fee.",
+    "date": "2024-10-09"
+  },
+  {
+    "reviewId": 180,
+    "userId": 14,
+    "attractionId": 15,
+    "rating": 4,
+    "text": "Lovely spot for Culture lovers. Good facilities nearby and easy to reach with a driver.",
+    "date": "2025-06-15"
+  },
+  {
+    "reviewId": 181,
+    "userId": 23,
+    "attractionId": 15,
+    "rating": 5,
+    "text": "Absolutely breathtaking experience! The views at Dambulla Royal Golden Cave Temple were unforgettable and the staff was so friendly.",
+    "date": "2025-11-19"
+  },
+  {
+    "reviewId": 182,
+    "userId": 17,
+    "attractionId": 15,
+    "rating": 3,
+    "text": "Good experience overall, though a bit pricey for foreign tourists compared to other sights.",
+    "date": "2025-11-07"
+  },
+  {
+    "reviewId": 183,
+    "userId": 22,
+    "attractionId": 15,
+    "rating": 4,
+    "text": "Thoroughly enjoyed our visit to Dambulla Royal Golden Cave Temple. Wear comfortable shoes and bring sunscreen!",
+    "date": "2025-05-20"
+  },
+  {
+    "reviewId": 184,
+    "userId": 18,
+    "attractionId": 15,
+    "rating": 4,
+    "text": "Thoroughly enjoyed our visit to Dambulla Royal Golden Cave Temple. Wear comfortable shoes and bring sunscreen!",
+    "date": "2025-07-08"
+  },
+  {
+    "reviewId": 185,
+    "userId": 39,
+    "attractionId": 15,
+    "rating": 5,
+    "text": "Exceeded all expectations. World-class destination with authentic cultural depth and friendly local guides.",
+    "date": "2025-10-13"
+  },
+  {
+    "reviewId": 186,
+    "userId": 43,
+    "attractionId": 15,
+    "rating": 4,
+    "text": "Lovely spot for Culture lovers. Good facilities nearby and easy to reach with a driver.",
+    "date": "2025-12-13"
+  },
+  {
+    "reviewId": 187,
+    "userId": 36,
+    "attractionId": 15,
+    "rating": 4,
+    "text": "Great experience overall. Well maintained and lovely surroundings. Worth the entrance fee.",
+    "date": "2026-05-16"
+  },
+  {
+    "reviewId": 188,
+    "userId": 1,
+    "attractionId": 15,
+    "rating": 5,
+    "text": "Highlight of our 2-week vacation! Loved every single minute. Perfect for anyone interested in Culture.",
+    "date": "2026-05-17"
+  },
+  {
+    "reviewId": 189,
+    "userId": 13,
+    "attractionId": 16,
+    "rating": 3,
+    "text": "Nice place, but definitely overrun with tourists on weekends. Go early in the morning to avoid queues.",
+    "date": "2026-03-02"
+  },
+  {
+    "reviewId": 190,
+    "userId": 14,
+    "attractionId": 16,
+    "rating": 3,
+    "text": "Average maintenance. The natural beauty is undeniable, but signage and guidance could be improved.",
+    "date": "2026-03-17"
+  },
+  {
+    "reviewId": 191,
+    "userId": 48,
+    "attractionId": 16,
+    "rating": 3,
+    "text": "Good experience overall, though a bit pricey for foreign tourists compared to other sights.",
+    "date": "2025-12-10"
+  },
+  {
+    "reviewId": 192,
+    "userId": 31,
+    "attractionId": 16,
+    "rating": 1,
+    "text": "Terrible experience during monsoon season. Trails were washed out and operations were disorganized.",
+    "date": "2025-02-27"
+  },
+  {
+    "reviewId": 193,
+    "userId": 18,
+    "attractionId": 16,
+    "rating": 3,
+    "text": "Good experience overall, though a bit pricey for foreign tourists compared to other sights.",
+    "date": "2024-12-02"
+  },
+  {
+    "reviewId": 194,
+    "userId": 38,
+    "attractionId": 16,
+    "rating": 5,
+    "text": "Outstanding! Beautiful scenery and great facilities. Clean, safe, and truly magical for travelers.",
+    "date": "2026-06-03"
+  },
+  {
+    "reviewId": 195,
+    "userId": 34,
+    "attractionId": 16,
+    "rating": 5,
+    "text": "Exceeded all expectations. World-class destination with authentic cultural depth and friendly local guides.",
+    "date": "2025-11-29"
+  },
+  {
+    "reviewId": 196,
+    "userId": 39,
+    "attractionId": 16,
+    "rating": 4,
+    "text": "Lovely spot for History lovers. Good facilities nearby and easy to reach with a driver.",
+    "date": "2025-10-03"
+  },
+  {
+    "reviewId": 197,
+    "userId": 4,
+    "attractionId": 17,
+    "rating": 4,
+    "text": "Very impressive destination with fantastic photo opportunities. Can get a bit crowded around midday.",
+    "date": "2026-04-14"
+  },
+  {
+    "reviewId": 198,
+    "userId": 17,
+    "attractionId": 17,
+    "rating": 2,
+    "text": "Expected much more given the hype. Would recommend looking for quieter alternatives nearby.",
+    "date": "2025-11-09"
+  },
+  {
+    "reviewId": 199,
+    "userId": 31,
+    "attractionId": 17,
+    "rating": 2,
+    "text": "A bit disappointed. Too crowded and vendors can be quite pushy near the entrance.",
+    "date": "2026-05-18"
+  },
+  {
+    "reviewId": 200,
+    "userId": 8,
+    "attractionId": 17,
+    "rating": 4,
+    "text": "Lovely spot for History lovers. Good facilities nearby and easy to reach with a driver.",
+    "date": "2025-01-04"
+  },
+  {
+    "reviewId": 201,
+    "userId": 5,
+    "attractionId": 17,
+    "rating": 4,
+    "text": "Solid 4 stars. Great adventure and beautiful nature, though ticket prices have increased slightly.",
+    "date": "2026-01-28"
+  },
+  {
+    "reviewId": 202,
+    "userId": 26,
+    "attractionId": 17,
+    "rating": 4,
+    "text": "Lovely spot for History lovers. Good facilities nearby and easy to reach with a driver.",
+    "date": "2025-06-12"
+  },
+  {
+    "reviewId": 203,
+    "userId": 32,
+    "attractionId": 17,
+    "rating": 5,
+    "text": "Highlight of our 2-week vacation! Loved every single minute. Perfect for anyone interested in History.",
+    "date": "2025-01-22"
+  },
+  {
+    "reviewId": 204,
+    "userId": 46,
+    "attractionId": 17,
+    "rating": 5,
+    "text": "Highlight of our 2-week vacation! Loved every single minute. Perfect for anyone interested in History.",
+    "date": "2025-02-11"
+  },
+  {
+    "reviewId": 205,
+    "userId": 40,
+    "attractionId": 18,
+    "rating": 4,
+    "text": "Great experience overall. Well maintained and lovely surroundings. Worth the entrance fee.",
+    "date": "2026-01-14"
+  },
+  {
+    "reviewId": 206,
+    "userId": 48,
+    "attractionId": 18,
+    "rating": 2,
+    "text": "A bit disappointed. Too crowded and vendors can be quite pushy near the entrance.",
+    "date": "2026-04-09"
+  },
+  {
+    "reviewId": 207,
+    "userId": 7,
+    "attractionId": 18,
+    "rating": 1,
+    "text": "Way too expensive for basic amenities. Felt like a tourist trap with zero preservation care.",
+    "date": "2024-10-11"
+  },
+  {
+    "reviewId": 208,
+    "userId": 14,
+    "attractionId": 18,
+    "rating": 4,
+    "text": "Thoroughly enjoyed our visit to Trincomalee Koneswaram Temple & Swami Rock. Wear comfortable shoes and bring sunscreen!",
+    "date": "2026-08-14"
+  },
+  {
+    "reviewId": 209,
+    "userId": 41,
+    "attractionId": 18,
+    "rating": 3,
+    "text": "Average maintenance. The natural beauty is undeniable, but signage and guidance could be improved.",
+    "date": "2024-09-27"
+  },
+  {
+    "reviewId": 210,
+    "userId": 47,
+    "attractionId": 18,
+    "rating": 5,
+    "text": "Absolutely breathtaking experience! The views at Trincomalee Koneswaram Temple & Swami Rock were unforgettable and the staff was so friendly.",
+    "date": "2024-10-13"
+  },
+  {
+    "reviewId": 211,
+    "userId": 17,
+    "attractionId": 18,
+    "rating": 3,
+    "text": "Average maintenance. The natural beauty is undeniable, but signage and guidance could be improved.",
+    "date": "2024-12-15"
+  },
+  {
+    "reviewId": 212,
+    "userId": 43,
+    "attractionId": 19,
+    "rating": 5,
+    "text": "Exceeded all expectations. World-class destination with authentic cultural depth and friendly local guides.",
+    "date": "2025-02-11"
+  },
+  {
+    "reviewId": 213,
+    "userId": 13,
+    "attractionId": 19,
+    "rating": 5,
+    "text": "Outstanding! Beautiful scenery and great facilities. Clean, safe, and truly magical for travelers.",
+    "date": "2026-05-12"
+  },
+  {
+    "reviewId": 214,
+    "userId": 28,
+    "attractionId": 19,
+    "rating": 4,
+    "text": "Thoroughly enjoyed our visit to Nuwara Eliya Tea Estate & Colonial Heritage. Wear comfortable shoes and bring sunscreen!",
+    "date": "2024-09-30"
+  },
+  {
+    "reviewId": 215,
+    "userId": 8,
+    "attractionId": 19,
+    "rating": 4,
+    "text": "Thoroughly enjoyed our visit to Nuwara Eliya Tea Estate & Colonial Heritage. Wear comfortable shoes and bring sunscreen!",
+    "date": "2025-04-22"
+  },
+  {
+    "reviewId": 216,
+    "userId": 35,
+    "attractionId": 19,
+    "rating": 4,
+    "text": "Lovely spot for Food lovers. Good facilities nearby and easy to reach with a driver.",
+    "date": "2026-06-26"
+  },
+  {
+    "reviewId": 217,
+    "userId": 15,
+    "attractionId": 19,
+    "rating": 4,
+    "text": "Lovely spot for Food lovers. Good facilities nearby and easy to reach with a driver.",
+    "date": "2025-10-21"
+  },
+  {
+    "reviewId": 218,
+    "userId": 42,
+    "attractionId": 19,
+    "rating": 4,
+    "text": "Very impressive destination with fantastic photo opportunities. Can get a bit crowded around midday.",
+    "date": "2026-06-15"
+  },
+  {
+    "reviewId": 219,
+    "userId": 10,
+    "attractionId": 19,
+    "rating": 3,
+    "text": "Nice place, but definitely overrun with tourists on weekends. Go early in the morning to avoid queues.",
+    "date": "2024-10-28"
+  },
+  {
+    "reviewId": 220,
+    "userId": 18,
+    "attractionId": 19,
+    "rating": 5,
+    "text": "Exceeded all expectations. World-class destination with authentic cultural depth and friendly local guides.",
+    "date": "2026-08-06"
+  },
+  {
+    "reviewId": 221,
+    "userId": 50,
+    "attractionId": 19,
+    "rating": 5,
+    "text": "A must-visit in Sri Lanka. Incredible history, tranquil atmosphere, and great value for $35/day.",
+    "date": "2025-05-23"
+  },
+  {
+    "reviewId": 222,
+    "userId": 5,
+    "attractionId": 19,
+    "rating": 4,
+    "text": "Lovely spot for Food lovers. Good facilities nearby and easy to reach with a driver.",
+    "date": "2025-12-06"
+  },
+  {
+    "reviewId": 223,
+    "userId": 4,
+    "attractionId": 19,
+    "rating": 3,
+    "text": "Decent stopover for an hour or two. Nice scenery, but quite hot in the afternoon.",
+    "date": "2024-12-05"
+  },
+  {
+    "reviewId": 224,
+    "userId": 11,
+    "attractionId": 19,
+    "rating": 5,
+    "text": "Absolutely breathtaking experience! The views at Nuwara Eliya Tea Estate & Colonial Heritage were unforgettable and the staff was so friendly.",
+    "date": "2025-05-23"
+  },
+  {
+    "reviewId": 225,
+    "userId": 27,
+    "attractionId": 20,
+    "rating": 3,
+    "text": "Decent stopover for an hour or two. Nice scenery, but quite hot in the afternoon.",
+    "date": "2025-03-02"
+  },
+  {
+    "reviewId": 226,
+    "userId": 22,
+    "attractionId": 20,
+    "rating": 1,
+    "text": "Terrible experience during monsoon season. Trails were washed out and operations were disorganized.",
+    "date": "2025-10-29"
+  },
+  {
+    "reviewId": 227,
+    "userId": 21,
+    "attractionId": 20,
+    "rating": 3,
+    "text": "Nice place, but definitely overrun with tourists on weekends. Go early in the morning to avoid queues.",
+    "date": "2025-07-30"
+  },
+  {
+    "reviewId": 228,
+    "userId": 43,
+    "attractionId": 20,
+    "rating": 5,
+    "text": "Absolutely breathtaking experience! The views at Arugam Bay World Championship Surf Point were unforgettable and the staff was so friendly.",
+    "date": "2024-11-12"
+  },
+  {
+    "reviewId": 229,
+    "userId": 7,
+    "attractionId": 20,
+    "rating": 5,
+    "text": "Outstanding! Beautiful scenery and great facilities. Clean, safe, and truly magical for travelers.",
+    "date": "2025-07-20"
+  },
+  {
+    "reviewId": 230,
+    "userId": 11,
+    "attractionId": 20,
+    "rating": 1,
+    "text": "Way too expensive for basic amenities. Felt like a tourist trap with zero preservation care.",
+    "date": "2024-12-18"
+  },
+  {
+    "reviewId": 231,
+    "userId": 49,
+    "attractionId": 20,
+    "rating": 4,
+    "text": "Lovely spot for Adventure lovers. Good facilities nearby and easy to reach with a driver.",
+    "date": "2026-07-26"
+  },
+  {
+    "reviewId": 232,
+    "userId": 50,
+    "attractionId": 20,
+    "rating": 3,
+    "text": "Good experience overall, though a bit pricey for foreign tourists compared to other sights.",
+    "date": "2025-11-26"
+  },
+  {
+    "reviewId": 233,
+    "userId": 32,
+    "attractionId": 20,
+    "rating": 4,
+    "text": "Lovely spot for Adventure lovers. Good facilities nearby and easy to reach with a driver.",
+    "date": "2026-05-15"
+  },
+  {
+    "reviewId": 234,
+    "userId": 41,
+    "attractionId": 21,
+    "rating": 4,
+    "text": "Great experience overall. Well maintained and lovely surroundings. Worth the entrance fee.",
+    "date": "2026-05-23"
+  },
+  {
+    "reviewId": 235,
+    "userId": 39,
+    "attractionId": 21,
+    "rating": 4,
+    "text": "Very impressive destination with fantastic photo opportunities. Can get a bit crowded around midday.",
+    "date": "2024-11-22"
+  },
+  {
+    "reviewId": 236,
+    "userId": 16,
+    "attractionId": 21,
+    "rating": 5,
+    "text": "Outstanding! Beautiful scenery and great facilities. Clean, safe, and truly magical for travelers.",
+    "date": "2025-11-22"
+  },
+  {
+    "reviewId": 237,
+    "userId": 46,
+    "attractionId": 21,
+    "rating": 4,
+    "text": "Thoroughly enjoyed our visit to Knuckles Mountain Range Wilderness Trek. Wear comfortable shoes and bring sunscreen!",
+    "date": "2025-07-18"
+  },
+  {
+    "reviewId": 238,
+    "userId": 11,
+    "attractionId": 21,
+    "rating": 5,
+    "text": "Outstanding! Beautiful scenery and great facilities. Clean, safe, and truly magical for travelers.",
+    "date": "2026-01-10"
+  },
+  {
+    "reviewId": 239,
+    "userId": 20,
+    "attractionId": 21,
+    "rating": 4,
+    "text": "Great experience overall. Well maintained and lovely surroundings. Worth the entrance fee.",
+    "date": "2025-08-20"
+  },
+  {
+    "reviewId": 240,
+    "userId": 36,
+    "attractionId": 21,
+    "rating": 3,
+    "text": "Good experience overall, though a bit pricey for foreign tourists compared to other sights.",
+    "date": "2026-07-07"
+  },
+  {
+    "reviewId": 241,
+    "userId": 1,
+    "attractionId": 21,
+    "rating": 3,
+    "text": "Decent stopover for an hour or two. Nice scenery, but quite hot in the afternoon.",
+    "date": "2025-10-03"
+  },
+  {
+    "reviewId": 242,
+    "userId": 44,
+    "attractionId": 21,
+    "rating": 5,
+    "text": "Exceeded all expectations. World-class destination with authentic cultural depth and friendly local guides.",
+    "date": "2025-12-17"
+  },
+  {
+    "reviewId": 243,
+    "userId": 19,
+    "attractionId": 22,
+    "rating": 5,
+    "text": "Outstanding! Beautiful scenery and great facilities. Clean, safe, and truly magical for travelers.",
+    "date": "2025-03-14"
+  },
+  {
+    "reviewId": 244,
+    "userId": 47,
+    "attractionId": 22,
+    "rating": 4,
+    "text": "Thoroughly enjoyed our visit to Wilpattu National Park Leopard & Villu Safari. Wear comfortable shoes and bring sunscreen!",
+    "date": "2025-02-28"
+  },
+  {
+    "reviewId": 245,
+    "userId": 20,
+    "attractionId": 22,
+    "rating": 4,
+    "text": "Lovely spot for Wildlife lovers. Good facilities nearby and easy to reach with a driver.",
+    "date": "2025-06-07"
+  },
+  {
+    "reviewId": 246,
+    "userId": 38,
+    "attractionId": 22,
+    "rating": 5,
+    "text": "A must-visit in Sri Lanka. Incredible history, tranquil atmosphere, and great value for $85/day.",
+    "date": "2024-10-02"
+  },
+  {
+    "reviewId": 247,
+    "userId": 49,
+    "attractionId": 22,
+    "rating": 3,
+    "text": "Decent stopover for an hour or two. Nice scenery, but quite hot in the afternoon.",
+    "date": "2026-01-20"
+  },
+  {
+    "reviewId": 248,
+    "userId": 43,
+    "attractionId": 22,
+    "rating": 5,
+    "text": "Outstanding! Beautiful scenery and great facilities. Clean, safe, and truly magical for travelers.",
+    "date": "2026-08-03"
+  },
+  {
+    "reviewId": 249,
+    "userId": 32,
+    "attractionId": 22,
+    "rating": 3,
+    "text": "Decent stopover for an hour or two. Nice scenery, but quite hot in the afternoon.",
+    "date": "2024-09-24"
+  },
+  {
+    "reviewId": 250,
+    "userId": 25,
+    "attractionId": 23,
+    "rating": 5,
+    "text": "Outstanding! Beautiful scenery and great facilities. Clean, safe, and truly magical for travelers.",
+    "date": "2026-06-06"
+  },
+  {
+    "reviewId": 251,
+    "userId": 43,
+    "attractionId": 23,
+    "rating": 4,
+    "text": "Lovely spot for Beaches lovers. Good facilities nearby and easy to reach with a driver.",
+    "date": "2026-09-01"
+  },
+  {
+    "reviewId": 252,
+    "userId": 42,
+    "attractionId": 23,
+    "rating": 4,
+    "text": "Lovely spot for Beaches lovers. Good facilities nearby and easy to reach with a driver.",
+    "date": "2024-11-15"
+  },
+  {
+    "reviewId": 253,
+    "userId": 10,
+    "attractionId": 23,
+    "rating": 5,
+    "text": "Absolutely breathtaking experience! The views at Unawatuna Coral Reef & Jungle Beach were unforgettable and the staff was so friendly.",
+    "date": "2025-05-24"
+  },
+  {
+    "reviewId": 254,
+    "userId": 32,
+    "attractionId": 23,
+    "rating": 5,
+    "text": "Highlight of our 2-week vacation! Loved every single minute. Perfect for anyone interested in Beaches.",
+    "date": "2025-10-05"
+  },
+  {
+    "reviewId": 255,
+    "userId": 3,
+    "attractionId": 23,
+    "rating": 4,
+    "text": "Lovely spot for Beaches lovers. Good facilities nearby and easy to reach with a driver.",
+    "date": "2024-11-20"
+  },
+  {
+    "reviewId": 256,
+    "userId": 9,
+    "attractionId": 23,
+    "rating": 2,
+    "text": "Overpriced compared to what is offered. Long waiting times and limited shade.",
+    "date": "2024-10-26"
+  },
+  {
+    "reviewId": 257,
+    "userId": 33,
+    "attractionId": 23,
+    "rating": 5,
+    "text": "Outstanding! Beautiful scenery and great facilities. Clean, safe, and truly magical for travelers.",
+    "date": "2025-10-27"
+  },
+  {
+    "reviewId": 258,
+    "userId": 38,
+    "attractionId": 23,
+    "rating": 4,
+    "text": "Lovely spot for Beaches lovers. Good facilities nearby and easy to reach with a driver.",
+    "date": "2025-03-11"
+  },
+  {
+    "reviewId": 259,
+    "userId": 22,
+    "attractionId": 23,
+    "rating": 1,
+    "text": "Terrible experience during monsoon season. Trails were washed out and operations were disorganized.",
+    "date": "2026-01-19"
+  },
+  {
+    "reviewId": 260,
+    "userId": 15,
+    "attractionId": 24,
+    "rating": 4,
+    "text": "Very impressive destination with fantastic photo opportunities. Can get a bit crowded around midday.",
+    "date": "2026-07-31"
+  },
+  {
+    "reviewId": 261,
+    "userId": 48,
+    "attractionId": 24,
+    "rating": 3,
+    "text": "Nice place, but definitely overrun with tourists on weekends. Go early in the morning to avoid queues.",
+    "date": "2025-11-20"
+  },
+  {
+    "reviewId": 262,
+    "userId": 6,
+    "attractionId": 24,
+    "rating": 3,
+    "text": "Decent stopover for an hour or two. Nice scenery, but quite hot in the afternoon.",
+    "date": "2026-04-20"
+  },
+  {
+    "reviewId": 263,
+    "userId": 28,
+    "attractionId": 24,
+    "rating": 3,
+    "text": "Decent stopover for an hour or two. Nice scenery, but quite hot in the afternoon.",
+    "date": "2025-02-14"
+  },
+  {
+    "reviewId": 264,
+    "userId": 7,
+    "attractionId": 24,
+    "rating": 4,
+    "text": "Great experience overall. Well maintained and lovely surroundings. Worth the entrance fee.",
+    "date": "2026-03-26"
+  },
+  {
+    "reviewId": 265,
+    "userId": 41,
+    "attractionId": 24,
+    "rating": 2,
+    "text": "Expected much more given the hype. Would recommend looking for quieter alternatives nearby.",
+    "date": "2025-08-21"
+  },
+  {
+    "reviewId": 266,
+    "userId": 46,
+    "attractionId": 24,
+    "rating": 4,
+    "text": "Great experience overall. Well maintained and lovely surroundings. Worth the entrance fee.",
+    "date": "2025-04-25"
+  },
+  {
+    "reviewId": 267,
+    "userId": 29,
+    "attractionId": 24,
+    "rating": 5,
+    "text": "A must-visit in Sri Lanka. Incredible history, tranquil atmosphere, and great value for $34/day.",
+    "date": "2026-01-22"
+  },
+  {
+    "reviewId": 268,
+    "userId": 11,
+    "attractionId": 24,
+    "rating": 4,
+    "text": "Thoroughly enjoyed our visit to Kaffir & Jaffna Heritage Crab Curry Tour. Wear comfortable shoes and bring sunscreen!",
+    "date": "2025-06-03"
+  },
+  {
+    "reviewId": 269,
+    "userId": 43,
+    "attractionId": 25,
+    "rating": 3,
+    "text": "Decent stopover for an hour or two. Nice scenery, but quite hot in the afternoon.",
+    "date": "2024-10-10"
+  },
+  {
+    "reviewId": 270,
+    "userId": 1,
+    "attractionId": 25,
+    "rating": 3,
+    "text": "Average maintenance. The natural beauty is undeniable, but signage and guidance could be improved.",
+    "date": "2026-02-25"
+  },
+  {
+    "reviewId": 271,
+    "userId": 30,
+    "attractionId": 25,
+    "rating": 5,
+    "text": "Outstanding! Beautiful scenery and great facilities. Clean, safe, and truly magical for travelers.",
+    "date": "2026-05-30"
+  },
+  {
+    "reviewId": 272,
+    "userId": 19,
+    "attractionId": 25,
+    "rating": 3,
+    "text": "Average maintenance. The natural beauty is undeniable, but signage and guidance could be improved.",
+    "date": "2025-02-05"
+  },
+  {
+    "reviewId": 273,
+    "userId": 44,
+    "attractionId": 25,
+    "rating": 3,
+    "text": "Average maintenance. The natural beauty is undeniable, but signage and guidance could be improved.",
+    "date": "2026-08-25"
+  },
+  {
+    "reviewId": 274,
+    "userId": 35,
+    "attractionId": 25,
+    "rating": 5,
+    "text": "Outstanding! Beautiful scenery and great facilities. Clean, safe, and truly magical for travelers.",
+    "date": "2025-12-09"
+  },
+  {
+    "reviewId": 275,
+    "userId": 11,
+    "attractionId": 25,
+    "rating": 1,
+    "text": "Terrible experience during monsoon season. Trails were washed out and operations were disorganized.",
+    "date": "2025-01-04"
+  },
+  {
+    "reviewId": 276,
+    "userId": 5,
+    "attractionId": 25,
+    "rating": 5,
+    "text": "Highlight of our 2-week vacation! Loved every single minute. Perfect for anyone interested in Beaches.",
+    "date": "2026-01-24"
+  },
+  {
+    "reviewId": 277,
+    "userId": 29,
+    "attractionId": 25,
+    "rating": 4,
+    "text": "Thoroughly enjoyed our visit to Hiriketiya Horseshoe Bay & Surf Break. Wear comfortable shoes and bring sunscreen!",
+    "date": "2026-02-04"
+  },
+  {
+    "reviewId": 278,
+    "userId": 23,
+    "attractionId": 25,
+    "rating": 4,
+    "text": "Solid 4 stars. Great adventure and beautiful nature, though ticket prices have increased slightly.",
+    "date": "2026-01-03"
+  },
+  {
+    "reviewId": 279,
+    "userId": 38,
+    "attractionId": 25,
+    "rating": 4,
+    "text": "Great experience overall. Well maintained and lovely surroundings. Worth the entrance fee.",
+    "date": "2024-12-12"
+  },
+  {
+    "reviewId": 280,
+    "userId": 41,
+    "attractionId": 26,
+    "rating": 3,
+    "text": "Good experience overall, though a bit pricey for foreign tourists compared to other sights.",
+    "date": "2026-06-16"
+  },
+  {
+    "reviewId": 281,
+    "userId": 42,
+    "attractionId": 26,
+    "rating": 5,
+    "text": "Highlight of our 2-week vacation! Loved every single minute. Perfect for anyone interested in Culture.",
+    "date": "2025-07-18"
+  },
+  {
+    "reviewId": 282,
+    "userId": 3,
+    "attractionId": 26,
+    "rating": 2,
+    "text": "A bit disappointed. Too crowded and vendors can be quite pushy near the entrance.",
+    "date": "2025-03-13"
+  },
+  {
+    "reviewId": 283,
+    "userId": 20,
+    "attractionId": 26,
+    "rating": 5,
+    "text": "Highlight of our 2-week vacation! Loved every single minute. Perfect for anyone interested in Culture.",
+    "date": "2025-03-22"
+  },
+  {
+    "reviewId": 284,
+    "userId": 29,
+    "attractionId": 26,
+    "rating": 4,
+    "text": "Thoroughly enjoyed our visit to Jaffna Fort & Nallur Kandaswamy Kovil. Wear comfortable shoes and bring sunscreen!",
+    "date": "2026-04-01"
+  },
+  {
+    "reviewId": 285,
+    "userId": 48,
+    "attractionId": 26,
+    "rating": 3,
+    "text": "Decent stopover for an hour or two. Nice scenery, but quite hot in the afternoon.",
+    "date": "2025-11-18"
+  },
+  {
+    "reviewId": 286,
+    "userId": 38,
+    "attractionId": 26,
+    "rating": 4,
+    "text": "Thoroughly enjoyed our visit to Jaffna Fort & Nallur Kandaswamy Kovil. Wear comfortable shoes and bring sunscreen!",
+    "date": "2026-05-22"
+  },
+  {
+    "reviewId": 287,
+    "userId": 5,
+    "attractionId": 27,
+    "rating": 4,
+    "text": "Thoroughly enjoyed our visit to Minneriya National Park Elephant Gathering. Wear comfortable shoes and bring sunscreen!",
+    "date": "2025-01-26"
+  },
+  {
+    "reviewId": 288,
+    "userId": 10,
+    "attractionId": 27,
+    "rating": 4,
+    "text": "Thoroughly enjoyed our visit to Minneriya National Park Elephant Gathering. Wear comfortable shoes and bring sunscreen!",
+    "date": "2026-05-29"
+  },
+  {
+    "reviewId": 289,
+    "userId": 15,
+    "attractionId": 27,
+    "rating": 5,
+    "text": "Outstanding! Beautiful scenery and great facilities. Clean, safe, and truly magical for travelers.",
+    "date": "2026-08-22"
+  },
+  {
+    "reviewId": 290,
+    "userId": 44,
+    "attractionId": 27,
+    "rating": 5,
+    "text": "Exceeded all expectations. World-class destination with authentic cultural depth and friendly local guides.",
+    "date": "2025-10-16"
+  },
+  {
+    "reviewId": 291,
+    "userId": 47,
+    "attractionId": 27,
+    "rating": 5,
+    "text": "A must-visit in Sri Lanka. Incredible history, tranquil atmosphere, and great value for $75/day.",
+    "date": "2024-11-22"
+  },
+  {
+    "reviewId": 292,
+    "userId": 26,
+    "attractionId": 27,
+    "rating": 2,
+    "text": "Overpriced compared to what is offered. Long waiting times and limited shade.",
+    "date": "2024-09-29"
+  },
+  {
+    "reviewId": 293,
+    "userId": 36,
+    "attractionId": 27,
+    "rating": 4,
+    "text": "Lovely spot for Wildlife lovers. Good facilities nearby and easy to reach with a driver.",
+    "date": "2026-05-20"
+  },
+  {
+    "reviewId": 294,
+    "userId": 24,
+    "attractionId": 27,
+    "rating": 3,
+    "text": "Nice place, but definitely overrun with tourists on weekends. Go early in the morning to avoid queues.",
+    "date": "2025-11-09"
+  },
+  {
+    "reviewId": 295,
+    "userId": 6,
+    "attractionId": 27,
+    "rating": 5,
+    "text": "Absolutely breathtaking experience! The views at Minneriya National Park Elephant Gathering were unforgettable and the staff was so friendly.",
+    "date": "2026-06-09"
+  },
+  {
+    "reviewId": 296,
+    "userId": 45,
+    "attractionId": 27,
+    "rating": 4,
+    "text": "Solid 4 stars. Great adventure and beautiful nature, though ticket prices have increased slightly.",
+    "date": "2026-05-01"
+  },
+  {
+    "reviewId": 297,
+    "userId": 1,
+    "attractionId": 27,
+    "rating": 4,
+    "text": "Thoroughly enjoyed our visit to Minneriya National Park Elephant Gathering. Wear comfortable shoes and bring sunscreen!",
+    "date": "2024-10-30"
+  },
+  {
+    "reviewId": 298,
+    "userId": 17,
+    "attractionId": 27,
+    "rating": 5,
+    "text": "Exceeded all expectations. World-class destination with authentic cultural depth and friendly local guides.",
+    "date": "2025-07-14"
+  },
+  {
+    "reviewId": 299,
+    "userId": 35,
+    "attractionId": 27,
+    "rating": 5,
+    "text": "A must-visit in Sri Lanka. Incredible history, tranquil atmosphere, and great value for $75/day.",
+    "date": "2025-07-19"
+  },
+  {
+    "reviewId": 300,
+    "userId": 8,
+    "attractionId": 27,
+    "rating": 5,
+    "text": "Outstanding! Beautiful scenery and great facilities. Clean, safe, and truly magical for travelers.",
+    "date": "2024-12-25"
+  },
+  {
+    "reviewId": 301,
+    "userId": 30,
+    "attractionId": 27,
+    "rating": 4,
+    "text": "Thoroughly enjoyed our visit to Minneriya National Park Elephant Gathering. Wear comfortable shoes and bring sunscreen!",
+    "date": "2026-08-14"
+  },
+  {
+    "reviewId": 302,
+    "userId": 14,
+    "attractionId": 28,
+    "rating": 5,
+    "text": "Highlight of our 2-week vacation! Loved every single minute. Perfect for anyone interested in Adventure.",
+    "date": "2026-07-16"
+  },
+  {
+    "reviewId": 303,
+    "userId": 29,
+    "attractionId": 28,
+    "rating": 3,
+    "text": "Good experience overall, though a bit pricey for foreign tourists compared to other sights.",
+    "date": "2026-05-14"
+  },
+  {
+    "reviewId": 304,
+    "userId": 49,
+    "attractionId": 28,
+    "rating": 5,
+    "text": "Outstanding! Beautiful scenery and great facilities. Clean, safe, and truly magical for travelers.",
+    "date": "2026-06-15"
+  },
+  {
+    "reviewId": 305,
+    "userId": 16,
+    "attractionId": 28,
+    "rating": 4,
+    "text": "Solid 4 stars. Great adventure and beautiful nature, though ticket prices have increased slightly.",
+    "date": "2026-08-26"
+  },
+  {
+    "reviewId": 306,
+    "userId": 24,
+    "attractionId": 28,
+    "rating": 1,
+    "text": "Way too expensive for basic amenities. Felt like a tourist trap with zero preservation care.",
+    "date": "2026-01-10"
+  },
+  {
+    "reviewId": 307,
+    "userId": 7,
+    "attractionId": 28,
+    "rating": 5,
+    "text": "Exceeded all expectations. World-class destination with authentic cultural depth and friendly local guides.",
+    "date": "2026-02-18"
+  },
+  {
+    "reviewId": 308,
+    "userId": 44,
+    "attractionId": 28,
+    "rating": 2,
+    "text": "Expected much more given the hype. Would recommend looking for quieter alternatives nearby.",
+    "date": "2026-02-16"
+  },
+  {
+    "reviewId": 309,
+    "userId": 46,
+    "attractionId": 28,
+    "rating": 4,
+    "text": "Great experience overall. Well maintained and lovely surroundings. Worth the entrance fee.",
+    "date": "2025-10-15"
+  },
+  {
+    "reviewId": 310,
+    "userId": 35,
+    "attractionId": 28,
+    "rating": 4,
+    "text": "Solid 4 stars. Great adventure and beautiful nature, though ticket prices have increased slightly.",
+    "date": "2026-09-14"
+  },
+  {
+    "reviewId": 311,
+    "userId": 10,
+    "attractionId": 29,
+    "rating": 1,
+    "text": "Terrible experience during monsoon season. Trails were washed out and operations were disorganized.",
+    "date": "2025-01-22"
+  },
+  {
+    "reviewId": 312,
+    "userId": 9,
+    "attractionId": 29,
+    "rating": 3,
+    "text": "Good experience overall, though a bit pricey for foreign tourists compared to other sights.",
+    "date": "2025-12-19"
+  },
+  {
+    "reviewId": 313,
+    "userId": 35,
+    "attractionId": 29,
+    "rating": 1,
+    "text": "Way too expensive for basic amenities. Felt like a tourist trap with zero preservation care.",
+    "date": "2025-03-27"
+  },
+  {
+    "reviewId": 314,
+    "userId": 17,
+    "attractionId": 29,
+    "rating": 2,
+    "text": "A bit disappointed. Too crowded and vendors can be quite pushy near the entrance.",
+    "date": "2025-05-17"
+  },
+  {
+    "reviewId": 315,
+    "userId": 12,
+    "attractionId": 29,
+    "rating": 4,
+    "text": "Thoroughly enjoyed our visit to Lipton's Seat & Dambatenne Tea Factory Trek. Wear comfortable shoes and bring sunscreen!",
+    "date": "2025-04-09"
+  },
+  {
+    "reviewId": 316,
+    "userId": 8,
+    "attractionId": 29,
+    "rating": 4,
+    "text": "Lovely spot for Nature lovers. Good facilities nearby and easy to reach with a driver.",
+    "date": "2025-04-19"
+  },
+  {
+    "reviewId": 317,
+    "userId": 43,
+    "attractionId": 29,
+    "rating": 3,
+    "text": "Nice place, but definitely overrun with tourists on weekends. Go early in the morning to avoid queues.",
+    "date": "2024-11-11"
+  },
+  {
+    "reviewId": 318,
+    "userId": 2,
+    "attractionId": 29,
+    "rating": 4,
+    "text": "Lovely spot for Nature lovers. Good facilities nearby and easy to reach with a driver.",
+    "date": "2024-11-27"
+  },
+  {
+    "reviewId": 319,
+    "userId": 49,
+    "attractionId": 29,
+    "rating": 5,
+    "text": "Absolutely breathtaking experience! The views at Lipton's Seat & Dambatenne Tea Factory Trek were unforgettable and the staff was so friendly.",
+    "date": "2025-05-14"
+  },
+  {
+    "reviewId": 320,
+    "userId": 28,
+    "attractionId": 30,
+    "rating": 2,
+    "text": "A bit disappointed. Too crowded and vendors can be quite pushy near the entrance.",
+    "date": "2025-12-09"
+  },
+  {
+    "reviewId": 321,
+    "userId": 44,
+    "attractionId": 30,
+    "rating": 4,
+    "text": "Solid 4 stars. Great adventure and beautiful nature, though ticket prices have increased slightly.",
+    "date": "2025-03-04"
+  },
+  {
+    "reviewId": 322,
+    "userId": 7,
+    "attractionId": 30,
+    "rating": 4,
+    "text": "Lovely spot for Culture lovers. Good facilities nearby and easy to reach with a driver.",
+    "date": "2025-01-13"
+  },
+  {
+    "reviewId": 323,
+    "userId": 32,
+    "attractionId": 30,
+    "rating": 4,
+    "text": "Lovely spot for Culture lovers. Good facilities nearby and easy to reach with a driver.",
+    "date": "2025-04-17"
+  },
+  {
+    "reviewId": 324,
+    "userId": 46,
+    "attractionId": 30,
+    "rating": 4,
+    "text": "Very impressive destination with fantastic photo opportunities. Can get a bit crowded around midday.",
+    "date": "2024-09-28"
+  },
+  {
+    "reviewId": 325,
+    "userId": 29,
+    "attractionId": 30,
+    "rating": 2,
+    "text": "Expected much more given the hype. Would recommend looking for quieter alternatives nearby.",
+    "date": "2024-11-19"
+  },
+  {
+    "reviewId": 326,
+    "userId": 5,
+    "attractionId": 30,
+    "rating": 5,
+    "text": "Exceeded all expectations. World-class destination with authentic cultural depth and friendly local guides.",
+    "date": "2026-02-08"
+  },
+  {
+    "reviewId": 327,
+    "userId": 6,
+    "attractionId": 30,
+    "rating": 4,
+    "text": "Great experience overall. Well maintained and lovely surroundings. Worth the entrance fee.",
+    "date": "2025-07-20"
+  },
+  {
+    "reviewId": 328,
+    "userId": 21,
+    "attractionId": 30,
+    "rating": 3,
+    "text": "Decent stopover for an hour or two. Nice scenery, but quite hot in the afternoon.",
+    "date": "2025-08-04"
+  },
+  {
+    "reviewId": 329,
+    "userId": 39,
+    "attractionId": 30,
+    "rating": 3,
+    "text": "Nice place, but definitely overrun with tourists on weekends. Go early in the morning to avoid queues.",
+    "date": "2025-10-31"
+  },
+  {
+    "reviewId": 330,
+    "userId": 21,
+    "attractionId": 31,
+    "rating": 5,
+    "text": "Exceeded all expectations. World-class destination with authentic cultural depth and friendly local guides.",
+    "date": "2025-02-18"
+  },
+  {
+    "reviewId": 331,
+    "userId": 43,
+    "attractionId": 31,
+    "rating": 5,
+    "text": "Absolutely breathtaking experience! The views at Pidurangala Rock Sunrise Hike were unforgettable and the staff was so friendly.",
+    "date": "2025-07-23"
+  },
+  {
+    "reviewId": 332,
+    "userId": 17,
+    "attractionId": 31,
+    "rating": 4,
+    "text": "Lovely spot for Adventure lovers. Good facilities nearby and easy to reach with a driver.",
+    "date": "2026-07-26"
+  },
+  {
+    "reviewId": 333,
+    "userId": 24,
+    "attractionId": 31,
+    "rating": 5,
+    "text": "Exceeded all expectations. World-class destination with authentic cultural depth and friendly local guides.",
+    "date": "2025-11-01"
+  },
+  {
+    "reviewId": 334,
+    "userId": 10,
+    "attractionId": 31,
+    "rating": 4,
+    "text": "Solid 4 stars. Great adventure and beautiful nature, though ticket prices have increased slightly.",
+    "date": "2025-04-15"
+  },
+  {
+    "reviewId": 335,
+    "userId": 44,
+    "attractionId": 31,
+    "rating": 4,
+    "text": "Lovely spot for Adventure lovers. Good facilities nearby and easy to reach with a driver.",
+    "date": "2026-01-30"
+  },
+  {
+    "reviewId": 336,
+    "userId": 31,
+    "attractionId": 31,
+    "rating": 5,
+    "text": "Highlight of our 2-week vacation! Loved every single minute. Perfect for anyone interested in Adventure.",
+    "date": "2025-02-24"
+  },
+  {
+    "reviewId": 337,
+    "userId": 5,
+    "attractionId": 31,
+    "rating": 4,
+    "text": "Thoroughly enjoyed our visit to Pidurangala Rock Sunrise Hike. Wear comfortable shoes and bring sunscreen!",
+    "date": "2025-02-06"
+  },
+  {
+    "reviewId": 338,
+    "userId": 6,
+    "attractionId": 31,
+    "rating": 4,
+    "text": "Lovely spot for Adventure lovers. Good facilities nearby and easy to reach with a driver.",
+    "date": "2025-02-19"
+  },
+  {
+    "reviewId": 339,
+    "userId": 42,
+    "attractionId": 31,
+    "rating": 5,
+    "text": "Exceeded all expectations. World-class destination with authentic cultural depth and friendly local guides.",
+    "date": "2024-12-27"
+  },
+  {
+    "reviewId": 340,
+    "userId": 41,
+    "attractionId": 31,
+    "rating": 5,
+    "text": "Exceeded all expectations. World-class destination with authentic cultural depth and friendly local guides.",
+    "date": "2026-08-21"
+  },
+  {
+    "reviewId": 341,
+    "userId": 28,
+    "attractionId": 31,
+    "rating": 5,
+    "text": "Highlight of our 2-week vacation! Loved every single minute. Perfect for anyone interested in Adventure.",
+    "date": "2026-08-18"
+  },
+  {
+    "reviewId": 342,
+    "userId": 7,
+    "attractionId": 31,
+    "rating": 3,
+    "text": "Average maintenance. The natural beauty is undeniable, but signage and guidance could be improved.",
+    "date": "2025-10-04"
+  },
+  {
+    "reviewId": 343,
+    "userId": 47,
+    "attractionId": 31,
+    "rating": 4,
+    "text": "Great experience overall. Well maintained and lovely surroundings. Worth the entrance fee.",
+    "date": "2026-04-23"
+  },
+  {
+    "reviewId": 344,
+    "userId": 9,
+    "attractionId": 31,
+    "rating": 5,
+    "text": "Outstanding! Beautiful scenery and great facilities. Clean, safe, and truly magical for travelers.",
+    "date": "2026-07-07"
+  },
+  {
+    "reviewId": 345,
+    "userId": 48,
+    "attractionId": 32,
+    "rating": 4,
+    "text": "Great experience overall. Well maintained and lovely surroundings. Worth the entrance fee.",
+    "date": "2025-09-03"
+  },
+  {
+    "reviewId": 346,
+    "userId": 41,
+    "attractionId": 32,
+    "rating": 3,
+    "text": "Average maintenance. The natural beauty is undeniable, but signage and guidance could be improved.",
+    "date": "2025-02-12"
+  },
+  {
+    "reviewId": 347,
+    "userId": 2,
+    "attractionId": 32,
+    "rating": 4,
+    "text": "Very impressive destination with fantastic photo opportunities. Can get a bit crowded around midday.",
+    "date": "2026-04-10"
+  },
+  {
+    "reviewId": 348,
+    "userId": 6,
+    "attractionId": 32,
+    "rating": 2,
+    "text": "Expected much more given the hype. Would recommend looking for quieter alternatives nearby.",
+    "date": "2026-07-28"
+  },
+  {
+    "reviewId": 349,
+    "userId": 34,
+    "attractionId": 32,
+    "rating": 4,
+    "text": "Thoroughly enjoyed our visit to Kandy Spice Garden & Traditional Cooking Class. Wear comfortable shoes and bring sunscreen!",
+    "date": "2025-06-20"
+  },
+  {
+    "reviewId": 350,
+    "userId": 14,
+    "attractionId": 32,
+    "rating": 4,
+    "text": "Lovely spot for Food lovers. Good facilities nearby and easy to reach with a driver.",
+    "date": "2025-01-03"
+  },
+  {
+    "reviewId": 351,
+    "userId": 25,
+    "attractionId": 32,
+    "rating": 4,
+    "text": "Thoroughly enjoyed our visit to Kandy Spice Garden & Traditional Cooking Class. Wear comfortable shoes and bring sunscreen!",
+    "date": "2026-02-08"
+  },
+  {
+    "reviewId": 352,
+    "userId": 27,
+    "attractionId": 32,
+    "rating": 4,
+    "text": "Very impressive destination with fantastic photo opportunities. Can get a bit crowded around midday.",
+    "date": "2025-09-28"
+  }
+]

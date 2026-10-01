@@ -1,0 +1,3 @@
+﻿<Project>
+  <Import Project="..\build\tourism-management-app.Api.props" />
+</Project>

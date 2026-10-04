@@ -68,7 +68,7 @@ export const ReviewManagementTable: React.FC<ReviewManagementTableProps> = ({
       // Date range filter (compare sortDate if available)
       let matchDate = true;
       if (dateFrom || dateTo) {
-        const revDate = r.sortDate ? new Date(r.sortDate) : null;
+        const revDate = (r as any).sortDate ? new Date((r as any).sortDate) : null;
         if (revDate) {
           if (dateFrom && revDate < new Date(dateFrom)) matchDate = false;
           if (dateTo && revDate > new Date(dateTo + 'T23:59:59')) matchDate = false;

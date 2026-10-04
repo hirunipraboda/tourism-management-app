@@ -201,7 +201,7 @@ export const ReviewList: React.FC<ReviewListProps> = ({
         return matchesSearch && matchesType && matchesRating && matchesDest;
       })
       .sort((a, b) => {
-        const newestFirst = (b.sortDate ?? b.date).localeCompare(a.sortDate ?? a.date);
+        const newestFirst = ((b as any).sortDate ?? b.date).localeCompare((a as any).sortDate ?? a.date);
         if (sortBy === 'highest') {
           return b.rating - a.rating || b.helpfulCount - a.helpfulCount || newestFirst;
         }

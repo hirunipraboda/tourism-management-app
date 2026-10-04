@@ -104,6 +104,20 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({
     return Object.keys(errs).length === 0;
   };
 
+  const resetForm = () => {
+    setTouristName('Sarah Jenkins');
+    setTouristCountry('United Kingdom');
+    setTravelerType('Solo');
+    setTargetType('attraction');
+    setTargetName('Temple of the Tooth');
+    setRating(5);
+    setTitle('');
+    setComment('');
+    setPhotos([]);
+    setTagInput('Culture, Scenic, Recommended');
+    setErrors({});
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!handleValidate()) return;
@@ -129,10 +143,15 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({
         photos,
         tags,
       });
+      // Success: reset fields and close the modal
+      resetForm();
+      onClose();
+    } catch (err) {
+      console.error('[ReviewForm] Submit failed:', err);
+      setErrors({ submit: 'Something went wrong. Please try again.' });
     } finally {
       setIsSubmitting(false);
     }
-
   };
 
   const handleAddPresetPhoto = (url: string) => {
@@ -466,7 +485,14 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({
           </div>
 
           {/* Sticky Modal Footer (Always Visible at Bottom) */}
-          <div className="flex items-center justify-end gap-3 p-4 sm:px-8 bg-slate-50 border-t border-slate-200 shrink-0">
+          <div className="bg-slate-50 border-t border-slate-200 shrink-0">
+            {errors.submit && (
+              <div className="flex items-center gap-2 px-5 py-2.5 bg-red-50 border-b border-red-100 text-red-700 text-xs font-semibold">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{errors.submit}</span>
+              </div>
+            )}
+          <div className="flex items-center justify-end gap-3 p-4 sm:px-8">
             <button
               type="button"
               onClick={onClose}
@@ -482,6 +508,7 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({
               <CheckCircle2 className="w-4 h-4" />
               <span>{isSubmitting ? 'Saving...' : initialData ? 'Update Review' : 'Submit Review'}</span>
             </button>
+            </div>
           </div>
         </form>
       </div>

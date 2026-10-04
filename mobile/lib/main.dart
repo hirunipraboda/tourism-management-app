@@ -9,7 +9,6 @@ import 'screens/trips_screen.dart';
 import 'screens/tours_screen.dart';
 import 'screens/ai_planner_screen.dart';
 import 'screens/reviews_screen.dart';
-import 'screens/ai_guide_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -65,23 +64,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     setState(() => _currentIndex = index);
   }
 
-  void _openAiGuide() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => Scaffold(
-          appBar: AppBar(
-            title: Text(
-              'NOVA AI Guide',
-              style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.w800, color: NovaBrand.primary),
-            ),
-          ),
-          body: const AiGuideScreen(),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final List<Widget> screens = [
@@ -100,17 +82,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         children: screens,
       ),
       bottomNavigationBar: _buildBottomBar(),
-      floatingActionButton: (_currentIndex == 2 || _currentIndex == 3 || _currentIndex == 4)
-          ? null
-          : FloatingActionButton.extended(
-              heroTag: 'mainAiGuideFab',
-              onPressed: _openAiGuide,
-              backgroundColor: NovaBrand.primary,
-              foregroundColor: Colors.white,
-              elevation: 3,
-              icon: const Icon(Icons.auto_awesome, size: 18),
-              label: Text('AI Guide', style: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 13)),
-            ),
     );
   }
 

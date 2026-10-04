@@ -1,0 +1,16 @@
+bin/
+obj/
+appsettings.Development.json
+*.user
+.venv/
+__pycache__/
+bin/
+obj/
+node_modules/
+
+.env
+.env.*
+!.env.example
+
+*.log
+frontend/SE3090_Lab05_LabSheet_Student_Version.pdf

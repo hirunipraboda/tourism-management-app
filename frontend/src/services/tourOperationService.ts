@@ -40,17 +40,17 @@ export const tourOperationService = {
         if (status) params.append('status', status);
 
         const query = params.toString() ? `?${params.toString()}` : '';
-        const response = await fetchApi<TourOperationResponse[]>(`/tour-operations${query}`);
+        const response = await fetchApi<TourOperationResponse[]>(`/v1/tour-operations${query}`);
         return response.data;
     },
 
     async getById(id: number): Promise<TourOperationResponse> {
-        const response = await fetchApi<TourOperationResponse>(`/tour-operations/${id}`);
+        const response = await fetchApi<TourOperationResponse>(`/v1/tour-operations/${id}`);
         return response.data;
     },
 
     async create(payload: CreateTourOperationPayload): Promise<TourOperationResponse> {
-        const response = await fetchApi<TourOperationResponse>('/tour-operations', {
+        const response = await fetchApi<TourOperationResponse>('/v1/tour-operations', {
             method: 'POST',
             body: JSON.stringify(payload),
         });
@@ -58,7 +58,7 @@ export const tourOperationService = {
     },
 
     async update(id: number, payload: UpdateTourOperationPayload): Promise<TourOperationResponse> {
-        const response = await fetchApi<TourOperationResponse>(`/tour-operations/${id}`, {
+        const response = await fetchApi<TourOperationResponse>(`/v1/tour-operations/${id}`, {
             method: 'PUT',
             body: JSON.stringify(payload),
         });
@@ -66,7 +66,7 @@ export const tourOperationService = {
     },
 
     async updateStatus(id: number, status: string): Promise<TourOperationResponse> {
-        const response = await fetchApi<TourOperationResponse>(`/tour-operations/${id}/status`, {
+        const response = await fetchApi<TourOperationResponse>(`/v1/tour-operations/${id}/status`, {
             method: 'PATCH',
             body: JSON.stringify({ status }),
         });
@@ -74,7 +74,7 @@ export const tourOperationService = {
     },
 
     async delete(id: number): Promise<void> {
-        await fetchApi<void>(`/tour-operations/${id}`, { method: 'DELETE' });
+        await fetchApi<void>(`/v1/tour-operations/${id}`, { method: 'DELETE' });
     },
 };
 

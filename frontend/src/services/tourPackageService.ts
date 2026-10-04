@@ -40,22 +40,22 @@ export interface TourPackageResponse {
 export const tourPackageService = {
     async getAll(guideId?: number): Promise<TourPackageResponse[]> {
         const query = guideId ? `?guideId=${guideId}` : '';
-        const response = await fetchApi<TourPackageResponse[]>(`/tour-packages${query}`);
+        const response = await fetchApi<TourPackageResponse[]>(`/v1/tour-packages${query}`);
         return response.data;
     },
 
     async getById(id: number): Promise<TourPackageResponse> {
-        const response = await fetchApi<TourPackageResponse>(`/tour-packages/${id}`);
+        const response = await fetchApi<TourPackageResponse>(`/v1/tour-packages/${id}`);
         return response.data;
     },
 
     async getByGuide(guideId: number): Promise<TourPackageResponse[]> {
-        const response = await fetchApi<TourPackageResponse[]>(`/guides/${guideId}/packages`);
+        const response = await fetchApi<TourPackageResponse[]>(`/v1/guides/${guideId}/packages`);
         return response.data;
     },
 
     async create(payload: TourPackagePayload): Promise<TourPackageResponse> {
-        const response = await fetchApi<TourPackageResponse>('/tour-packages', {
+        const response = await fetchApi<TourPackageResponse>('/v1/tour-packages', {
             method: 'POST',
             body: JSON.stringify(payload),
         });
@@ -63,7 +63,7 @@ export const tourPackageService = {
     },
 
     async update(id: number, payload: TourPackageUpdatePayload): Promise<TourPackageResponse> {
-        const response = await fetchApi<TourPackageResponse>(`/tour-packages/${id}`, {
+        const response = await fetchApi<TourPackageResponse>(`/v1/tour-packages/${id}`, {
             method: 'PUT',
             body: JSON.stringify(payload),
         });
@@ -71,6 +71,6 @@ export const tourPackageService = {
     },
 
     async deactivate(id: number): Promise<void> {
-        await fetchApi<void>(`/tour-packages/${id}`, { method: 'DELETE' });
+        await fetchApi<void>(`/v1/tour-packages/${id}`, { method: 'DELETE' });
     },
 };

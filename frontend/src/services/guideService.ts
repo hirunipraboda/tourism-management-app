@@ -14,19 +14,21 @@ export interface CreateGuidePayload {
   avatarUrl?: string | null;
 }
 
+const BASE = '/v1/guides';
+
 export const guideService = {
   async getGuides(): Promise<Guide[]> {
-    const response = await fetchApi<Guide[]>('/guides');
+    const response = await fetchApi<Guide[]>(BASE);
     return response.data;
   },
 
   async getGuideById(id: string): Promise<Guide> {
-    const response = await fetchApi<Guide>(`/guides/${id}`);
+    const response = await fetchApi<Guide>(`${BASE}/${id}`);
     return response.data;
   },
 
   async createGuide(payload: CreateGuidePayload): Promise<Guide> {
-    const response = await fetchApi<Guide>('/guides', {
+    const response = await fetchApi<Guide>(BASE, {
       method: 'POST',
       body: JSON.stringify(payload),
     });
@@ -34,7 +36,7 @@ export const guideService = {
   },
 
   async updateGuide(id: string, payload: Partial<CreateGuidePayload>): Promise<Guide> {
-    const response = await fetchApi<Guide>(`/guides/${id}`, {
+    const response = await fetchApi<Guide>(`${BASE}/${id}`, {
       method: 'PUT',
       body: JSON.stringify(payload),
     });
@@ -42,16 +44,17 @@ export const guideService = {
   },
 
   async deactivateGuide(id: string): Promise<void> {
-    await fetchApi<void>(`/guides/${id}`, { method: 'DELETE' });
+    await fetchApi<void>(`${BASE}/${id}`, { method: 'DELETE' });
   },
 
   // Admin-only: approve or reject a guide's verification status
   // verificationStatus: 'Verified' | 'Rejected' | 'Pending'
   async verifyGuide(id: string, verificationStatus: string): Promise<Guide> {
-    const response = await fetchApi<Guide>(`/guides/${id}/verification`, {
+    const response = await fetchApi<Guide>(`${BASE}/${id}/verification`, {
       method: 'PATCH',
       body: JSON.stringify({ verificationStatus }),
     });
     return response.data;
   },
 };
+

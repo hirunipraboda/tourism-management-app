@@ -19,12 +19,12 @@ export interface AvailabilitySlotResponse {
 
 export const guideAvailabilityService = {
     async getByGuide(guideId: number): Promise<AvailabilitySlotResponse[]> {
-        const response = await fetchApi<AvailabilitySlotResponse[]>(`/guides/${guideId}/availability`);
+        const response = await fetchApi<AvailabilitySlotResponse[]>(`/v1/guides/${guideId}/availability`);
         return response.data;
     },
 
     async create(guideId: number, payload: CreateAvailabilityPayload): Promise<AvailabilitySlotResponse> {
-        const response = await fetchApi<AvailabilitySlotResponse>(`/guides/${guideId}/availability`, {
+        const response = await fetchApi<AvailabilitySlotResponse>(`/v1/guides/${guideId}/availability`, {
             method: 'POST',
             body: JSON.stringify(payload),
         });
@@ -32,7 +32,7 @@ export const guideAvailabilityService = {
     },
 
     async delete(guideId: number, availabilityId: number): Promise<void> {
-        await fetchApi<void>(`/guides/${guideId}/availability/${availabilityId}`, {
+        await fetchApi<void>(`/v1/guides/${guideId}/availability/${availabilityId}`, {
             method: 'DELETE',
         });
     },

@@ -40,12 +40,13 @@ import pickmeLogoImg from '../assets/pickme-logo.png';
 import { PickMeLogo } from '../components/icons/PickMeLogo';
 
 // Helper to map backend TourPackageResponse to TravelPackage
-const mapBackendTourPackageToTravelPackage = (tp: TourPackageResponse): TravelPackage => {
-  const dests = tp.destination
-    ? tp.destination.split(/->|&|,|\+/).map(d => d.trim()).filter(Boolean)
+const mapBackendTourPackageToTravelPackage = (tp: any): TravelPackage => {
+  const destStr = tp.destination || tp.destinationName || 'Sri Lanka';
+  const dests = destStr
+    ? destStr.split(/->|&|,|\+/).map((d: string) => d.trim()).filter(Boolean)
     : ['Sri Lanka'];
   
-  const destLower = tp.destination.toLowerCase();
+  const destLower = destStr.toLowerCase();
   let imageUrl = tp.imageUrl && tp.imageUrl.trim() ? tp.imageUrl.trim() : sriLankaBeautyImg;
   if (!tp.imageUrl || !tp.imageUrl.trim()) {
     if (destLower.includes('galle') || destLower.includes('beach') || destLower.includes('matara') || destLower.includes('mirissa')) {
@@ -59,53 +60,56 @@ const mapBackendTourPackageToTravelPackage = (tp: TourPackageResponse): TravelPa
     }
   }
 
-  const dailyItinerary = Array.from({ length: Math.min(tp.durationDays, 7) }, (_, idx) => {
+  const durationDays = tp.durationDays || (typeof tp.duration === 'string' ? parseInt(tp.duration) : 3) || 3;
+  const dailyItinerary = Array.from({ length: Math.min(durationDays, 7) }, (_, idx) => {
     const dayNum = idx + 1;
     return {
       day: dayNum,
-      title: idx === 0 ? 'Arrival & Welcome Reception' : (idx === tp.durationDays - 1 ? 'Final Exploration & Departure' : `Guided Tour of ${dests[idx % dests.length] || tp.destination}`),
+      title: idx === 0 ? 'Arrival & Welcome Reception' : (idx === durationDays - 1 ? 'Final Exploration & Departure' : `Guided Tour of ${dests[idx % dests.length] || destStr}`),
       morning: idx === 0 ? 'Airport transfer & hotel check-in' : 'Breakfast & morning sightseeing tour',
       afternoon: 'Guided cultural visit & local cuisine experience',
-      evening: idx === tp.durationDays - 1 ? 'Departure transfer' : 'Leisure time & evening sunset view'
+      evening: idx === durationDays - 1 ? 'Departure transfer' : 'Leisure time & evening sunset view'
     };
   });
 
+  const priceVal = tp.price ?? (tp.priceFrom ? parseFloat(String(tp.priceFrom).replace(/[^0-9.]/g, '')) : 280);
+
   return {
-    id: `db-${tp.tourPackageId}`,
-    name: tp.packageName,
-    destination: tp.destination,
-    destinationsList: dests.length > 0 ? dests : [tp.destination],
-    duration: `${tp.durationDays} Days`,
-    nights: `${Math.max(1, tp.durationDays - 1)} Nights`,
-    priceFrom: `$${tp.price}`,
+    id: tp.id || `db-${tp.tourPackageId || Math.random()}`,
+    name: tp.packageName || tp.title || tp.name || 'Sri Lanka Tour Package',
+    destination: destStr,
+    destinationsList: dests.length > 0 ? dests : [destStr],
+    duration: typeof tp.duration === 'string' ? tp.duration : `${durationDays} Days`,
+    nights: tp.nights || `${Math.max(1, durationDays - 1)} Nights`,
+    priceFrom: typeof tp.priceFrom === 'string' ? tp.priceFrom : `$${priceVal}`,
     imageUrl: imageUrl,
-    inclusions: [
+    inclusions: tp.inclusions || [
       'Licensed English-speaking Tour Guide',
       'Private AC Transport throughout',
       'Hotel Pickups & Dropoffs',
       'NOVA AI Travel Assistant Access',
       'All Entry Tickets & Permits'
     ],
-    exclusions: [
+    exclusions: tp.exclusions || [
       'International Flight Tickets',
       'Personal Travel Insurance',
       'Personal Gratuities & Tips'
     ],
-    about: tp.description || `Experience ${tp.destination} with a custom tailored package for up to ${tp.maxGroupSize} travelers.`,
-    groupSize: `Up to ${tp.maxGroupSize} travelers`,
-    travelStyle: 'Cultural & Scenic Tour',
-    bestFor: 'Couples, Families & Small Groups',
-    dailyItinerary: dailyItinerary,
-    guide: {
+    about: tp.about || tp.description || `Experience ${destStr} with a custom tailored package for travelers.`,
+    groupSize: tp.groupSize || (tp.maxGroupSize ? `Up to ${tp.maxGroupSize} travelers` : 'Up to 8 travelers'),
+    travelStyle: tp.travelStyle || 'Cultural & Scenic Tour',
+    bestFor: tp.bestFor || 'Couples, Families & Small Groups',
+    dailyItinerary: tp.dailyItinerary || dailyItinerary,
+    guide: tp.guide || {
       name: tp.guideName || 'Licensed Local Guide',
       title: 'Certified Tourist Guide',
       languages: 'English, Sinhala',
       rating: 4.9,
       experience: '5+ Years'
     },
-    transport: {
+    transport: tp.transport || {
       type: 'Private AC Vehicle / Van',
-      capacity: `Up to ${tp.maxGroupSize} Seats`,
+      capacity: `Up to ${tp.maxGroupSize || 8} Seats`,
       features: 'Free WiFi, Air Conditioning, Bottled Water'
     }
   };
@@ -121,7 +125,20 @@ export const ToursPage: React.FC = () => {
   const [selectedTravelPkgModal, setSelectedTravelPkgModal] = useState<TravelPackage | null>(null);
   const [selectedPlanId, setSelectedPlanId] = useState<string>('explorer');
   const [isGuideWidgetOpen, setIsGuideWidgetOpen] = useState<boolean>(false);
-  const [packagesList, setPackagesList] = useState<TravelPackage[]>(TRAVEL_PACKAGES);
+  const [packagesList, setPackagesList] = useState<TravelPackage[]>(() => {
+    try {
+      const stored = localStorage.getItem('nova_custom_travel_packages');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const names = new Set(parsed.map((p: any) => p.name?.toLowerCase()));
+          const nonDup = TRAVEL_PACKAGES.filter(p => !names.has(p.name.toLowerCase()));
+          return [...parsed, ...nonDup];
+        }
+      }
+    } catch {}
+    return TRAVEL_PACKAGES;
+  });
 
   // Booking Form State inside Details Modal
   const [bookingDate, setBookingDate] = useState<string>('2026-10-15');
@@ -131,25 +148,53 @@ export const ToursPage: React.FC = () => {
   const travelPackagesRef = useRef<HTMLDivElement>(null);
   const packageRowRef = useRef<HTMLDivElement>(null);
 
-  // Fetch real active tour packages from backend database
+  // Fetch real active tour packages from backend database + sync with admin-added packages
   useEffect(() => {
     let isMounted = true;
     const fetchTourPackages = async () => {
+      let customPackages: TravelPackage[] = [];
+      try {
+        const stored = localStorage.getItem('nova_custom_travel_packages');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) customPackages = parsed;
+        }
+      } catch {}
+
       try {
         const dbPackages = await tourPackageService.getAll();
-        if (dbPackages && dbPackages.length > 0) {
+        if (dbPackages && Array.isArray(dbPackages) && dbPackages.length > 0) {
           const activeMapped = dbPackages
-            .filter(p => p.isActive)
+            .filter((p: any) => p.isActive !== false)
             .map(mapBackendTourPackageToTravelPackage);
           
-          if (isMounted && activeMapped.length > 0) {
-            const dbNames = new Set(activeMapped.map(p => p.name.toLowerCase()));
-            const nonDuplicateStatic = TRAVEL_PACKAGES.filter(p => !dbNames.has(p.name.toLowerCase()));
-            setPackagesList([...activeMapped, ...nonDuplicateStatic]);
+          if (isMounted) {
+            const combined = [...customPackages, ...activeMapped, ...TRAVEL_PACKAGES];
+            const seen = new Set<string>();
+            const unique = combined.filter(p => {
+              const k = p.name.toLowerCase().trim();
+              if (seen.has(k)) return false;
+              seen.add(k);
+              return true;
+            });
+            setPackagesList(unique);
+            return;
           }
         }
       } catch (err) {
         console.warn('Backend API offline or error fetching packages, using fallback static data:', err);
+      }
+
+      if (isMounted && customPackages.length > 0) {
+        const combined = [...customPackages, ...TRAVEL_PACKAGES];
+        const seen = new Set<string>();
+        const unique = combined.filter(p => {
+          const k = p.name.toLowerCase().trim();
+          if (seen.has(k)) return false;
+          seen.add(k);
+          return true;
+        });
+        setPackagesList(unique);
       }
     };
 

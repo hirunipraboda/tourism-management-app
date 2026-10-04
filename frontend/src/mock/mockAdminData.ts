@@ -28,6 +28,12 @@ export interface AdminDestination {
   bestTimeToVisit: string;
   bookingsCount: number;
   growthPercentage: number;
+  recommendedStayDays?: string | number;
+  avgBudgetPerDay?: string;
+  topAttractions?: string[];
+  openingHours?: string;
+  entryFeeLocal?: string;
+  entryFeeForeign?: string;
 }
 
 export interface AdminAttraction {
@@ -241,6 +247,12 @@ export const MOCK_ADMIN_DESTINATIONS: AdminDestination[] = [
     bestTimeToVisit: 'December to April',
     bookingsCount: 1240,
     growthPercentage: 14.8,
+    recommendedStayDays: '2 - 3 Days',
+    avgBudgetPerDay: '$60 - $95 / day',
+    topAttractions: ['Temple of the Sacred Tooth Relic', 'Kandy Lake Walk', 'Royal Botanical Gardens Peradeniya', 'Bahirawakanda Buddha'],
+    openingHours: '05:30 AM – 08:00 PM Daily',
+    entryFeeLocal: 'Free – LKR 200',
+    entryFeeForeign: '$15 / LKR 4,500',
   },
   {
     id: 'dest-ella',
@@ -258,6 +270,12 @@ export const MOCK_ADMIN_DESTINATIONS: AdminDestination[] = [
     bestTimeToVisit: 'January to May',
     bookingsCount: 980,
     growthPercentage: 22.4,
+    recommendedStayDays: '2 - 4 Days',
+    avgBudgetPerDay: '$45 - $80 / day',
+    topAttractions: ['Nine Arch Bridge', "Little Adam's Peak Hike", 'Ravana Waterfall & Caves', 'Ella Rock Trail'],
+    openingHours: '24 Hours Open',
+    entryFeeLocal: 'Free Entry',
+    entryFeeForeign: 'Free Entry / Optional $10 Guide',
   },
   {
     id: 'dest-galle',
@@ -275,6 +293,12 @@ export const MOCK_ADMIN_DESTINATIONS: AdminDestination[] = [
     bestTimeToVisit: 'November to April',
     bookingsCount: 890,
     growthPercentage: 11.2,
+    recommendedStayDays: '2 Days',
+    avgBudgetPerDay: '$70 - $120 / day',
+    topAttractions: ['Galle Fort Ramparts & Lighthouse', 'Dutch Reformed Church', 'Maritime Archaeology Museum', 'Flag Rock Bastion'],
+    openingHours: '24 Hours Open (Museums: 09:00 AM – 05:00 PM)',
+    entryFeeLocal: 'Free Fort Entry (Museums: LKR 100)',
+    entryFeeForeign: 'Free Fort Entry (Museums: $10 USD)',
   },
   {
     id: 'dest-sigiriya',
@@ -292,6 +316,12 @@ export const MOCK_ADMIN_DESTINATIONS: AdminDestination[] = [
     bestTimeToVisit: 'January to April',
     bookingsCount: 820,
     growthPercentage: 18.5,
+    recommendedStayDays: '1 - 2 Days',
+    avgBudgetPerDay: '$80 - $130 / day',
+    topAttractions: ['Sigiriya Rock Citadel Fortress', 'Pidurangala Rock Sunrise Summit', 'Sigiriya Museum & Royal Water Gardens'],
+    openingHours: '06:30 AM – 05:30 PM Daily',
+    entryFeeLocal: 'LKR 100 – 250',
+    entryFeeForeign: '$35 / LKR 10,500',
   },
   {
     id: 'dest-nuwaraeliya',
@@ -309,6 +339,12 @@ export const MOCK_ADMIN_DESTINATIONS: AdminDestination[] = [
     bestTimeToVisit: 'March to May',
     bookingsCount: 650,
     growthPercentage: 8.4,
+    recommendedStayDays: '2 - 3 Days',
+    avgBudgetPerDay: '$65 - $110 / day',
+    topAttractions: ['Lake Gregory Boating Park', 'Pedro Tea Estate & Factory', 'Victoria Park Botanical Gardens', 'Horton Plains World’s End'],
+    openingHours: '06:00 AM – 06:00 PM Daily',
+    entryFeeLocal: 'LKR 50 – LKR 200',
+    entryFeeForeign: '$12 – $25 USD',
   },
   {
     id: 'dest-mirissa',
@@ -326,6 +362,12 @@ export const MOCK_ADMIN_DESTINATIONS: AdminDestination[] = [
     bestTimeToVisit: 'November to April',
     bookingsCount: 540,
     growthPercentage: 16.1,
+    recommendedStayDays: '2 - 3 Days',
+    avgBudgetPerDay: '$50 - $90 / day',
+    topAttractions: ['Coconut Tree Hill', 'Mirissa Blue Whale Watching Harbor', 'Parrot Rock Coral Lookout', 'Secret Beach Mirissa'],
+    openingHours: '24 Hours Open',
+    entryFeeLocal: 'Free Entry (Boat Whale Safari: LKR 4,000)',
+    entryFeeForeign: 'Free Entry (Whale Safari: $50 USD)',
   },
   {
     id: 'dest-yala',
@@ -343,6 +385,12 @@ export const MOCK_ADMIN_DESTINATIONS: AdminDestination[] = [
     bestTimeToVisit: 'February to July',
     bookingsCount: 480,
     growthPercentage: 19.3,
+    recommendedStayDays: '1 - 2 Days',
+    avgBudgetPerDay: '$100 - $180 / day (Safari Jeep Incl.)',
+    topAttractions: ['Yala Block 1 Wildlife Safari', 'Sithulpawwa Rock Monastery', 'Patanangala Coastal Beach Headland'],
+    openingHours: '06:00 AM – 06:00 PM Daily',
+    entryFeeLocal: 'LKR 650 (Wildlife Dept)',
+    entryFeeForeign: '$35 – $40 USD + Jeep',
   },
 ];
 

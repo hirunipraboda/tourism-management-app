@@ -202,7 +202,6 @@ public class TransportService : ITransportService
         SelectTransportRequest request)
     {
         var item = await _db.ItineraryItems
-            .Include(i => i.SelectedTransport)
             .Include(i => i.ItineraryDay)
                 .ThenInclude(d => d!.Itinerary)
                     .ThenInclude(it => it!.Trip)
@@ -327,7 +326,6 @@ public class TransportService : ITransportService
         string userRole)
     {
         var item = await _db.ItineraryItems
-            .Include(i => i.SelectedTransport)
             .Include(i => i.ItineraryDay)
                 .ThenInclude(d => d!.Itinerary)
                     .ThenInclude(it => it!.Trip)
@@ -348,7 +346,11 @@ public class TransportService : ITransportService
                 ["UNAUTHORIZED_ACCESS"]);
         }
 
-        if (item.SelectedTransport == null)
+        var selectedTransport = trip != null 
+            ? await _db.TransportOptions.FirstOrDefaultAsync(t => t.TripId == trip.Id && t.IsSelected)
+            : null;
+
+        if (selectedTransport == null)
         {
             return ApiResponse<SelectedTransportResponse>.Fail(
                 "No transport option has been selected for this itinerary item.", 
@@ -359,8 +361,8 @@ public class TransportService : ITransportService
         {
             ItineraryItemId = item.Id,
             TripId = trip?.Id,
-            TransportOption = MapToDto(item.SelectedTransport),
-            SelectedAt = item.SelectedTransport.CreatedAt
+            TransportOption = MapToDto(selectedTransport),
+            SelectedAt = selectedTransport.CreatedAt
         };
 
         return ApiResponse<SelectedTransportResponse>.Ok(response, "Selected transport retrieved successfully.");
@@ -372,7 +374,6 @@ public class TransportService : ITransportService
         string userRole)
     {
         var item = await _db.ItineraryItems
-            .Include(i => i.SelectedTransport)
             .Include(i => i.ItineraryDay)
                 .ThenInclude(d => d!.Itinerary)
                     .ThenInclude(it => it!.Trip)
@@ -393,9 +394,13 @@ public class TransportService : ITransportService
                 ["UNAUTHORIZED_ACCESS"]);
         }
 
-        if (item.SelectedTransport != null)
+        var selectedTransport = trip != null 
+            ? await _db.TransportOptions.FirstOrDefaultAsync(t => t.TripId == trip.Id && t.IsSelected)
+            : null;
+
+        if (selectedTransport != null)
         {
-            _db.TransportOptions.Remove(item.SelectedTransport);
+            _db.TransportOptions.Remove(selectedTransport);
             item.TravelTimeMinutes = 0;
             await _db.SaveChangesAsync();
         }
@@ -446,24 +451,32 @@ public class TransportService : ITransportService
 
     private async Task<List<TransportOptionDto>> GetCachedOptionsAsync(string origin, string destination, DateTime travelDate, string? transportType)
     {
-        var freshnessCutoff = DateTime.UtcNow.AddHours(-24);
-        var startUtc = DateTime.SpecifyKind(travelDate.Date, DateTimeKind.Utc);
-        var endUtc = startUtc.AddDays(1);
-
-        var query = _db.TransportOptions
-            .Where(t => t.ItineraryItemId == null
-                        && t.Origin.ToLower() == origin.ToLower()
-                        && t.Destination.ToLower() == destination.ToLower()
-                        && t.TravelDate >= startUtc && t.TravelDate < endUtc
-                        && t.RetrievedAt >= freshnessCutoff);
-
-        if (!string.IsNullOrWhiteSpace(transportType))
+        try
         {
-            query = query.Where(t => t.TransportType == transportType.ToUpper());
-        }
+            var freshnessCutoff = DateTime.UtcNow.AddHours(-24);
+            var startUtc = DateTime.SpecifyKind(travelDate.Date, DateTimeKind.Utc);
+            var endUtc = startUtc.AddDays(1);
 
-        var entities = await query.ToListAsync();
-        return entities.Select(MapToDto).ToList();
+            var query = _db.TransportOptions
+                .Where(t => t.ItineraryItemId == null
+                            && t.Origin.ToLower() == origin.ToLower()
+                            && t.Destination.ToLower() == destination.ToLower()
+                            && t.TravelDate >= startUtc && t.TravelDate < endUtc
+                            && t.RetrievedAt >= freshnessCutoff);
+
+            if (!string.IsNullOrWhiteSpace(transportType))
+            {
+                query = query.Where(t => t.TransportType == transportType.ToUpper());
+            }
+
+            var entities = await query.ToListAsync();
+            return entities.Select(MapToDto).ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to retrieve cached transport options for {Origin} -> {Destination}. Proceeding without cache.", origin, destination);
+            return [];
+        }
     }
 
     private async Task SaveRetrievedOptionsToCacheAsync(List<TransportOptionDto> options, string origin, string destination, DateTime travelDate)

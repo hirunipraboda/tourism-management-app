@@ -22,7 +22,7 @@ public class DestinationsController : ControllerBase
     {
         try
         {
-            var query = _db.Destinations.Include(d => d.Activities).AsQueryable();
+            var query = _db.Destinations.Include(d => d.Attractions).AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(search))
             {
@@ -54,7 +54,7 @@ public class DestinationsController : ControllerBase
     {
         try
         {
-            var destination = await _db.Destinations.Include(d => d.Activities).FirstOrDefaultAsync(d => d.Id == id || d.Slug == id);
+            var destination = await _db.Destinations.Include(d => d.Attractions).FirstOrDefaultAsync(d => d.Id == id || d.Slug == id);
             if (destination != null) return Ok(ApiResponse<Destination>.Ok(destination));
         }
         catch

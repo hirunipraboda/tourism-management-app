@@ -23,17 +23,17 @@ class _ExploreScreenState extends State<ExploreScreen> {
   int _currentHeroIndex = 0;
   Timer? _heroTimer;
 
-  // 1. Hero / Featured Destinations (Galle Fort as #1)
+  // 1. Hero / Featured Destinations (matching website SRI_LANKA_HERO_DESTINATIONS exactly)
   final List<Map<String, dynamic>> _heroItems = [
     {
       'id': 'hero-galle',
       'name': 'Galle Fort',
-      'subtitle': 'Seaside Colonial Citadel & Ocean Ramparts',
+      'subtitle': 'Seaside Colonial Citadel & Ramparts',
       'location': 'Galle, Southern Province',
-      'category': 'SOUTHERN PROVINCE',
-      'rating': 4.9,
-      'imageUrl': 'https://images.unsplash.com/photo-1578328819058-b69f3a3b0f6b?auto=format&fit=crop&w=1200&q=80',
-      'description': 'Wander 16th-century oceanfront ramparts, cobblestone alleys, Dutch colonial mansions, and vibrant artisan cafes.',
+      'category': 'HERITAGE CITADEL',
+      'rating': 4.85,
+      'imageUrl': 'assets/images/destinations/Galle.jpg',
+      'description': 'Wander 16th-century oceanfront ramparts, cobblestone alleys, Dutch colonial mansions, and vibrant artisan cafes overlooking the lighthouse.',
     },
     {
       'id': 'hero-sigiriya',
@@ -41,8 +41,8 @@ class _ExploreScreenState extends State<ExploreScreen> {
       'subtitle': 'Ancient Rock Citadel & Royal Water Gardens',
       'location': 'Matale, Central Province',
       'category': 'ANCIENT MONUMENTS',
-      'rating': 5.0,
-      'imageUrl': 'https://images.unsplash.com/photo-1586861635167-e5223aadc9fe?auto=format&fit=crop&w=1200&q=80',
+      'rating': 4.9,
+      'imageUrl': 'assets/images/destinations/sigiriya.jpg',
       'description': 'Ascend the 5th-century Lion Rock fortress to discover ancient frescoes, royal water gardens, and 360° jungle canopy panoramas.',
     },
     {
@@ -51,8 +51,8 @@ class _ExploreScreenState extends State<ExploreScreen> {
       'subtitle': 'Highland Landscapes & Scenic Rail Trails',
       'location': 'Badulla District, Highlands',
       'category': 'TEA HIGHLANDS',
-      'rating': 4.9,
-      'imageUrl': 'https://images.unsplash.com/photo-1546708973-b339540b5162?auto=format&fit=crop&w=1200&q=80',
+      'rating': 4.8,
+      'imageUrl': 'assets/images/destinations/Ella.jpg',
       'description': 'Ride iconic blue mountain trains through misty tea estates, trek to Little Adam’s Peak, and marvel at the Nine Arch Bridge.',
     },
     {
@@ -61,8 +61,8 @@ class _ExploreScreenState extends State<ExploreScreen> {
       'subtitle': 'Golden Palm Bays & Ocean Safaris',
       'location': 'Matara, Southern Province',
       'category': 'SOUTHERN COAST',
-      'rating': 4.8,
-      'imageUrl': 'https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?auto=format&fit=crop&w=1200&q=80',
+      'rating': 4.9,
+      'imageUrl': 'assets/images/destinations/Mirissa.jpg',
       'description': 'Unwind on palm-fringed golden beaches, surf azure Indian Ocean swells, and embark on world-renowned blue whale watching safaris.',
     },
     {
@@ -71,9 +71,19 @@ class _ExploreScreenState extends State<ExploreScreen> {
       'subtitle': 'Leopard Sanctuaries & Untamed Wilderness',
       'location': 'Hambantota, Southern Coast',
       'category': 'WILDLIFE SAFARI',
-      'rating': 4.9,
-      'imageUrl': 'https://images.unsplash.com/photo-1544644181-1484b3fdfc62?auto=format&fit=crop&w=1200&q=80',
-      'description': 'Track wild leopards, Asian elephants, sloth bears, and crocodiles across coastal savannahs on open-top 4x4 safaris.',
+      'rating': 4.92,
+      'imageUrl': 'assets/images/destinations/Yala.jpg',
+      'description': 'Embark on open-top 4x4 safaris to track wild leopards, Asian elephants, sloth bears, and crocodiles across coastal savannahs.',
+    },
+    {
+      'id': 'hero-kandy',
+      'name': 'Kandy',
+      'subtitle': 'Sacred Temple & Lakeside Culture',
+      'location': 'Central Highlands',
+      'category': 'CULTURAL CAPITAL',
+      'rating': 4.88,
+      'imageUrl': 'assets/images/destinations/Kandy.jpg',
+      'description': 'Immerse in Sri Lanka’s cultural heart, home to the sacred Temple of the Tooth Relic, mist-shrouded hills, and serene central lake.',
     },
   ];
 
@@ -129,13 +139,13 @@ class _ExploreScreenState extends State<ExploreScreen> {
     },
   ];
 
-  // 3. Places Worth Discovering Curated Items
+  // 3. Places Worth Discovering Curated Items (matching website assets)
   final List<Map<String, dynamic>> _placesWorthDiscovering = [
     {
       'name': 'Horton Plains',
       'location': 'Central Highlands, Sri Lanka',
       'description': 'Misty cloud forests, rolling highland moors, and the dramatic sheer precipice of World’s End drop.',
-      'imageUrl': 'https://images.unsplash.com/photo-1589182373726-e4f658ab50f0?auto=format&fit=crop&w=800&q=80',
+      'imageUrl': 'assets/images/destinations/horton_plains.jpg',
       'category': 'Highlands',
       'rating': 4.9,
     },
@@ -143,7 +153,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
       'name': 'Nilaveli',
       'location': 'Trincomalee, Sri Lanka',
       'description': 'Pristine white sand bays, turquoise waters, and shallow coral reef snorkeling around Pigeon Island.',
-      'imageUrl': 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80',
+      'imageUrl': 'assets/images/destinations/nilaveli.png',
       'category': 'Beach',
       'rating': 4.85,
     },
@@ -151,7 +161,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
       'name': 'Anuradhapura',
       'location': 'North Central Province, Sri Lanka',
       'description': 'Ancient sacred stupas, monastic ruins, and the venerated Jaya Sri Maha Bodhi tree.',
-      'imageUrl': 'https://images.unsplash.com/photo-1586861635167-e5223aadc9fe?auto=format&fit=crop&w=800&q=80',
+      'imageUrl': 'assets/images/destinations/Anuradhapura.jpg',
       'category': 'Heritage',
       'rating': 4.85,
     },
@@ -408,6 +418,28 @@ class _ExploreScreenState extends State<ExploreScreen> {
     );
   }
 
+  Widget _buildSmartImage(String path, {BoxFit fit = BoxFit.cover, double? width, double? height}) {
+    if (path.startsWith('assets/')) {
+      return Image.asset(
+        path,
+        fit: fit,
+        width: width,
+        height: height,
+        errorBuilder: (context, error, stackTrace) {
+          debugPrint('[ExploreScreen] Asset image load failed for $path: $error');
+          return Container(color: NovaBrand.primary);
+        },
+      );
+    }
+    return Image.network(
+      path,
+      fit: fit,
+      width: width,
+      height: height,
+      errorBuilder: (_, __, ___) => Container(color: NovaBrand.primary),
+    );
+  }
+
   Widget _buildHeroSlide(Map<String, dynamic> item) {
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
@@ -420,10 +452,9 @@ class _ExploreScreenState extends State<ExploreScreen> {
         fit: StackFit.expand,
         children: [
           // Large featured destination image
-          Image.network(
+          _buildSmartImage(
             item['imageUrl'],
             fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => Container(color: NovaBrand.primary),
           ),
 
           // Deep gradient overlay for text readability
@@ -836,10 +867,9 @@ class _ExploreScreenState extends State<ExploreScreen> {
                 SizedBox(
                   height: 145,
                   width: double.infinity,
-                  child: Image.network(
+                  child: _buildSmartImage(
                     place['imageUrl'],
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(color: NovaBrand.primary),
                   ),
                 ),
                 Positioned(

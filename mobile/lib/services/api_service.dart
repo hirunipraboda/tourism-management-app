@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/travel_models.dart';
 
@@ -708,9 +709,4 @@ class ApiService {
       'satisfactionRate': 99.4,
     };
   }
-}
-
-void debugPrint(String message) {
-  // ignore: avoid_print
-  print(message);
 }

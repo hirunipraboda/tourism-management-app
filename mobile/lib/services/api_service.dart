@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/travel_models.dart';
 import '../models/ai_trip_planner_models.dart';
+import '../models/user_trip_models.dart';
 
 class ApiService {
   static String? customBaseUrl;
@@ -270,6 +271,70 @@ class ApiService {
       debugPrint('[ApiService] getTrips error: $e');
     }
     return [];
+  }
+
+  static Future<List<UserTripDetail>> getEnrichedUserTrips() async {
+    final Map<String, UserTripDetail> tripMap = {};
+
+    // 1. Seed with rich mock trips (all 12 trips)
+    for (final mockTrip in kMockTripsData) {
+      tripMap[mockTrip.id] = mockTrip;
+    }
+
+    // 2. Fetch backend trips from PostgreSQL
+    try {
+      final backendTrips = await getTrips();
+      for (final bt in backendTrips) {
+        final days = bt.endDate.difference(bt.startDate).inDays;
+        final durationStr = days > 0 ? '$days Days' : '3 Days';
+        final destName = bt.destinationNames.isNotEmpty ? bt.destinationNames.first : 'Sri Lanka';
+        final destId = destName.toLowerCase().replaceAll(' ', '_');
+
+        String img = 'assets/images/destinations/Mirissa.jpg';
+        if (destName.toLowerCase().contains('kandy')) img = 'assets/images/destinations/Kandy.jpg';
+        if (destName.toLowerCase().contains('ella')) img = 'assets/images/destinations/Ella.jpg';
+        if (destName.toLowerCase().contains('galle')) img = 'assets/images/destinations/Galle.jpg';
+        if (destName.toLowerCase().contains('sigiriya')) img = 'assets/images/destinations/sigiriya.jpg';
+        if (destName.toLowerCase().contains('yala')) img = 'assets/images/destinations/Yala.jpg';
+
+        final enriched = UserTripDetail(
+          id: bt.id,
+          name: bt.title,
+          destination: destName.toUpperCase(),
+          destinationId: destId,
+          startDate: bt.startDate.toIso8601String().split('T').first,
+          endDate: bt.endDate.toIso8601String().split('T').first,
+          dates: '${bt.startDate.day} ${_monthName(bt.startDate.month)} – ${bt.endDate.day} ${_monthName(bt.endDate.month)} ${bt.endDate.year}',
+          duration: durationStr,
+          travelers: bt.numberOfTravelers,
+          status: bt.status.toLowerCase() == 'ongoing'
+              ? 'Ongoing'
+              : bt.status.toLowerCase() == 'completed'
+                  ? 'Completed'
+                  : bt.status.toLowerCase() == 'planning'
+                      ? 'Planning'
+                      : 'Upcoming',
+          timelineLabel: bt.status.toLowerCase() == 'ongoing' ? 'Ongoing - Day 1 of $days' : 'Upcoming',
+          imageUrl: img,
+          budget: '\$${bt.budget.toStringAsFixed(0)}',
+          spentBudget: '\$0',
+          isFeatured: bt.status.toLowerCase() == 'ongoing',
+          notes: bt.description ?? '',
+        );
+
+        tripMap[bt.id] = enriched;
+      }
+    } catch (e) {
+      debugPrint('[ApiService] getEnrichedUserTrips error: $e');
+    }
+
+    return tripMap.values.toList();
+  }
+
+  static String _monthName(int month) {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    if (month >= 1 && month <= 12) return months[month - 1];
+    return '';
   }
 
   static Future<Map<String, dynamic>> createTrip({
@@ -951,11 +1016,6 @@ class ApiService {
       ],
       aiScore: 98.0,
     );
-  }
-
-  static String _monthName(int m) {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return (m >= 1 && m <= 12) ? months[m - 1] : '';
   }
 
   // =========================================================================

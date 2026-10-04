@@ -87,7 +87,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     final List<Widget> screens = [
       ExploreScreen(onNavigateTab: _navigateToTab),
       const DestinationsScreen(),
-      const TripsScreen(),
+      TripsScreen(onNavigateTab: _navigateToTab),
       const ToursScreen(),
       const AiPlannerScreen(),
       const ReviewsScreen(),

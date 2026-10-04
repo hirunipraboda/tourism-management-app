@@ -43,7 +43,6 @@ class _DestinationsAttractionsScreenState
 
   static const _teal = Color(0xFF0D9488);
   static const _darkTeal = Color(0xFF0F766E);
-  static const _amber = Color(0xFFF59E0B);
   static const _bg = Color(0xFFF0FDFA);
 
   @override
@@ -303,7 +302,7 @@ class _DestinationsAttractionsScreenState
                       style: TextStyle(fontSize: 13, color: Colors.black87)),
                   Switch(
                     value: _accessibleOnly,
-                    activeColor: _teal,
+                    activeThumbColor: _teal,
                     onChanged: (val) {
                       setState(() => _accessibleOnly = val);
                       _applyFilters();
@@ -449,7 +448,7 @@ class _DestinationsAttractionsScreenState
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: _teal.withOpacity(0.1),
+              color: _teal.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icon, color: _teal, size: 20),
@@ -515,7 +514,7 @@ class _AttractionCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.06),
+              color: Colors.black.withValues(alpha: 0.06),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -695,7 +694,7 @@ class _InfoChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -939,7 +938,7 @@ class _DetailRow extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(7),
             decoration: BoxDecoration(
-              color: _teal.withOpacity(0.08),
+              color: _teal.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icon, size: 16, color: _teal),

@@ -178,7 +178,7 @@ class _DestinationsScreenState extends State<DestinationsScreen> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                             decoration: BoxDecoration(
-                              color: NovaBrand.tertiary.withOpacity(0.12),
+                              color: NovaBrand.tertiary.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Row(
@@ -288,9 +288,9 @@ class _DestinationsScreenState extends State<DestinationsScreen> {
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        Colors.black.withOpacity(0.35),
+                        Colors.black.withValues(alpha: 0.35),
                         Colors.transparent,
-                        Colors.black.withOpacity(0.65),
+                        Colors.black.withValues(alpha: 0.65),
                       ],
                     ),
                   ),
@@ -304,7 +304,7 @@ class _DestinationsScreenState extends State<DestinationsScreen> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.8),
+                    color: Colors.black.withValues(alpha: 0.8),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: Colors.white24, width: 0.8),
                   ),
@@ -374,7 +374,7 @@ class _DestinationsScreenState extends State<DestinationsScreen> {
                         const SizedBox(width: 4),
                         Text(
                           '${dest.province} · ${dest.location}',
-                          style: GoogleFonts.inter(fontSize: 12, color: Colors.white.withOpacity(0.9)),
+                          style: GoogleFonts.inter(fontSize: 12, color: Colors.white.withValues(alpha: 0.9)),
                         ),
                       ],
                     ),

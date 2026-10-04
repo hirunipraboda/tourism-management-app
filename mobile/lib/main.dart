@@ -52,7 +52,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         backgroundColor: Colors.white,
-        indicatorColor: NovaBrand.tertiary.withOpacity(0.12),
+        indicatorColor: NovaBrand.tertiary.withValues(alpha: 0.12),
         onDestinationSelected: (index) {
           setState(() {
             _currentIndex = index;

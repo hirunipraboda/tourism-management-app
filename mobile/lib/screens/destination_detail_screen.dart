@@ -4,7 +4,7 @@ import '../models/travel_models.dart';
 import '../theme/app_theme.dart';
 import 'ai_planner_screen.dart';
 import 'reviews_screen.dart';
-import 'trips_screen.dart';
+
 import '../services/api_service.dart';
 
 class DestinationDetailScreen extends StatelessWidget {
@@ -26,7 +26,7 @@ class DestinationDetailScreen extends StatelessWidget {
             leading: Padding(
               padding: const EdgeInsets.all(8.0),
               child: CircleAvatar(
-                backgroundColor: Colors.black.withOpacity(0.55),
+                backgroundColor: Colors.black.withValues(alpha: 0.55),
                 child: IconButton(
                   icon: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
                   onPressed: () => Navigator.pop(context),
@@ -58,9 +58,9 @@ class DestinationDetailScreen extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.85),
+                        color: Colors.black.withValues(alpha: 0.85),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.white.withOpacity(0.2)),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -337,7 +337,7 @@ class DestinationDetailScreen extends StatelessWidget {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                 decoration: BoxDecoration(
-                                  color: NovaBrand.tertiary.withOpacity(0.12),
+                                  color: NovaBrand.tertiary.withValues(alpha: 0.12),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Text(
@@ -454,7 +454,7 @@ class DestinationDetailScreen extends StatelessWidget {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.15),
+                                color: Colors.white.withValues(alpha: 0.15),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(

@@ -1,13 +1,9 @@
 import React, { useState } from 'react';
 import {
-  Sparkles,
   MapPin,
   Star,
   Plus,
-  ArrowRight,
   Heart,
-  CheckCircle2,
-  Clock,
   Eye,
 } from 'lucide-react';
 import { Recommendation } from '../../types/reviewsAndRecommendations';
@@ -48,8 +44,7 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
           </span>
 
           {/* Suitability Score Pill */}
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500 text-white font-black text-xs shadow-md border border-white/20">
-            <Sparkles className="w-3.5 h-3.5" />
+          <div className="flex items-center px-3.5 py-1 rounded-full bg-[#0B3A53] text-white font-black text-xs shadow-md border border-white/20">
             <span>{recommendation.suitabilityScore}% Suitable</span>
           </div>
         </div>
@@ -72,7 +67,7 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
 
         {/* Location Label */}
         <div className="absolute bottom-3 left-3 text-white flex items-center gap-1 text-xs font-extrabold drop-shadow">
-          <MapPin className="w-3.5 h-3.5 text-[#16A6A1]" />
+          <MapPin className="w-3.5 h-3.5 text-white/90" />
           <span>{recommendation.location}</span>
         </div>
       </div>
@@ -105,12 +100,11 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
           </h3>
 
           {/* Short Recommendation Explanation */}
-          <div className="bg-emerald-50/70 p-3 rounded-2xl border border-emerald-100/90 text-[11px] text-emerald-900 space-y-1">
-            <div className="flex items-center gap-1 font-black text-emerald-800 uppercase tracking-wider text-[10px]">
-              <Sparkles className="w-3 h-3 text-emerald-600" />
-              <span>Suitability: {recommendation.suitabilityScore}%</span>
+          <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200/80 text-[11px] text-slate-700 space-y-1">
+            <div className="font-black text-[#0B3A53] uppercase tracking-wider text-[10px]">
+              Suitability: {recommendation.suitabilityScore}%
             </div>
-            <p className="font-medium text-emerald-800 leading-relaxed line-clamp-2">
+            <p className="font-medium text-slate-600 leading-relaxed line-clamp-2">
               "{recommendation.explanation}"
             </p>
           </div>
@@ -120,7 +114,7 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
         <div className="grid grid-cols-2 gap-2 text-[10px] font-bold text-slate-500 pt-2 border-t border-slate-100">
           <div className="flex items-center justify-between">
             <span>Interest Match:</span>
-            <span className="text-[#16A6A1] font-black">{recommendation.interestMatch}%</span>
+            <span className="text-[#0B3A53] font-black">{recommendation.interestMatch}%</span>
           </div>
           <div className="flex items-center justify-between">
             <span>Rating Match:</span>
@@ -142,7 +136,7 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
             onClick={() => onAddToTrip(recommendation)}
             className="w-full py-2.5 rounded-xl bg-[#0B3A53] hover:bg-slate-900 text-white font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs hover:shadow-xs"
           >
-            <Plus className="w-3.5 h-3.5 text-[#16A6A1]" />
+            <Plus className="w-3.5 h-3.5 text-white" />
             <span>Add to Trip</span>
           </button>
         </div>

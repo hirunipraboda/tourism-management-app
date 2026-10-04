@@ -1,8 +1,56 @@
 import { Recommendation, RecommendationFilterState } from '../types/reviewsAndRecommendations';
 import { INITIAL_MOCK_RECOMMENDATIONS } from '../mock/mockRecommendations';
 
+export interface CreateRecommendationInput {
+  name: string;
+  category: string;
+  location?: string;
+  targetType?: 'destination' | 'attraction' | 'tour';
+  rating?: number;
+  price?: string;
+  description?: string;
+  explanation?: string;
+  imageUrl?: string;
+  tags?: string[];
+  bestTimeToVisit?: string;
+  estimatedDuration?: string;
+  suitabilityScore?: number;
+  destinationName?: string;
+  activityType?: string;
+  estimatedCostUsd?: number;
+  initialRating?: number;
+  openingHours?: string;
+  isFeatured?: boolean;
+  duration?: string;
+}
+
 class RecommendationService {
   private recommendations: Recommendation[] = [...INITIAL_MOCK_RECOMMENDATIONS];
+
+  async addRecommendation(input: CreateRecommendationInput): Promise<Recommendation> {
+    const newRec: Recommendation = {
+      id: `rec-${Date.now()}`,
+      name: input.name,
+      category: input.category,
+      location: input.location || input.destinationName || 'Sri Lanka',
+      targetType: input.targetType || 'attraction',
+      rating: input.rating || input.initialRating || 4.8,
+      reviewCount: 1,
+      price: input.price || (input.estimatedCostUsd ? `$${input.estimatedCostUsd}` : 'Free'),
+      description: input.description || '',
+      explanation: input.explanation || `Recommended ${input.category} experience`,
+      image: input.imageUrl || 'https://images.unsplash.com/photo-1546708973-b339540b5162?w=800&auto=format&fit=crop&q=80',
+      bestTimeToVisit: input.bestTimeToVisit || 'Year-round',
+      suitabilityScore: input.suitabilityScore || 92,
+      interestMatch: 90,
+      ratingMatch: 95,
+      budgetMatch: 88,
+      locationMatch: 90,
+      popularityScore: 85,
+    };
+    this.recommendations.unshift(newRec);
+    return newRec;
+  }
 
   /**
    * GET /api/recommendations

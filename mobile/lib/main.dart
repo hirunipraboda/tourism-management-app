@@ -100,7 +100,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         children: screens,
       ),
       bottomNavigationBar: _buildBottomBar(),
-      floatingActionButton: _currentIndex == 2
+      floatingActionButton: (_currentIndex == 2 || _currentIndex == 3)
           ? null
           : FloatingActionButton.extended(
               heroTag: 'mainAiGuideFab',

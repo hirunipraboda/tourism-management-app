@@ -4,7 +4,6 @@ import '../models/travel_models.dart';
 import '../theme/app_theme.dart';
 import 'ai_planner_screen.dart';
 import 'reviews_screen.dart';
-import 'trips_screen.dart';
 import '../services/api_service.dart';
 
 class DestinationDetailScreen extends StatelessWidget {
@@ -37,13 +36,9 @@ class DestinationDetailScreen extends StatelessWidget {
               background: Stack(
                 fit: StackFit.expand,
                 children: [
-                  Image.network(
-                    destination.imageUrl,
+                  _buildSmartImage(
+                    _getBestImage(destination),
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      color: NovaBrand.primary,
-                      child: const Icon(Icons.image, color: Colors.white54, size: 60),
-                    ),
                   ),
                   // Gradient Overlay
                   DecoratedBox(
@@ -702,6 +697,42 @@ class DestinationDetailScreen extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  static String _getBestImage(Destination dest) {
+    final lower = dest.name.toLowerCase();
+    if (lower.contains('kandy')) return 'assets/images/destinations/Kandy.jpg';
+    if (lower.contains('ella')) return 'assets/images/destinations/Ella.jpg';
+    if (lower.contains('sigiriya')) return 'assets/images/destinations/sigiriya.jpg';
+    if (lower.contains('mirissa')) return 'assets/images/destinations/Mirissa.jpg';
+    if (lower.contains('galle')) return 'assets/images/destinations/Galle.jpg';
+    if (lower.contains('yala')) return 'assets/images/destinations/Yala.jpg';
+    if (lower.contains('horton')) return 'assets/images/destinations/horton_plains.jpg';
+    if (lower.contains('nilaveli') || lower.contains('trincomalee')) return 'assets/images/destinations/nilaveli.png';
+    if (lower.contains('anuradhapura')) return 'assets/images/destinations/Anuradhapura.jpg';
+    if (lower.contains('riverston')) return 'assets/images/destinations/riverston.jpg';
+    if (lower.contains('nuwara eliya')) return 'assets/images/destinations/horton_plains.jpg';
+    if (lower.contains('arugam')) return 'assets/images/destinations/Sri_lanka_beauty.jpg';
+    return dest.imageUrl;
+  }
+
+  static Widget _buildSmartImage(String path, {BoxFit fit = BoxFit.cover, double? width, double? height}) {
+    if (path.startsWith('assets/')) {
+      return Image.asset(
+        path,
+        fit: fit,
+        width: width,
+        height: height,
+        errorBuilder: (_, __, ___) => Container(color: NovaBrand.primary),
+      );
+    }
+    return Image.network(
+      path,
+      fit: fit,
+      width: width,
+      height: height,
+      errorBuilder: (_, __, ___) => Container(color: NovaBrand.primary),
     );
   }
 }

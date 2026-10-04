@@ -395,11 +395,18 @@ class _ExploreScreenState extends State<ExploreScreen> {
 
                 // Slide count
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.5),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.white24, width: 0.8),
+                    color: Colors.black.withValues(alpha: 0.55),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.25), width: 0.8),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.25),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
                   child: Text(
                     '${_currentHeroIndex + 1} / ${_heroItems.length}',
@@ -442,10 +449,11 @@ class _ExploreScreenState extends State<ExploreScreen> {
 
   Widget _buildHeroSlide(Map<String, dynamic> item) {
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(28),
-        boxShadow: NovaBrand.cardShadow,
+        border: Border.all(color: Colors.black.withValues(alpha: 0.08), width: 1),
+        boxShadow: NovaBrand.heroFloatingShadow,
       ),
       clipBehavior: Clip.antiAlias,
       child: Stack(
@@ -482,10 +490,17 @@ class _ExploreScreenState extends State<ExploreScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5.5),
                   decoration: BoxDecoration(
                     color: NovaBrand.tertiary,
                     borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
                   ),
                   child: Text(
                     item['category'],
@@ -498,11 +513,18 @@ class _ExploreScreenState extends State<ExploreScreen> {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4.5),
                   decoration: BoxDecoration(
                     color: Colors.black.withValues(alpha: 0.65),
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: Colors.white24, width: 0.8),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 0.8),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
                   ),
                   child: Row(
                     children: [
@@ -591,7 +613,8 @@ class _ExploreScreenState extends State<ExploreScreen> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: NovaBrand.tertiary,
                           foregroundColor: Colors.white,
-                          elevation: 0,
+                          elevation: 4,
+                          shadowColor: NovaBrand.tertiary.withValues(alpha: 0.5),
                           padding: const EdgeInsets.symmetric(vertical: 11),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -616,8 +639,10 @@ class _ExploreScreenState extends State<ExploreScreen> {
                         onPressed: () => _navigateToCatalog(),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.white,
-                          side: const BorderSide(color: Colors.white70, width: 1.2),
-                          backgroundColor: Colors.white.withValues(alpha: 0.12),
+                          side: const BorderSide(color: Colors.white, width: 1.2),
+                          backgroundColor: Colors.white.withValues(alpha: 0.16),
+                          elevation: 2,
+                          shadowColor: Colors.black.withValues(alpha: 0.25),
                           padding: const EdgeInsets.symmetric(vertical: 11),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -693,8 +718,9 @@ class _ExploreScreenState extends State<ExploreScreen> {
 
           // Horizontally scrollable category cards
           SizedBox(
-            height: 112,
+            height: 124,
             child: ListView.separated(
+              padding: const EdgeInsets.fromLTRB(2, 4, 2, 8),
               scrollDirection: Axis.horizontal,
               itemCount: _interestCategories.length,
               separatorBuilder: (_, __) => const SizedBox(width: 12),
@@ -708,8 +734,8 @@ class _ExploreScreenState extends State<ExploreScreen> {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: NovaBrand.cardBorder),
-                      boxShadow: NovaBrand.softShadow,
+                      border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
+                      boxShadow: NovaBrand.floatingShadow,
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -724,6 +750,17 @@ class _ExploreScreenState extends State<ExploreScreen> {
                               decoration: BoxDecoration(
                                 color: cat['bgColor'],
                                 borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: (cat['color'] as Color).withValues(alpha: 0.25),
+                                  width: 1,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: (cat['color'] as Color).withValues(alpha: 0.18),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
                               ),
                               child: Center(
                                 child: Text(cat['icon'], style: const TextStyle(fontSize: 18)),
@@ -818,9 +855,9 @@ class _ExploreScreenState extends State<ExploreScreen> {
 
         // Horizontal Swipe Cards for Horton Plains, Nilaveli, Anuradhapura + Catalog CTA
         SizedBox(
-          height: 290,
+          height: 304,
           child: ListView.separated(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
             scrollDirection: Axis.horizontal,
             itemCount: _placesWorthDiscovering.length + 1,
             separatorBuilder: (_, __) => const SizedBox(width: 14),
@@ -854,8 +891,8 @@ class _ExploreScreenState extends State<ExploreScreen> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: NovaBrand.cardBorder),
-          boxShadow: NovaBrand.softShadow,
+          border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
+          boxShadow: NovaBrand.floatingShadow,
         ),
         clipBehavior: Clip.antiAlias,
         child: Column(
@@ -876,10 +913,18 @@ class _ExploreScreenState extends State<ExploreScreen> {
                   top: 10,
                   right: 10,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
                     decoration: BoxDecoration(
                       color: Colors.black.withValues(alpha: 0.65),
                       borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.25), width: 0.8),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.3),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
                     child: Row(
                       children: [
@@ -994,7 +1039,20 @@ class _ExploreScreenState extends State<ExploreScreen> {
         decoration: BoxDecoration(
           gradient: NovaBrand.heroGradient,
           borderRadius: BorderRadius.circular(22),
-          boxShadow: NovaBrand.cardShadow,
+          border: Border.all(color: Colors.white.withValues(alpha: 0.22), width: 1.2),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF0B3A53).withValues(alpha: 0.28),
+              blurRadius: 22,
+              spreadRadius: -1,
+              offset: const Offset(0, 10),
+            ),
+            BoxShadow(
+              color: NovaBrand.tertiary.withValues(alpha: 0.22),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
         ),
         padding: const EdgeInsets.all(18),
         child: Column(
@@ -1088,7 +1146,8 @@ class _ExploreScreenState extends State<ExploreScreen> {
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(24),
-              boxShadow: NovaBrand.cardShadow,
+              border: Border.all(color: Colors.white.withValues(alpha: 0.18), width: 1.2),
+              boxShadow: NovaBrand.heroFloatingShadow,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1185,9 +1244,16 @@ class _ExploreScreenState extends State<ExploreScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.1),
+        color: Colors.white.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.22), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.18),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Column(
         children: [
@@ -1249,13 +1315,13 @@ class _ExploreScreenState extends State<ExploreScreen> {
             children: List.generate(_whyNovaFeatures.length, (index) {
               final feature = _whyNovaFeatures[index];
               return Container(
-                margin: const EdgeInsets.only(bottom: 12),
+                margin: const EdgeInsets.only(bottom: 14),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: NovaBrand.cardBorder),
-                  boxShadow: NovaBrand.softShadow,
+                  border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
+                  boxShadow: NovaBrand.floatingShadow,
                 ),
                 child: Row(
                   children: [
@@ -1266,6 +1332,17 @@ class _ExploreScreenState extends State<ExploreScreen> {
                       decoration: BoxDecoration(
                         color: feature['bg'],
                         borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: (feature['accent'] as Color).withValues(alpha: 0.22),
+                          width: 1,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: (feature['accent'] as Color).withValues(alpha: 0.14),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
                       child: Icon(
                         feature['icon'],

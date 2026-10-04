@@ -38,20 +38,66 @@ class NovaBrand {
     stops: [0.3, 0.65, 1.0],
   );
 
-  // Soft shadows matching website
+  // Floating elevation shadows with defined shadow edges
   static List<BoxShadow> get cardShadow => [
     BoxShadow(
-      color: const Color(0xFF0B3A53).withOpacity(0.06),
-      blurRadius: 18,
-      offset: const Offset(0, 4),
+      color: const Color(0xFF0B3A53).withValues(alpha: 0.10),
+      blurRadius: 20,
+      spreadRadius: 0,
+      offset: const Offset(0, 8),
+    ),
+    BoxShadow(
+      color: const Color(0xFF0B3A53).withValues(alpha: 0.05),
+      blurRadius: 5,
+      spreadRadius: 0,
+      offset: const Offset(0, 2),
     ),
   ];
 
   static List<BoxShadow> get softShadow => [
     BoxShadow(
-      color: Colors.black.withOpacity(0.04),
-      blurRadius: 10,
+      color: const Color(0xFF0F2537).withValues(alpha: 0.08),
+      blurRadius: 16,
+      spreadRadius: 0,
+      offset: const Offset(0, 6),
+    ),
+    BoxShadow(
+      color: const Color(0xFF0F2537).withValues(alpha: 0.04),
+      blurRadius: 4,
+      spreadRadius: 0,
       offset: const Offset(0, 2),
+    ),
+  ];
+
+  /// Multi-tier floating shadow with defined edge rim for cards
+  static List<BoxShadow> get floatingShadow => [
+    BoxShadow(
+      color: const Color(0xFF0B3A53).withValues(alpha: 0.09),
+      blurRadius: 22,
+      spreadRadius: -1,
+      offset: const Offset(0, 10),
+    ),
+    BoxShadow(
+      color: const Color(0xFF0B3A53).withValues(alpha: 0.05),
+      blurRadius: 6,
+      spreadRadius: 0,
+      offset: const Offset(0, 2),
+    ),
+  ];
+
+  /// Deep floating shadow for large hero cards & prominent containers
+  static List<BoxShadow> get heroFloatingShadow => [
+    BoxShadow(
+      color: const Color(0xFF0B2D46).withValues(alpha: 0.26),
+      blurRadius: 32,
+      spreadRadius: -2,
+      offset: const Offset(0, 16),
+    ),
+    BoxShadow(
+      color: const Color(0xFF0B2D46).withValues(alpha: 0.12),
+      blurRadius: 10,
+      spreadRadius: 0,
+      offset: const Offset(0, 4),
     ),
   ];
 }
@@ -61,7 +107,7 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       scaffoldBackgroundColor: NovaBrand.slateLight,
-      colorScheme: ColorScheme.light(
+      colorScheme: const ColorScheme.light(
         primary: NovaBrand.primary,
         secondary: NovaBrand.secondary,
         tertiary: NovaBrand.tertiary,

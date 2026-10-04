@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Nova.Api.Data;
 using Nova.Api.DTOs;
-using Nova.Api.Models;
+using Nova.Api.Entities;
 using Nova.Api.Services;
 
 namespace Nova.Api.Controllers
@@ -31,7 +31,7 @@ namespace Nova.Api.Controllers
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<AttractionReadDto>> GetAttraction(Guid id)
+        public async Task<ActionResult<AttractionReadDto>> GetAttraction(string id)
         {
             var attraction = await _context.Attractions.FindAsync(id);
             if (attraction == null)
@@ -60,21 +60,21 @@ namespace Nova.Api.Controllers
         [HttpPost]
         public async Task<ActionResult<AttractionReadDto>> CreateAttraction(AttractionCreateDto dto)
         {
-            var destinationExists = await _context.Destinations.AnyAsync(d => d.Id == dto.DestinationId);
+            var destinationExists = await _context.Destinations.AnyAsync(d => d.Id == dto.DestinationId.ToString());
             if (!destinationExists)
                 return BadRequest("DestinationId does not exist.");
 
             var attraction = new Attraction
             {
-                DestinationId = dto.DestinationId,
+                DestinationId = dto.DestinationId.ToString(),
                 Name = dto.Name,
                 Category = dto.Category,
-                OpeningHours = dto.OpeningHours,
-                EntryFee = dto.EntryFee,
-                VisitDurationMinutes = dto.VisitDurationMinutes,
+                OpeningTime = dto.OpeningHours,
+                EntryFee = (double)(dto.EntryFee ?? 0m),
+                DurationHours = (dto.VisitDurationMinutes ?? 60) / 60.0,
                 Latitude = dto.Latitude,
                 Longitude = dto.Longitude,
-                IsAccessible = dto.IsAccessible
+                IsActive = dto.IsAccessible
             };
 
             _context.Attractions.Add(attraction);
@@ -84,7 +84,7 @@ namespace Nova.Api.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateAttraction(Guid id, AttractionUpdateDto dto)
+        public async Task<IActionResult> UpdateAttraction(string id, AttractionUpdateDto dto)
         {
             var attraction = await _context.Attractions.FindAsync(id);
             if (attraction == null)
@@ -92,19 +92,19 @@ namespace Nova.Api.Controllers
 
             attraction.Name = dto.Name;
             attraction.Category = dto.Category;
-            attraction.OpeningHours = dto.OpeningHours;
-            attraction.EntryFee = dto.EntryFee;
-            attraction.VisitDurationMinutes = dto.VisitDurationMinutes;
+            attraction.OpeningTime = dto.OpeningHours;
+            attraction.EntryFee = (double)(dto.EntryFee ?? 0m);
+            attraction.DurationHours = (dto.VisitDurationMinutes ?? 60) / 60.0;
             attraction.Latitude = dto.Latitude;
             attraction.Longitude = dto.Longitude;
-            attraction.IsAccessible = dto.IsAccessible;
+            attraction.IsActive = dto.IsAccessible;
 
             await _context.SaveChangesAsync();
             return NoContent();
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteAttraction(Guid id)
+        public async Task<IActionResult> DeleteAttraction(string id)
         {
             var attraction = await _context.Attractions.FindAsync(id);
             if (attraction == null)
@@ -165,10 +165,7 @@ namespace Nova.Api.Controllers
             if (!string.Equals(state.Status, "APPROVED", StringComparison.OrdinalIgnoreCase))
                 return BadRequest($"Thread is in status '{state.Status}'. Only 'APPROVED' plans can be saved.");
 
-            if (!Guid.TryParse(state.DestinationId, out Guid destinationId))
-                return BadRequest("Invalid Destination ID in AI state.");
-
-            var destinationExists = await _context.Destinations.AnyAsync(d => d.Id == destinationId);
+            var destinationExists = await _context.Destinations.AnyAsync(d => d.Id == state.DestinationId);
             if (!destinationExists)
                 return BadRequest("Associated Destination does not exist in database.");
 
@@ -177,15 +174,15 @@ namespace Nova.Api.Controllers
             {
                 var attraction = new Attraction
                 {
-                    DestinationId = destinationId,
+                    DestinationId = state.DestinationId ?? string.Empty,
                     Name = item.Name,
                     Category = item.Category,
-                    OpeningHours = item.OpeningHours,
-                    EntryFee = item.EntryFee,
-                    VisitDurationMinutes = item.VisitDurationMinutes,
+                    OpeningTime = item.OpeningHours,
+                    EntryFee = (double)(item.EntryFee ?? 0m),
+                    DurationHours = (item.VisitDurationMinutes ?? 60) / 60.0,
                     Latitude = item.Latitude,
                     Longitude = item.Longitude,
-                    IsAccessible = item.IsAccessible
+                    IsActive = item.IsAccessible
                 };
 
                 _context.Attractions.Add(attraction);
@@ -198,16 +195,16 @@ namespace Nova.Api.Controllers
 
         private static AttractionReadDto ToReadDto(Attraction a) => new()
         {
-            Id = a.Id,
-            DestinationId = a.DestinationId,
+            Id = Guid.TryParse(a.Id, out var idGuid) ? idGuid : Guid.Empty,
+            DestinationId = Guid.TryParse(a.DestinationId, out var destGuid) ? destGuid : Guid.Empty,
             Name = a.Name,
-            Category = a.Category,
-            OpeningHours = a.OpeningHours,
-            EntryFee = a.EntryFee,
-            VisitDurationMinutes = a.VisitDurationMinutes,
+            Category = a.Category ?? "Cultural",
+            OpeningHours = a.OpeningTime ?? "08:00 AM",
+            EntryFee = (decimal)a.EntryFee,
+            VisitDurationMinutes = (int)(a.DurationHours * 60),
             Latitude = a.Latitude,
             Longitude = a.Longitude,
-            IsAccessible = a.IsAccessible,
+            IsAccessible = a.IsActive,
             CreatedAt = a.CreatedAt
         };
     }

@@ -17,6 +17,7 @@ import {
   MOCK_ADMIN_AI_WORKFLOWS,
   MOCK_ADMIN_AI_APPROVALS,
 } from '../mock/mockAdminData';
+import { AttractionItem } from '../types/adminTypes';
 
 // Local transient state containers for fallback / offline preview
 let usersState = [...MOCK_ADMIN_USERS];
@@ -97,9 +98,100 @@ export const adminService = {
     );
     return destinationsState;
   },
+  updateDestination: (id: string, data: Partial<AdminDestination>): AdminDestination | null => {
+    const idx = destinationsState.findIndex((d) => d.id === id);
+    if (idx === -1) return null;
+    destinationsState[idx] = { ...destinationsState[idx], ...data };
+    return destinationsState[idx];
+  },
+  deleteDestination: (id: string): AdminDestination[] => {
+    destinationsState = destinationsState.filter((d) => d.id !== id);
+    return destinationsState;
+  },
 
   // Attractions
   getAttractions: (): AdminAttraction[] => attractionsState,
+  async fetchAttractions(): Promise<AttractionItem[]> {
+    try {
+      const res = await fetchApi<AttractionItem[]>('/admin/attractions');
+      if (Array.isArray(res.data) && res.data.length > 0) {
+        return res.data;
+      }
+    } catch {}
+    return attractionsState.map((a) => ({
+      id: a.id,
+      name: a.name,
+      destinationId: a.destinationId,
+      destinationName: a.destinationName,
+      category: a.category,
+      openingHours: a.openingHours,
+      entryFee: a.entryFee,
+      duration: a.duration,
+      description: a.description,
+      imageUrl: a.imageUrl,
+      status: a.status,
+      availability: a.availability,
+    }));
+  },
+  async createAttraction(data: Partial<AttractionItem>): Promise<AttractionItem> {
+    try {
+      const res = await fetchApi<AttractionItem>('/admin/attractions', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+      if (res.data) return res.data;
+    } catch {}
+    const newAttr: AttractionItem = {
+      id: `attr-${Date.now()}`,
+      name: data.name || '',
+      destinationId: data.destinationId || 'dest-kandy',
+      destinationName: data.destinationName || 'Kandy',
+      category: data.category || 'Sightseeing',
+      openingHours: data.openingHours || '08:00 AM – 06:00 PM',
+      entryFee: data.entryFee || 'Free',
+      duration: data.duration || '1-2 Hours',
+      description: data.description || '',
+      imageUrl: data.imageUrl || 'https://images.unsplash.com/photo-1588598056972-2d12f6a73c1d?auto=format&fit=crop&w=600&q=80',
+      status: data.status || 'Active',
+      availability: data.availability || 'Open All Year',
+    };
+    attractionsState.unshift({
+      id: newAttr.id,
+      name: newAttr.name,
+      destinationId: newAttr.destinationId,
+      destinationName: newAttr.destinationName,
+      category: newAttr.category || 'Sightseeing',
+      openingHours: newAttr.openingHours || '08:00 AM – 06:00 PM',
+      entryFee: newAttr.entryFee || 'Free',
+      duration: newAttr.duration || '1-2 Hours',
+      description: newAttr.description || '',
+      imageUrl: newAttr.imageUrl || '',
+      status: (newAttr.status === 'Inactive' ? 'Inactive' : 'Active'),
+      availability: 'Open All Year',
+    });
+    return newAttr;
+  },
+  async updateAttraction(id: string, data: Partial<AttractionItem>): Promise<AttractionItem> {
+    try {
+      const res = await fetchApi<AttractionItem>(`/admin/attractions/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      });
+      if (res.data) return res.data;
+    } catch {}
+    const idx = attractionsState.findIndex((a) => a.id === id);
+    if (idx !== -1) {
+      attractionsState[idx] = { ...attractionsState[idx], ...data } as AdminAttraction;
+    }
+    return { id, ...data } as AttractionItem;
+  },
+  async deleteAttraction(id: string): Promise<boolean> {
+    try {
+      await fetchApi<any>(`/admin/attractions/${id}`, { method: 'DELETE' });
+    } catch {}
+    attractionsState = attractionsState.filter((a) => a.id !== id);
+    return true;
+  },
   addAttraction: (attr: Omit<AdminAttraction, 'id'>): AdminAttraction => {
     const newAttr: AdminAttraction = {
       ...attr,

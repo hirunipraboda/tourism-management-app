@@ -10,6 +10,7 @@ public static class TestDbContextFactory
     {
         var options = new DbContextOptionsBuilder<NovaDbContext>()
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.InMemoryEventId.TransactionIgnoredWarning))
             .Options;
 
         var context = new NovaDbContext(options);

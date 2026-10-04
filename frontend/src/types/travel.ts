@@ -22,6 +22,13 @@ export interface Destination {
     temp: number;
     condition: 'Sunny' | 'Cloudy' | 'Rainy' | 'Clear';
   };
+  bestTimeToVisit?: string;
+  recommendedStayDays?: string | number;
+  avgBudgetPerDay?: string;
+  openingHours?: string;
+  entryFeeLocal?: string;
+  entryFeeForeign?: string;
+  topAttractions?: string[];
 }
 
 export interface Attraction {

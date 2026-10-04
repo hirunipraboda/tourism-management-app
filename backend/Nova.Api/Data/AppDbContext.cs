@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using Nova.Api.Models;
+using Nova.Api.Entities;
 
 namespace Nova.Api.Data
 {

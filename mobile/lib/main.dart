@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'screens/home_screen.dart';
+import 'screens/destinations_screen.dart';
+import 'screens/destinations_attractions_screen.dart';
 import 'screens/ai_planner_screen.dart';
 import 'screens/bookings_screen.dart';
-import 'screens/destinations_attractions_screen.dart';
+import 'theme/app_theme.dart';
 
 void main() {
   runApp(const NovaTouristApp());
@@ -17,16 +18,7 @@ class NovaTouristApp extends StatelessWidget {
     return MaterialApp(
       title: 'NOVA Tourist App',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF0D9488), // Teal primary
-          primary: const Color(0xFF0D9488),
-          secondary: const Color(0xFFF59E0B),
-          surface: Colors.white,
-        ),
-        textTheme: GoogleFonts.interTextTheme(Theme.of(context).textTheme),
-      ),
+      theme: AppTheme.lightTheme,
       home: const MainNavigationScreen(),
     );
   }
@@ -44,6 +36,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   final List<Widget> _screens = const [
     HomeScreen(),
+    DestinationsScreen(),
     DestinationsAttractionsScreen(),
     AiPlannerScreen(),
     BookingsScreen(),
@@ -58,6 +51,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
+        backgroundColor: Colors.white,
+        indicatorColor: NovaBrand.tertiary.withValues(alpha: 0.12),
         onDestinationSelected: (index) {
           setState(() {
             _currentIndex = index;
@@ -68,6 +63,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             icon: Icon(Icons.explore_outlined),
             selectedIcon: Icon(Icons.explore),
             label: 'Explore',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.map_outlined),
+            selectedIcon: Icon(Icons.map),
+            label: 'Destinations',
           ),
           NavigationDestination(
             icon: Icon(Icons.place_outlined),

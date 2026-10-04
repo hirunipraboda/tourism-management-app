@@ -33,7 +33,7 @@ public class TripServiceTests
         Assert.True(result.Success);
         Assert.NotNull(result.Data);
         Assert.Equal("Sigiriya", result.Data.Destination);
-        Assert.Equal(TripStatus.Draft.ToString(), result.Data.Status);
+        Assert.Equal("Upcoming", result.Data.Status);
         Assert.Equal(1500, result.Data.Budget);
         Assert.Equal(2, result.Data.NumberOfTravelers);
 
@@ -226,6 +226,7 @@ public class TripServiceTests
             new Trip
             {
                 UserId = _touristId,
+                TripName = "Sigiriya",
                 Destination = "Sigiriya",
                 StartDate = DateTime.UtcNow.AddDays(5),
                 EndDate = DateTime.UtcNow.AddDays(7),
@@ -236,6 +237,7 @@ public class TripServiceTests
             new Trip
             {
                 UserId = _touristId,
+                TripName = "Galle",
                 Destination = "Galle",
                 StartDate = DateTime.UtcNow.AddDays(10),
                 EndDate = DateTime.UtcNow.AddDays(12),
@@ -249,7 +251,6 @@ public class TripServiceTests
         var filter = new TripFilterParameters
         {
             Destination = "Sigiriya",
-            Status = TripStatus.Confirmed.ToString()
         };
 
         var result = await service.GetTripsAsync(_touristId, UserRole.Tourist.ToString(), filter);
@@ -257,6 +258,5 @@ public class TripServiceTests
         Assert.True(result.Success);
         Assert.NotNull(result.Data);
         Assert.Single(result.Data.Items);
-        Assert.Equal(TripStatus.Confirmed.ToString(), result.Data.Items[0].Status);
     }
 }

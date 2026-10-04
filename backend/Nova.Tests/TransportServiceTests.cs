@@ -482,10 +482,11 @@ public class TransportServiceTests
         Assert.Equal("Intercity Express", response.Data.TransportOption.TrainName);
 
         // Verify in database
-        var updatedItem = await db.ItineraryItems.Include(i => i.SelectedTransport).FirstOrDefaultAsync(i => i.Id == itemId);
-        Assert.NotNull(updatedItem?.SelectedTransport);
-        Assert.Equal("TRAIN", updatedItem.SelectedTransport.TransportType);
-        Assert.Equal(155, updatedItem.TravelTimeMinutes);
+        var updatedItem = await db.ItineraryItems.FirstOrDefaultAsync(i => i.Id == itemId);
+        var selectedTransport = await db.TransportOptions.FirstOrDefaultAsync(t => t.IsSelected);
+        Assert.NotNull(selectedTransport);
+        Assert.Equal("TRAIN", selectedTransport.TransportType);
+        Assert.Equal(155, updatedItem?.TravelTimeMinutes);
     }
 
     // 13. Removing transport
@@ -516,8 +517,9 @@ public class TransportServiceTests
         Assert.True(removeResult.Success);
 
         // Verify removed in DB
-        var updatedItem = await db.ItineraryItems.Include(i => i.SelectedTransport).FirstOrDefaultAsync(i => i.Id == itemId);
-        Assert.Null(updatedItem?.SelectedTransport);
+        var updatedItem = await db.ItineraryItems.FirstOrDefaultAsync(i => i.Id == itemId);
+        var selectedTransport = await db.TransportOptions.FirstOrDefaultAsync(t => t.IsSelected);
+        Assert.Null(selectedTransport);
         Assert.Equal(0, updatedItem?.TravelTimeMinutes);
     }
 

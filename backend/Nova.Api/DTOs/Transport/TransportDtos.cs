@@ -27,7 +27,7 @@ public class PublicTransportSearchRequest
 public class TransportOptionDto
 {
     public string Id { get; set; } = string.Empty;
-    public string TransportType { get; set; } = "BUS"; // BUS, TRAIN, PICKME
+    public string TransportType { get; set; } = "BUS"; // BUS, TRAIN
     public string Origin { get; set; } = string.Empty;
     public string Destination { get; set; } = string.Empty;
     public string TravelDate { get; set; } = string.Empty;

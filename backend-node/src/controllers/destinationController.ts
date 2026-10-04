@@ -144,14 +144,52 @@ export const createDestination = async (req: Request, res: Response) => {
   try {
     const { name, description, location, province, district, imageUrl, category, entryFee, openingTime, closingTime, bestTimeToVisit } = req.body;
 
+    if (!name || typeof name !== 'string' || !name.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Destination name is required and cannot be empty',
+      });
+    }
+
+    if (!description || typeof description !== 'string' || description.trim().length < 15) {
+      return res.status(400).json({
+        success: false,
+        message: 'Description is required and must be at least 15 characters long',
+      });
+    }
+
+    if (!location || typeof location !== 'string' || !location.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Location is required',
+      });
+    }
+
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
+    // Duplicate check
+    const existing = await prisma.destination.findFirst({
+      where: {
+        OR: [
+          { name: { equals: name.trim(), mode: 'insensitive' } },
+          { slug },
+        ],
+      },
+    });
+
+    if (existing) {
+      return res.status(409).json({
+        success: false,
+        message: `A destination with name "${name.trim()}" already exists`,
+      });
+    }
 
     const destination = await prisma.destination.create({
       data: {
-        name,
+        name: name.trim(),
         slug,
-        description,
-        location,
+        description: description.trim(),
+        location: location.trim(),
         province: province || Province.CENTRAL,
         district,
         imageUrl: imageUrl || 'https://images.unsplash.com/photo-1586861635167-e5223aadc9fe?auto=format&fit=crop&w=800&q=80',

@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import '../models/travel_models.dart';
 import '../models/ai_trip_planner_models.dart';
 import '../models/user_trip_models.dart';
+import '../models/review_recommendation_models.dart';
 
 class ApiService {
   static String? customBaseUrl;
@@ -491,6 +492,9 @@ class ApiService {
   // 6. REVIEWS & RECOMMENDATIONS
   // =========================================================================
 
+  static final List<ReviewDetailItem> _inMemoryReviews = List<ReviewDetailItem>.from(kInitialReviews);
+  static final List<RecommendationItem> _inMemoryRecommendations = List<RecommendationItem>.from(kInitialRecommendations);
+
   static Future<List<ReviewItem>> getReviews({String? destinationId, String? tourId}) async {
     try {
       String query = '$baseUrl/reviews';
@@ -538,6 +542,202 @@ class ApiService {
     } catch (e) {
       return {'success': false, 'message': '$e'};
     }
+  }
+
+  static Future<List<ReviewDetailItem>> getDetailedReviews({
+    String? searchQuery,
+    String? targetType,
+    dynamic ratingFilter,
+    String? destinationFilter,
+    String sortBy = 'newest',
+  }) async {
+    try {
+      final res = await http.get(Uri.parse('$baseUrl/reviews'), headers: _headers(needsAuth: false));
+      if (res.statusCode == 200) {
+        final body = jsonDecode(res.body);
+        final list = (body['data'] as List<dynamic>? ?? []);
+        for (final item in list) {
+          final id = item['id']?.toString() ?? '';
+          if (id.isNotEmpty && !_inMemoryReviews.any((r) => r.id == id)) {
+            String title = 'Trip Experience';
+            String comment = item['comment'] ?? '';
+            if (comment.startsWith('[') && comment.contains(']')) {
+              final end = comment.indexOf(']');
+              title = comment.substring(1, end);
+              comment = comment.substring(end + 1).trim();
+            } else if (comment.isNotEmpty) {
+              title = comment.length > 40 ? '${comment.substring(0, 40)}...' : comment;
+            }
+            final rRating = (item['rating'] as num?)?.toDouble() ?? 5.0;
+            _inMemoryReviews.add(ReviewDetailItem(
+              id: id,
+              touristName: item['user']?['name'] ?? 'Verified Traveler',
+              touristAvatar: item['user']?['profileImage'] ??
+                  'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200',
+              touristCountry: 'Sri Lanka',
+              travelerType: 'Solo',
+              targetType: item['destinationId'] != null
+                  ? 'destination'
+                  : (item['tourId'] != null ? 'tour' : 'attraction'),
+              targetId: item['destinationId'] ?? item['tourId'] ?? 'dest-1',
+              targetName: item['destination']?['name'] ?? item['tour']?['title'] ?? 'Sri Lanka Destination',
+              rating: rRating,
+              title: title,
+              comment: comment,
+              date: item['createdAt'] != null ? item['createdAt'].toString().split('T')[0] : 'Recently',
+              helpfulCount: 2,
+              isHelpfulByUser: false,
+              status: 'Published',
+              photos: [],
+              tags: ['Verified Travel', 'Community Feedback'],
+              highlightRating: HighlightRatings(
+                experience: rRating,
+                value: (rRating * 0.95).clamp(1.0, 5.0),
+                safety: 5.0,
+                hospitality: 5.0,
+              ),
+              isCurrentTourist: item['userId'] == (currentUser?['id'] ?? currentUser?['userId']),
+            ));
+          }
+        }
+      }
+    } catch (_) {}
+
+    var filtered = List<ReviewDetailItem>.from(_inMemoryReviews);
+
+    if (searchQuery != null && searchQuery.trim().isNotEmpty) {
+      final q = searchQuery.toLowerCase().trim();
+      filtered = filtered.where((r) {
+        final matchesTitle = r.title.toLowerCase().contains(q);
+        final matchesComment = r.comment.toLowerCase().contains(q);
+        final matchesTarget = r.targetName.toLowerCase().contains(q);
+        final matchesTourist = r.touristName.toLowerCase().contains(q);
+        final matchesTags = r.tags.any((t) => t.toLowerCase().contains(q));
+        return matchesTitle || matchesComment || matchesTarget || matchesTourist || matchesTags;
+      }).toList();
+    }
+
+    if (targetType != null && targetType != 'All') {
+      filtered = filtered.where((r) => r.targetType.toLowerCase() == targetType.toLowerCase()).toList();
+    }
+
+    if (ratingFilter != null && ratingFilter != 'All') {
+      if (ratingFilter == 'Low') {
+        filtered = filtered.where((r) => r.rating <= 2.0).toList();
+      } else if (ratingFilter is num) {
+        filtered = filtered.where((r) => r.rating.round() == ratingFilter.round()).toList();
+      }
+    }
+
+    if (destinationFilter != null && destinationFilter != 'All') {
+      filtered = filtered.where((r) => r.targetName.toLowerCase().contains(destinationFilter.toLowerCase())).toList();
+    }
+
+    if (sortBy == 'highest') {
+      filtered.sort((a, b) => b.rating.compareTo(a.rating));
+    } else if (sortBy == 'helpful') {
+      filtered.sort((a, b) => b.helpfulCount.compareTo(a.helpfulCount));
+    } else {
+      filtered.sort((a, b) => b.date.compareTo(a.date));
+    }
+
+    return filtered;
+  }
+
+  static Future<bool> toggleReviewHelpful(String reviewId) async {
+    final idx = _inMemoryReviews.indexWhere((r) => r.id == reviewId);
+    if (idx != -1) {
+      final item = _inMemoryReviews[idx];
+      final newHelpful = !item.isHelpfulByUser;
+      _inMemoryReviews[idx] = item.copyWith(
+        isHelpfulByUser: newHelpful,
+        helpfulCount: newHelpful ? item.helpfulCount + 1 : (item.helpfulCount - 1).clamp(0, 9999),
+      );
+      return newHelpful;
+    }
+    return false;
+  }
+
+  static Future<bool> deleteDetailedReview(String reviewId) async {
+    _inMemoryReviews.removeWhere((r) => r.id == reviewId);
+    return true;
+  }
+
+  static Future<ReviewDetailItem> submitDetailedReview(ReviewDetailItem review) async {
+    final idx = _inMemoryReviews.indexWhere((r) => r.id == review.id);
+    if (idx != -1) {
+      _inMemoryReviews[idx] = review;
+    } else {
+      _inMemoryReviews.insert(0, review);
+    }
+    try {
+      await http.post(
+        Uri.parse('$baseUrl/reviews'),
+        headers: _headers(),
+        body: jsonEncode({
+          'comment': '[${review.title}] ${review.comment}',
+          'rating': review.rating.round(),
+          'destinationId': review.targetType == 'destination' ? review.targetId : null,
+          'tourId': review.targetType == 'tour' ? review.targetId : null,
+        }),
+      );
+    } catch (_) {}
+    return review;
+  }
+
+  static Future<List<RecommendationItem>> getRecommendations(RecommendationFilterState filters) async {
+    final updated = recalculateSuitability(filters);
+    var filtered = updated.where((r) {
+      final matchesType = filters.activityType == 'All' ||
+          r.targetType.toLowerCase() == filters.activityType.toLowerCase();
+      final matchesRating = r.rating >= filters.minRating;
+      final matchesDistance = r.distanceKm == null || r.distanceKm! <= filters.maxDistance;
+      return matchesType && matchesRating && matchesDistance;
+    }).toList();
+
+    return filtered;
+  }
+
+  static List<RecommendationItem> recalculateSuitability(RecommendationFilterState filters) {
+    return _inMemoryRecommendations.map((item) {
+      int interestBoost = 0;
+      if (filters.interests.contains('All') ||
+          filters.interests.any((i) =>
+              i.toLowerCase() == item.category.toLowerCase() ||
+              item.explanation.toLowerCase().contains(i.toLowerCase()))) {
+        interestBoost = 5;
+      } else {
+        interestBoost = -8;
+      }
+
+      int budgetBoost = 0;
+      final isLuxury = filters.maxBudget > 100;
+      final isBudget = filters.maxBudget < 50;
+      if (isLuxury && item.price.contains('75')) budgetBoost = 4;
+      if (isBudget &&
+          (item.price.contains('Free') ||
+              item.price.contains('15') ||
+              item.price.contains('18'))) {
+        budgetBoost = 6;
+      }
+
+      final newInterestMatch = (item.interestMatch + interestBoost).clamp(70, 99);
+      final newBudgetMatch = (item.budgetMatch + budgetBoost).clamp(65, 99);
+      final newSuitability = ((newInterestMatch * 0.35) +
+              (item.ratingMatch * 0.25) +
+              (newBudgetMatch * 0.15) +
+              (item.locationMatch * 0.15) +
+              (item.popularityScore * 0.10))
+          .round()
+          .clamp(70, 99);
+
+      return item.copyWith(
+        suitabilityScore: newSuitability,
+        interestMatch: newInterestMatch,
+        budgetMatch: newBudgetMatch,
+      );
+    }).toList()
+      ..sort((a, b) => b.suitabilityScore.compareTo(a.suitabilityScore));
   }
 
   // =========================================================================

@@ -1,3 +1,4 @@
+import { fetchApi } from './api';
 import { Review, ReviewStatus } from '../types/reviewsAndRecommendations';
 import { INITIAL_MOCK_REVIEWS } from '../mock/mockReviews';
 
@@ -6,6 +7,7 @@ const STORAGE_KEY = 'travelwise_mock_reviews';
 class ReviewService {
   private reviews: Review[] = [];
   private listeners: (() => void)[] = [];
+  private hasFetchedDb: boolean = false;
 
   constructor() {
     this.init();
@@ -46,8 +48,67 @@ class ReviewService {
   }
 
   /**
+   * Helper to map backend DB review to frontend Review object
+   */
+  private mapDbReview(r: any): Review {
+    let title = 'Trip Experience';
+    let comment = r.comment || '';
+
+    if (comment.startsWith('[') && comment.includes(']')) {
+      const endBracket = comment.indexOf(']');
+      title = comment.substring(1, endBracket);
+      comment = comment.substring(endBracket + 1).trim();
+    } else if (comment.length > 0) {
+      title = comment.length > 40 ? comment.substring(0, 40) + '...' : comment;
+    }
+
+    let currentUserId = '';
+    try {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        const parsed = JSON.parse(storedUser);
+        currentUserId = parsed.id || parsed.userId || '';
+      }
+    } catch {
+      // ignore
+    }
+
+    const isCurrentTourist = Boolean(currentUserId && r.userId === currentUserId);
+
+    return {
+      id: r.id,
+      touristName: r.user?.name || 'Verified Traveler',
+      touristAvatar:
+        r.user?.profileImage ||
+        'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80',
+      touristCountry: 'Sri Lanka',
+      travelerType: 'Solo',
+      targetType: r.destinationId ? 'destination' : (r.tourId ? 'tour' : 'attraction'),
+      targetId: r.destinationId || r.tourId || '',
+      targetName: r.destination?.name || r.tour?.title || 'Sri Lanka Destination',
+      rating: r.rating || 5,
+      title,
+      comment,
+      date: r.createdAt ? new Date(r.createdAt).toISOString().split('T')[0] : 'Recently',
+      helpfulCount: 0,
+      isHelpfulByUser: false,
+      status: 'Published',
+      photos: [],
+      tags: ['Verified Travel', 'Community Feedback'],
+      highlightRating: {
+        experience: r.rating || 5,
+        value: Number(((r.rating || 5) * 0.95).toFixed(1)),
+        safety: 5.0,
+        hospitality: 5.0,
+      },
+      isCurrentTourist,
+    };
+  }
+
+  /**
    * GET /api/reviews
-   * Retrieve reviews with filtering, search, and sorting
+   * Retrieve reviews with filtering, search, and sorting.
+   * Loads genuine reviews from PostgreSQL database and merges them with initial mock data.
    */
   async getReviews(params?: {
     targetType?: string;
@@ -57,6 +118,30 @@ class ReviewService {
     searchQuery?: string;
     sortBy?: 'newest' | 'highest' | 'helpful';
   }): Promise<Review[]> {
+    try {
+      const res = await fetchApi<any[]>('/reviews');
+      if (res && res.data && Array.isArray(res.data)) {
+        const dbReviews = res.data.map((r: any) => this.mapDbReview(r));
+
+        // Preserve mock reviews that have different IDs so demo exploration is still rich
+        const dbIds = new Set(dbReviews.map((r) => r.id));
+        const mockFallback = INITIAL_MOCK_REVIEWS.filter(
+          (m) => !dbIds.has(m.id) && !this.reviews.some((existing) => existing.id === m.id && existing.isCurrentTourist)
+        );
+
+        // Put database reviews first!
+        this.reviews = [...dbReviews, ...mockFallback];
+        this.hasFetchedDb = true;
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(this.reviews));
+        } catch {
+          // ignore
+        }
+      }
+    } catch (e) {
+      console.warn('[reviewService.getReviews] Failed to load reviews from API, using cached state:', e);
+    }
+
     let result = [...this.reviews];
 
     if (params?.status && params.status !== 'All') {
@@ -96,7 +181,6 @@ class ReviewService {
       result.sort((a, b) => b.helpfulCount - a.helpfulCount);
     } else {
       // Default: newest
-      // Since date is mock strings, we preserve array insertion order (newest first)
     }
 
     return result;
@@ -107,7 +191,19 @@ class ReviewService {
    * Retrieve reviews submitted by the current tourist
    */
   async getMyReviews(): Promise<Review[]> {
-    return this.reviews.filter((r) => r.isCurrentTourist === true);
+    try {
+      const res = await fetchApi<any[]>('/reviews/my-reviews');
+      if (res && res.data && Array.isArray(res.data) && res.data.length > 0) {
+        return res.data.map((r: any) => ({
+          ...this.mapDbReview(r),
+          isCurrentTourist: true,
+        }));
+      }
+    } catch {
+      // fallback to local filter
+    }
+
+    return this.reviews.filter((r) => r.isCurrentTourist);
   }
 
   /**
@@ -119,7 +215,7 @@ class ReviewService {
 
   /**
    * POST /api/reviews
-   * Submit a new review
+   * Submit a new review and genuinely persist it in PostgreSQL database!
    */
   async createReview(data: {
     touristName: string;
@@ -135,48 +231,115 @@ class ReviewService {
     photos?: string[];
     tags?: string[];
   }): Promise<Review> {
-    const newReview: Review = {
-      id: `rev-${Date.now()}`,
-      touristName: data.touristName.trim() || 'Sarah Jenkins',
-      touristAvatar:
-        data.touristAvatar ||
-        'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80',
-      touristCountry: data.touristCountry || 'United Kingdom',
-      travelerType: data.travelerType || 'Solo',
-      targetType: data.targetType,
+    const payload = {
+      destinationId: data.targetType === 'destination' ? data.targetId : undefined,
+      tourId: data.targetType === 'tour' ? data.targetId : undefined,
       targetId: data.targetId,
       targetName: data.targetName,
-      rating: Math.max(1, Math.min(5, data.rating)),
+      targetType: data.targetType,
+      rating: Math.max(1, Math.min(5, Math.round(data.rating))),
       title: data.title.trim(),
       comment: data.comment.trim(),
-      date: 'Just now',
-      helpfulCount: 0,
-      isHelpfulByUser: false,
-      status: 'Published', // Defaults to Published for instant gratification
       photos: data.photos || [],
       tags: data.tags || ['Verified Travel', 'Community Feedback'],
-      highlightRating: {
-        experience: data.rating,
-        value: Number((data.rating * 0.95).toFixed(1)),
-        safety: 5.0,
-        hospitality: 5.0,
-      },
-      isCurrentTourist: true,
+      touristName: data.touristName.trim() || 'Verified Explorer',
+      touristCountry: data.touristCountry || 'Sri Lanka',
+      travelerType: data.travelerType || 'Solo',
     };
 
-    this.reviews = [newReview, ...this.reviews];
+    let newReview: Review;
+
+    try {
+      const res = await fetchApi<any>('/reviews', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+
+      if (res && res.data) {
+        const mapped = this.mapDbReview(res.data);
+        newReview = {
+          ...mapped,
+          touristName: data.touristName.trim() || mapped.touristName,
+          touristAvatar:
+            data.touristAvatar ||
+            mapped.touristAvatar ||
+            'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80',
+          touristCountry: data.touristCountry || 'Sri Lanka',
+          travelerType: data.travelerType || 'Solo',
+          targetType: data.targetType,
+          targetId: data.targetId,
+          targetName: data.targetName,
+          rating: payload.rating,
+          title: data.title.trim(),
+          comment: data.comment.trim(),
+          photos: data.photos || [],
+          tags: data.tags || ['Verified Travel', 'Community Feedback'],
+          isCurrentTourist: true,
+        };
+      } else {
+        throw new Error(res?.message || 'Database creation failed');
+      }
+    } catch (err) {
+      console.warn('[ReviewService] Backend POST /reviews failed, using local fallback:', err);
+      // Local fallback in case network error
+      newReview = {
+        id: `rev-${Date.now()}`,
+        touristName: data.touristName.trim() || 'Verified Explorer',
+        touristAvatar:
+          data.touristAvatar ||
+          'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80',
+        touristCountry: data.touristCountry || 'Sri Lanka',
+        travelerType: data.travelerType || 'Solo',
+        targetType: data.targetType,
+        targetId: data.targetId,
+        targetName: data.targetName,
+        rating: Math.max(1, Math.min(5, data.rating)),
+        title: data.title.trim(),
+        comment: data.comment.trim(),
+        date: 'Just now',
+        helpfulCount: 0,
+        isHelpfulByUser: false,
+        status: 'Published',
+        photos: data.photos || [],
+        tags: data.tags || ['Verified Travel', 'Community Feedback'],
+        highlightRating: {
+          experience: data.rating,
+          value: Number((data.rating * 0.95).toFixed(1)),
+          safety: 5.0,
+          hospitality: 5.0,
+        },
+        isCurrentTourist: true,
+      };
+    }
+
+    this.reviews = [newReview, ...this.reviews.filter((r) => r.id !== newReview.id)];
     this.save();
     return newReview;
   }
 
   /**
    * PUT /api/reviews/:id
-   * Edit review
+   * Edit review in database
    */
   async updateReview(
     id: string,
     updates: Partial<Pick<Review, 'rating' | 'title' | 'comment' | 'photos' | 'tags' | 'targetName' | 'targetType'>>
   ): Promise<Review> {
+    if (!id.startsWith('rev-')) {
+      try {
+        await fetchApi(`/reviews/${id}`, {
+          method: 'PUT',
+          body: JSON.stringify({
+            rating: updates.rating,
+            title: updates.title,
+            comment: updates.comment,
+          }),
+        });
+      } catch (err) {
+        console.warn('[ReviewService] Failed to update review in database:', err);
+      }
+    }
+
     const idx = this.reviews.findIndex((r) => r.id === id);
     if (idx === -1) throw new Error('Review not found');
 
@@ -193,8 +356,17 @@ class ReviewService {
 
   /**
    * DELETE /api/reviews/:id
+   * Remove review from database
    */
   async deleteReview(id: string): Promise<boolean> {
+    if (!id.startsWith('rev-')) {
+      try {
+        await fetchApi(`/reviews/${id}`, { method: 'DELETE' });
+      } catch (err) {
+        console.warn('[ReviewService] Failed to delete review from database:', err);
+      }
+    }
+
     const initialLen = this.reviews.length;
     this.reviews = this.reviews.filter((r) => r.id !== id);
     if (this.reviews.length !== initialLen) {

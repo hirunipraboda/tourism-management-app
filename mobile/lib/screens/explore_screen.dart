@@ -395,18 +395,11 @@ class _ExploreScreenState extends State<ExploreScreen> {
 
                 // Slide count
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.55),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.25), width: 0.8),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.25),
-                        blurRadius: 6,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
+                    color: Colors.black.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.white24, width: 0.8),
                   ),
                   child: Text(
                     '${_currentHeroIndex + 1} / ${_heroItems.length}',
@@ -449,11 +442,9 @@ class _ExploreScreenState extends State<ExploreScreen> {
 
   Widget _buildHeroSlide(Map<String, dynamic> item) {
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: Colors.black.withValues(alpha: 0.08), width: 1),
-        boxShadow: NovaBrand.heroFloatingShadow,
       ),
       clipBehavior: Clip.antiAlias,
       child: Stack(
@@ -490,17 +481,10 @@ class _ExploreScreenState extends State<ExploreScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5.5),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
                     color: NovaBrand.tertiary,
                     borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
                   ),
                   child: Text(
                     item['category'],
@@ -513,18 +497,11 @@ class _ExploreScreenState extends State<ExploreScreen> {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4.5),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.black.withValues(alpha: 0.65),
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 0.8),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
+                    border: Border.all(color: Colors.white24, width: 0.8),
                   ),
                   child: Row(
                     children: [
@@ -613,8 +590,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: NovaBrand.tertiary,
                           foregroundColor: Colors.white,
-                          elevation: 4,
-                          shadowColor: NovaBrand.tertiary.withValues(alpha: 0.5),
+                          elevation: 0,
                           padding: const EdgeInsets.symmetric(vertical: 11),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -639,10 +615,9 @@ class _ExploreScreenState extends State<ExploreScreen> {
                         onPressed: () => _navigateToCatalog(),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.white,
-                          side: const BorderSide(color: Colors.white, width: 1.2),
-                          backgroundColor: Colors.white.withValues(alpha: 0.16),
-                          elevation: 2,
-                          shadowColor: Colors.black.withValues(alpha: 0.25),
+                          side: const BorderSide(color: Colors.white70, width: 1.2),
+                          backgroundColor: Colors.white.withValues(alpha: 0.12),
+                          elevation: 0,
                           padding: const EdgeInsets.symmetric(vertical: 11),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),

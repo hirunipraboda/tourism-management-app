@@ -251,15 +251,16 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
             {!isCollapsed && <span className="truncate">Trip & Itinerary Management</span>}
           </NavLink>
 
-          {/* 5. Chatbot Payments */}
+          {/* 5. Package Bookings & Payments */}
           <NavLink
             to="/admin/chatbot-payments"
-            title={isCollapsed ? 'Chatbot Payments' : undefined}
+            title={isCollapsed ? 'Package Bookings & Payments' : undefined}
             className={({ isActive }) => getItemClass(isActive)}
           >
             <CreditCard className="w-5 h-5 shrink-0 transition-transform group-hover:scale-110" />
-            {!isCollapsed && <span className="truncate">Chatbot Payments</span>}
+            {!isCollapsed && <span className="truncate">Package Bookings & Payments</span>}
           </NavLink>
+
 
 
           {/* 7. Transportation (Collapsible) */}
@@ -322,7 +323,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
             <button
               onClick={() => {
                 if (isCollapsed) {
-                  navigate('/admin/ai-guide/purchases');
+                  navigate('/admin/ai-guide/usage');
                 } else {
                   setAiGuideOpen(!aiGuideOpen);
                 }
@@ -349,16 +350,6 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
             {(!isCollapsed && aiGuideOpen) && (
               <div className="ml-5 pl-3 border-l-2 border-slate-200/80 mt-1 space-y-1 py-1 animate-in fade-in duration-200">
                 <NavLink
-                  to="/admin/ai-guide/purchases"
-                  className={({ isActive }) =>
-                    `flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${isActive ? 'bg-[#16A6A1]/10 text-[#16A6A1] font-black' : 'text-slate-500 hover:text-[#0B3A53] hover:bg-slate-50'
-                    }`
-                  }
-                >
-                  <CreditCard className="w-3.5 h-3.5" />
-                  <span>Purchase Details</span>
-                </NavLink>
-                <NavLink
                   to="/admin/ai-guide/usage"
                   className={({ isActive }) =>
                     `flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${isActive ? 'bg-[#16A6A1]/10 text-[#16A6A1] font-black' : 'text-slate-500 hover:text-[#0B3A53] hover:bg-slate-50'
@@ -368,6 +359,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                   <BarChart3 className="w-3.5 h-3.5" />
                   <span>Usage Statistics</span>
                 </NavLink>
+
                 <NavLink
                   to="/admin/ai-guide/analytics"
                   className={({ isActive }) =>

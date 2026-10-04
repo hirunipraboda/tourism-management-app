@@ -5,6 +5,7 @@ export const registerSchema = z.object({
     name: z.string().min(2, 'Name must be at least 2 characters'),
     email: z.string().email('Invalid email address'),
     password: z.string().min(6, 'Password must be at least 6 characters'),
+    confirmPassword: z.string().optional(),
     role: z.enum(['USER', 'ADMIN']).optional(),
     phone: z.string().optional(),
   }),
@@ -100,10 +101,22 @@ export const createBookingSchema = z.object({
 });
 
 export const createReviewSchema = z.object({
-  body: z.object({
-    destinationId: z.string().optional(),
-    tourId: z.string().optional(),
-    rating: z.number().min(1).max(5, 'Rating must be between 1 and 5'),
-    comment: z.string().min(3, 'Comment must be at least 3 characters'),
-  }),
+  body: z
+    .object({
+      destinationId: z.string().optional(),
+      tourId: z.string().optional(),
+      targetId: z.string().optional(),
+      targetName: z.string().optional(),
+      targetType: z.string().optional(),
+      title: z.string().optional(),
+      rating: z.coerce.number().min(1).max(5, 'Rating must be between 1 and 5'),
+      comment: z.string().min(1, 'Comment is required'),
+      photos: z.array(z.string()).optional(),
+      tags: z.array(z.string()).optional(),
+      touristName: z.string().optional(),
+      touristCountry: z.string().optional(),
+      travelerType: z.string().optional(),
+    })
+    .passthrough(),
 });
+

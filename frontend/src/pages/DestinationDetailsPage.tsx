@@ -32,16 +32,17 @@ import {
   ShieldCheck,
   ThumbsUp,
   Sliders,
+  Tag,
+  Droplets,
+  Wind,
 } from 'lucide-react';
 import { LandingNavbar } from '../components/navigation/LandingNavbar';
 import {
   getDestinationDetails,
   AttractionItem,
-  ActivityItem,
-  MapPinLocation,
   UserReview,
-  ItineraryDay,
 } from '../mock/destinationDetails';
+import { DestinationWeatherService } from '../services/destinationWeatherService';
 
 export const DestinationDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -49,17 +50,18 @@ export const DestinationDetailsPage: React.FC = () => {
   const destinationId = id || 'ella';
   const destination = getDestinationDetails(destinationId);
 
+  // Live real-time weather telemetry for this destination
+  const liveWeather = DestinationWeatherService.getLiveWeather(
+    destination.name,
+    destination.province || destination.region
+  );
+
   // Component States
   const [isFavorite, setIsFavorite] = useState(false);
   const [showStickyBar, setShowStickyBar] = useState(false);
   const [selectedAttractionModal, setSelectedAttractionModal] = useState<AttractionItem | null>(null);
   const [showAddTripModal, setShowAddTripModal] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [activeMapCategory, setActiveMapCategory] = useState<string>('all');
-  const [selectedMapPin, setSelectedMapPin] = useState<MapPinLocation | null>(
-    destination.mapLocations[0] || null
-  );
-  const [expandedDay, setExpandedDay] = useState<number | null>(1);
 
   const heroRef = useRef<HTMLDivElement>(null);
 
@@ -94,11 +96,6 @@ export const DestinationDetailsPage: React.FC = () => {
     setShowAddTripModal(true);
   };
 
-  const filteredMapLocations =
-    activeMapCategory === 'all'
-      ? destination.mapLocations
-      : destination.mapLocations.filter((loc) => loc.type === activeMapCategory);
-
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-900 font-sans selection:bg-[#16A6A1]/20 selection:text-[#0B3A53] pb-24">
       {/* Toast Notification */}
@@ -119,8 +116,9 @@ export const DestinationDetailsPage: React.FC = () => {
         <div className="flex items-center justify-between gap-4">
           {/* Back Button on Left */}
           <button
+            id="destination-back-btn"
             onClick={() => navigate('/destinations')}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-slate-200/80 hover:border-[#16A6A1] text-[#0B3A53] text-xs font-extrabold shadow-2xs hover:shadow-md hover:-translate-x-1 transition-all duration-200 cursor-pointer group"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white border border-slate-200/90 hover:border-[#16A6A1] hover:bg-teal-50/40 text-[#0B3A53] text-xs font-black shadow-xs hover:shadow-md hover:-translate-x-1 transition-all duration-200 cursor-pointer group"
           >
             <ArrowLeft className="w-4 h-4 text-[#16A6A1] group-hover:-translate-x-0.5 transition-transform" />
             <span>Back to Destinations</span>
@@ -152,8 +150,8 @@ export const DestinationDetailsPage: React.FC = () => {
           <div className="absolute inset-0 bg-gradient-to-t from-slate-950/95 via-slate-950/40 to-slate-950/10 p-6 sm:p-10 lg:p-12 flex flex-col justify-between text-white z-10" />
 
           {/* Top Badges & Favorite Button */}
-          <div className="relative z-20 flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
+          <div className="relative z-20 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-2.5">
               <span className="px-3.5 py-1.5 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-white text-xs font-extrabold tracking-wider shadow-xs">
                 {destination.category}
               </span>
@@ -161,6 +159,21 @@ export const DestinationDetailsPage: React.FC = () => {
                 <Sparkles className="w-3.5 h-3.5 text-[#16A6A1]" />
                 <span>NOVA Verified</span>
               </span>
+              {/* Real-Time Live Weather Badge */}
+              <div className="bg-slate-950/80 backdrop-blur-md text-white text-xs font-bold px-3 py-1.5 rounded-full border border-white/20 flex items-center gap-2 shadow-lg">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                </span>
+                <span className="font-black text-amber-300 flex items-center gap-1">
+                  <Sun className="w-3.5 h-3.5 text-amber-400" />
+                  {liveWeather.currentTemp}°C
+                </span>
+                <span className="text-slate-400 text-xs">·</span>
+                <span className="text-teal-200 font-semibold">{liveWeather.condition}</span>
+                <span className="text-slate-400 text-xs">·</span>
+                <span className="text-slate-300 text-[11px]">Feels {liveWeather.feelsLike}°C</span>
+              </div>
             </div>
 
             <button
@@ -331,6 +344,19 @@ export const DestinationDetailsPage: React.FC = () => {
             <h2 className="text-2xl sm:text-3xl font-black text-[#0B3A53] tracking-tight font-heading">
               Top Attractions in {destination.shortName}
             </h2>
+            {destination.topAttractionsList && destination.topAttractionsList.length > 0 && (
+              <div className="flex flex-wrap gap-2 pt-2">
+                {destination.topAttractionsList.map((attrName) => (
+                  <span
+                    key={attrName}
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-50 border border-teal-200/80 text-[#146C86] text-xs font-bold shadow-2xs"
+                  >
+                    <Tag className="w-3 h-3 text-[#16A6A1]" />
+                    <span>{attrName}</span>
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
           <button
             onClick={() => triggerToast(`Showing all ${destination.attractions.length} attractions in ${destination.shortName}`)}
@@ -391,35 +417,50 @@ export const DestinationDetailsPage: React.FC = () => {
 
       {/* 4. WEATHER SECTION */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/70 shadow-sm">
+        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/70 shadow-sm space-y-6">
           <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8">
             {/* Left Weather Widget Overview */}
             <div className="space-y-3 max-w-md">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#16A6A1]/10 text-[#146C86] text-xs font-bold border border-[#16A6A1]/20">
                 <Sun className="w-3.5 h-3.5 text-[#16A6A1]" />
-                <span>CLIMATE & FORECAST</span>
+                <span>REAL-TIME CLIMATE & FORECAST</span>
               </div>
               <h2 className="text-2xl sm:text-3xl font-black text-[#0B3A53] tracking-tight font-heading">
-                Weather in {destination.shortName}
+                Live Weather in {destination.shortName}
               </h2>
               <div className="flex items-center gap-4 pt-1">
                 <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-600">
                   <Sun className="w-8 h-8 text-amber-500" />
                 </div>
                 <div>
-                  <div className="text-3xl sm:text-4xl font-black text-[#0B3A53]">
-                    {destination.weather.currentTemp}°C
+                  <div className="text-3xl sm:text-4xl font-black text-[#0B3A53] flex items-center gap-2">
+                    <span>{liveWeather.currentTemp}°C</span>
+                    <span className="text-sm font-semibold text-slate-400">({liveWeather.currentTempF}°F)</span>
                   </div>
                   <div className="text-xs font-bold text-slate-500">
-                    {destination.weather.condition} • Humidity: {destination.weather.humidity}
+                    {liveWeather.condition} • Feels like {liveWeather.feelsLike}°C
                   </div>
                 </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-4 pt-1 text-xs text-slate-600 font-semibold">
+                <span className="flex items-center gap-1.5 text-sky-600 font-bold">
+                  <Droplets className="w-4 h-4 text-sky-500" />
+                  Humidity: {liveWeather.humidity}%
+                </span>
+                <span className="flex items-center gap-1.5 text-slate-600 font-bold">
+                  <Wind className="w-4 h-4 text-slate-400" />
+                  Wind: {liveWeather.windSpeed} km/h
+                </span>
+                <span className="flex items-center gap-1.5 text-amber-600 font-bold">
+                  <Sun className="w-4 h-4 text-amber-500" />
+                  UV Index: {liveWeather.uvIndex}
+                </span>
               </div>
             </div>
 
             {/* Right 6-Day Forecast Row */}
             <div className="w-full lg:w-auto grid grid-cols-3 sm:grid-cols-6 gap-3">
-              {destination.weather.forecast.map((fc, idx) => (
+              {liveWeather.forecast.slice(0, 6).map((fc, idx) => (
                 <div
                   key={idx}
                   className="bg-slate-50 p-4 rounded-2xl border border-slate-200/60 text-center space-y-1.5 hover:bg-white hover:shadow-md transition-all cursor-default"
@@ -434,11 +475,19 @@ export const DestinationDetailsPage: React.FC = () => {
                       <Cloud className="w-5 h-5 text-slate-400" />
                     )}
                   </div>
-                  <p className="text-sm font-black text-[#0B3A53]">{fc.temp}°C</p>
+                  <p className="text-sm font-black text-[#0B3A53]">{fc.tempMax}°C</p>
+                  <p className="text-[10px] font-bold text-slate-400">{fc.tempMin}°C min</p>
                 </div>
               ))}
             </div>
           </div>
+
+          {liveWeather.travelAdvisory && (
+            <div className="p-3.5 bg-teal-50/70 border border-teal-200/70 rounded-2xl text-xs font-medium text-[#0B3A53] flex items-center gap-2">
+              <Info className="w-4 h-4 text-[#16A6A1] shrink-0" />
+              <span><strong>Advisory:</strong> {liveWeather.travelAdvisory}</span>
+            </div>
+          )}
         </div>
       </section>
 
@@ -448,6 +497,57 @@ export const DestinationDetailsPage: React.FC = () => {
           <h2 className="text-2xl sm:text-3xl font-black text-[#0B3A53] tracking-tight font-heading">
             Opening Hours & Entry Fees
           </h2>
+          <p className="text-xs text-slate-500 font-semibold mt-1">
+            General operating schedules and admission rates for local citizens and international visitors.
+          </p>
+        </div>
+
+        {/* Main Destination Pass / Hours Banner */}
+        <div className="bg-gradient-to-br from-[#0B3A53] to-[#146C86] rounded-3xl p-6 sm:p-8 text-white mb-8 shadow-xl relative overflow-hidden">
+          <div className="absolute right-0 top-0 w-96 h-96 bg-white/5 rounded-full blur-2xl pointer-events-none" />
+          <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div className="space-y-2">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 text-teal-200 text-xs font-black uppercase tracking-wider">
+                <Clock className="w-3.5 h-3.5" />
+                <span>Destination Admission & Schedules</span>
+              </span>
+              <h3 className="text-2xl font-black tracking-tight font-heading">
+                {destination.name}
+              </h3>
+              <p className="text-sm text-teal-50 max-w-xl font-medium">
+                Official opening schedules and separate admissions for Sri Lankan citizens and international visitors.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full md:w-auto shrink-0">
+              <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-4 min-w-[160px]">
+                <span className="text-[10px] font-black uppercase tracking-wider text-teal-200 block mb-1">
+                  Operating Hours
+                </span>
+                <span className="text-sm font-extrabold text-white block">
+                  {destination.openingHours || '06:00 AM – 06:00 PM Daily'}
+                </span>
+              </div>
+
+              <div className="bg-emerald-500/20 backdrop-blur-md border border-emerald-400/40 rounded-2xl p-4 min-w-[160px]">
+                <span className="text-[10px] font-black uppercase tracking-wider text-emerald-200 block mb-1">
+                  Local Visitors
+                </span>
+                <span className="text-sm font-black text-emerald-100 block">
+                  {destination.entryFeeLocal || 'Free Entry'}
+                </span>
+              </div>
+
+              <div className="bg-cyan-500/20 backdrop-blur-md border border-cyan-400/40 rounded-2xl p-4 min-w-[160px]">
+                <span className="text-[10px] font-black uppercase tracking-wider text-cyan-200 block mb-1">
+                  Foreign Travelers
+                </span>
+                <span className="text-sm font-black text-cyan-100 block">
+                  {destination.entryFeeForeign || '$25 USD / LKR 7,500'}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -501,189 +601,7 @@ export const DestinationDetailsPage: React.FC = () => {
         </div>
       </section>
 
-      {/* 6. ACTIVITIES SECTION ("THINGS TO DO") */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
-        <div className="mb-8">
-          <h2 className="text-2xl sm:text-3xl font-black text-[#0B3A53] tracking-tight font-heading">
-            Things to Do in {destination.shortName}
-          </h2>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {destination.activities.map((activity) => (
-            <div
-              key={activity.id}
-              className="bg-white rounded-3xl overflow-hidden border border-slate-200/70 shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 group cursor-default flex flex-col justify-between"
-            >
-              <div>
-                <div className="relative h-44 w-full overflow-hidden bg-slate-100">
-                  <img
-                    src={activity.image}
-                    alt={activity.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                  />
-                  <div className="absolute top-3 left-3 px-3 py-1 rounded-full bg-slate-900/75 backdrop-blur-md text-white text-[11px] font-bold border border-white/15">
-                    {activity.category}
-                  </div>
-                </div>
-
-                <div className="p-5 space-y-2">
-                  <h3 className="text-base font-extrabold text-slate-900 font-heading group-hover:text-[#146C86] transition-colors leading-snug">
-                    {activity.title}
-                  </h3>
-                  <p className="text-xs text-slate-500 leading-relaxed line-clamp-2">
-                    {activity.desc}
-                  </p>
-                </div>
-              </div>
-
-              <div className="px-5 pb-5 pt-2 border-t border-slate-100/80 flex items-center justify-between text-xs">
-                <span className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 font-extrabold">
-                  {activity.difficulty}
-                </span>
-                <span className="font-black text-[#146C86]">
-                  {activity.price}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* 7. INTERACTIVE MAP SECTION */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 gap-4">
-          <div>
-            <h2 className="text-2xl sm:text-3xl font-black text-[#0B3A53] tracking-tight font-heading">
-              Explore Nearby Locations
-            </h2>
-          </div>
-
-          {/* Filter Tabs */}
-          <div className="flex flex-wrap items-center gap-2">
-            {['all', 'attraction', 'restaurant', 'hotel', 'activity'].map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setActiveMapCategory(cat)}
-                className={`px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer capitalize ${
-                  activeMapCategory === cat
-                    ? 'bg-[#0B3A53] text-white shadow-sm'
-                    : 'bg-white text-slate-600 border border-slate-200/80 hover:bg-slate-50'
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 bg-white p-6 rounded-3xl border border-slate-200/70 shadow-sm">
-          {/* Interactive Map Visual Box */}
-          <div className="lg:col-span-7 relative h-[380px] sm:h-[450px] w-full rounded-2xl overflow-hidden bg-slate-900 border border-slate-200/60 shadow-inner group">
-            {/* Map Canvas Background */}
-            <div className="absolute inset-0 opacity-40 bg-[radial-gradient(#16A6A1_1px,transparent_1px)] [background-size:16px_16px]" />
-
-            {/* Stylized Simulated Map Pins */}
-            {filteredMapLocations.map((loc, idx) => {
-              const isSelected = selectedMapPin?.id === loc.id;
-              // Map positions
-              const positions = [
-                { top: '35%', left: '42%' },
-                { top: '55%', left: '65%' },
-                { top: '48%', left: '28%' },
-                { top: '68%', left: '45%' },
-                { top: '25%', left: '72%' },
-              ];
-              const pos = positions[idx % positions.length];
-
-              return (
-                <div
-                  key={loc.id}
-                  onClick={() => setSelectedMapPin(loc)}
-                  style={{ top: pos.top, left: pos.left }}
-                  className={`absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer z-20 transition-all duration-300 ${
-                    isSelected ? 'scale-125 z-30' : 'hover:scale-110'
-                  }`}
-                >
-                  <div
-                    className={`p-2.5 rounded-full shadow-2xl flex items-center justify-center border-2 ${
-                      isSelected
-                        ? 'bg-[#16A6A1] text-white border-white ring-4 ring-[#16A6A1]/40'
-                        : 'bg-white text-[#0B3A53] border-[#16A6A1]'
-                    }`}
-                  >
-                    {loc.type === 'attraction' && <MapPin className="w-4 h-4" />}
-                    {loc.type === 'restaurant' && <Utensils className="w-4 h-4" />}
-                    {loc.type === 'hotel' && <Hotel className="w-4 h-4" />}
-                    {loc.type === 'activity' && <Camera className="w-4 h-4" />}
-                  </div>
-                </div>
-              );
-            })}
-
-            {/* Map Info Card Overlay */}
-            {selectedMapPin && (
-              <div className="absolute bottom-4 left-4 right-4 bg-slate-900/90 backdrop-blur-md p-4 rounded-2xl border border-white/20 text-white flex items-center justify-between gap-4 z-30 animate-in fade-in slide-in-from-bottom-2">
-                <div className="flex items-center gap-3">
-                  <img
-                    src={selectedMapPin.image}
-                    alt={selectedMapPin.name}
-                    className="w-12 h-12 rounded-xl object-cover"
-                  />
-                  <div>
-                    <h4 className="text-sm font-extrabold text-white">{selectedMapPin.name}</h4>
-                    <p className="text-xs text-slate-300">{selectedMapPin.address}</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => triggerToast(`Navigating to ${selectedMapPin.name}...`)}
-                  className="px-4 py-2 rounded-full bg-[#16A6A1] text-white text-xs font-bold hover:bg-[#138D89] transition-colors cursor-pointer"
-                >
-                  Get Directions
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Right Side Location List */}
-          <div className="lg:col-span-5 space-y-3 max-h-[450px] overflow-y-auto pr-1">
-            {filteredMapLocations.map((loc) => {
-              const isSelected = selectedMapPin?.id === loc.id;
-              return (
-                <div
-                  key={loc.id}
-                  onClick={() => setSelectedMapPin(loc)}
-                  className={`p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-4 ${
-                    isSelected
-                      ? 'bg-[#16A6A1]/10 border-[#16A6A1] shadow-xs'
-                      : 'bg-slate-50/80 border-slate-200/70 hover:bg-white'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={loc.image}
-                      alt={loc.name}
-                      className="w-12 h-12 rounded-xl object-cover"
-                    />
-                    <div>
-                      <h4 className="text-xs sm:text-sm font-extrabold text-[#0B3A53]">{loc.name}</h4>
-                      <p className="text-[11px] text-slate-500 capitalize">{loc.type}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-500">
-                      <Star className="w-3.5 h-3.5 fill-amber-400" />
-                      <span>{loc.rating}</span>
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* 8. TRAVELER REVIEWS SECTION */}
+      {/* 6. TRAVELER REVIEWS SECTION */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 gap-4">
           <div>
@@ -783,86 +701,7 @@ export const DestinationDetailsPage: React.FC = () => {
         </div>
       </section>
 
-      {/* 9. RECOMMENDED ITINERARY */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 gap-4">
-          <div>
-            <h2 className="text-2xl sm:text-3xl font-black text-[#0B3A53] tracking-tight font-heading">
-              Recommended Itinerary: 3 Days in {destination.shortName}
-            </h2>
-          </div>
-          <button
-            onClick={() => triggerToast(`Added 3-Day ${destination.shortName} Itinerary to your trips!`)}
-            className="bg-[#0B3A53] hover:bg-[#072537] text-white font-bold text-xs px-5 py-2.5 rounded-full shadow-xs hover:shadow-md transition-all cursor-pointer inline-flex items-center gap-2 border border-slate-700/40"
-          >
-            <Plus className="w-4 h-4 text-[#16A6A1]" />
-            <span>Add Itinerary to Trip</span>
-          </button>
-        </div>
-
-        {/* Timeline Days */}
-        <div className="space-y-6">
-          {destination.itinerary.map((day) => {
-            const isExpanded = expandedDay === day.day;
-            return (
-              <div
-                key={day.day}
-                className="bg-white rounded-3xl border border-slate-200/70 shadow-sm overflow-hidden transition-all"
-              >
-                {/* Day Header Bar */}
-                <div
-                  onClick={() => setExpandedDay(isExpanded ? null : day.day)}
-                  className="p-6 flex items-center justify-between gap-4 cursor-pointer hover:bg-slate-50/80 transition-colors"
-                >
-                  <div className="flex items-center gap-4">
-                    <span className="w-12 h-12 rounded-2xl bg-[#16A6A1]/10 text-[#146C86] font-black text-lg flex items-center justify-center">
-                      0{day.day}
-                    </span>
-                    <div>
-                      <h3 className="text-base sm:text-lg font-extrabold text-[#0B3A53]">
-                        Day {day.day}: {day.title}
-                      </h3>
-                      <span className="text-xs text-slate-400 font-medium">
-                        Estimated Duration: {day.estimatedDuration}
-                      </span>
-                    </div>
-                  </div>
-                  {isExpanded ? (
-                    <ChevronUp className="w-5 h-5 text-slate-400" />
-                  ) : (
-                    <ChevronDown className="w-5 h-5 text-slate-400" />
-                  )}
-                </div>
-
-                {/* Day Activities List */}
-                {isExpanded && (
-                  <div className="px-6 pb-6 pt-2 border-t border-slate-100 space-y-4 animate-in fade-in duration-300">
-                    {day.activities.map((act, idx) => (
-                      <div
-                        key={idx}
-                        className="p-4 rounded-2xl bg-slate-50/90 border border-slate-200/60 flex items-start gap-4"
-                      >
-                        <span className="px-3 py-1 rounded-full bg-[#0B3A53] text-white text-[11px] font-extrabold shrink-0 mt-0.5">
-                          {act.time}
-                        </span>
-                        <div className="space-y-1">
-                          <h4 className="text-sm font-extrabold text-slate-900">{act.title}</h4>
-                          <p className="text-xs text-slate-600 leading-relaxed">{act.desc}</p>
-                          <span className="text-[11px] text-[#146C86] font-bold block pt-0.5">
-                            📍 {act.location}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* 14 & 15. FINAL CTA SECTION */}
+      {/* 7. FINAL CTA SECTION */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
         <div className="bg-white py-16 px-6 sm:px-12 rounded-3xl border border-slate-200/70 shadow-sm text-center space-y-6 max-w-4xl mx-auto">
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-[#0B3A53] font-heading tracking-tight">
@@ -875,6 +714,15 @@ export const DestinationDetailsPage: React.FC = () => {
 
           <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
             <button
+              id="destination-bottom-back-btn"
+              onClick={() => navigate('/destinations')}
+              className="bg-white hover:bg-slate-50 text-[#0B3A53] font-extrabold text-xs px-8 py-3.5 rounded-full border border-slate-200/90 shadow-2xs hover:shadow-sm transition-all cursor-pointer flex items-center gap-2 group"
+            >
+              <ArrowLeft className="w-4 h-4 text-[#16A6A1] group-hover:-translate-x-0.5 transition-transform" />
+              <span>Back to Destinations</span>
+            </button>
+
+            <button
               onClick={() => navigate('/ai-workflows')}
               className="bg-[#0B3A53] hover:bg-[#072537] text-white font-bold text-xs uppercase tracking-wider px-8 py-3.5 rounded-full shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer flex items-center gap-2 border border-slate-700/40"
             >
@@ -884,7 +732,7 @@ export const DestinationDetailsPage: React.FC = () => {
 
             <button
               onClick={handleFavoriteToggle}
-              className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs px-8 py-4 rounded-full border border-slate-200 transition-all cursor-pointer"
+              className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs px-8 py-3.5 rounded-full border border-slate-200 transition-all cursor-pointer"
             >
               Save Destination
             </button>
@@ -911,6 +759,15 @@ export const DestinationDetailsPage: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-2">
+              <button
+                onClick={() => navigate('/destinations')}
+                className="hidden md:inline-flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-[#0B3A53] font-bold text-xs px-3.5 py-2 rounded-full border border-slate-200 transition-all cursor-pointer"
+                title="Back to Destinations"
+              >
+                <ArrowLeft className="w-3.5 h-3.5 text-[#16A6A1]" />
+                <span>Destinations</span>
+              </button>
+
               <button
                 onClick={handleFavoriteToggle}
                 className={`p-2.5 rounded-full border transition-all cursor-pointer ${

@@ -16,7 +16,6 @@ import {
   Users,
 } from 'lucide-react';
 import { LandingNavbar } from '../components/navigation/LandingNavbar';
-import { SplashScreen } from '../components/common/SplashScreen';
 import { useAuth } from '../hooks/useAuth';
 import { MOCK_DESTINATIONS } from '../mock/destinations';
 import { BRAND } from '../constants/brand';
@@ -165,18 +164,6 @@ const AnimatedCounter: React.FC<CounterProps> = ({
 export const LandingPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [showSplash, setShowSplash] = useState<boolean>(() => {
-    // Never show splash screen if user is logged in or marked seen in session
-    if (user || sessionStorage.getItem('nova_splash_seen') || localStorage.getItem('nova_auth_token')) {
-      return false;
-    }
-    return !sessionStorage.getItem('nova_splash_seen');
-  });
-
-  const handleSplashComplete = () => {
-    sessionStorage.setItem('nova_splash_seen', 'true');
-    setShowSplash(false);
-  };
 
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
@@ -184,6 +171,18 @@ export const LandingPage: React.FC = () => {
 
   const statsRef = React.useRef<HTMLDivElement>(null);
   const [isStatsVisible, setIsStatsVisible] = useState(false);
+  const [statsData, setStatsData] = useState<{ totalUsers: number; totalTrips: number; satisfactionRate: number } | null>(null);
+
+  useEffect(() => {
+    fetch('/api/public-stats')
+      .then(res => res.json())
+      .then(resJson => {
+        if (resJson.success && resJson.data) {
+          setStatsData(resJson.data);
+        }
+      })
+      .catch(err => console.warn('[LandingPage] Public stats fetch failed:', err));
+  }, []);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -279,9 +278,6 @@ export const LandingPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col text-slate-900 font-sans antialiased">
-      {/* Animated Minimalist Splash Screen */}
-      {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
-
       {/* Top Navbar */}
       <LandingNavbar />
 
@@ -766,12 +762,12 @@ export const LandingPage: React.FC = () => {
                   <Users className="w-6 h-6" />
                 </div>
                 <h3 className="text-4xl sm:text-5xl lg:text-6xl font-black text-[#0B3A53] font-heading tracking-tight">
-                  <AnimatedCounter target={128450} isVisible={isStatsVisible} />+
+                  <AnimatedCounter target={statsData ? statsData.totalUsers : 8} isVisible={isStatsVisible} />+
                 </h3>
                 <p className="text-xs sm:text-sm font-extrabold text-slate-800 uppercase tracking-wider">
                   Active Global Users
                 </p>
-                <p className="text-xs text-slate-500 font-medium">Across 84+ countries worldwide</p>
+                <p className="text-xs text-slate-500 font-medium">Verified travelers in TourLink database</p>
               </div>
 
               {/* Stat 2: Trips Planned */}
@@ -780,7 +776,7 @@ export const LandingPage: React.FC = () => {
                   <Compass className="w-6 h-6" />
                 </div>
                 <h3 className="text-4xl sm:text-5xl lg:text-6xl font-black text-[#0B3A53] font-heading tracking-tight">
-                  <AnimatedCounter target={482900} isVisible={isStatsVisible} />+
+                  <AnimatedCounter target={statsData ? statsData.totalTrips : 3} isVisible={isStatsVisible} />+
                 </h3>
                 <p className="text-xs sm:text-sm font-extrabold text-slate-800 uppercase tracking-wider">
                   Trips Planned
@@ -902,9 +898,7 @@ export const LandingPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-6 text-xs text-slate-300 font-medium">
-            <button onClick={() => setShowSplash(true)} className="hover:text-[#16A6A1] transition-colors cursor-pointer text-[#16A6A1] font-bold">
-              ✦ Replay Splash Reveal
-            </button>
+
             <button onClick={() => navigate('/dashboard')} className="hover:text-white transition-colors cursor-pointer">
               Sitemap
             </button>

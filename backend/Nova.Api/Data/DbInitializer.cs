@@ -10,20 +10,32 @@ public static class DbInitializer
         // 1. Seed Users
         var usersToEnsure = new List<User>
         {
+            new() { Id = "U001", Name = "Hiruni Praboda", Email = "hiruni.u001@example.com", PasswordHash = BCrypt.Net.BCrypt.HashPassword("Password123!"), Role = UserRole.Tourist, CreatedAt = DateTime.UtcNow.AddDays(-30) },
+            new() { Id = "U002", Name = "Demo User", Email = "demo.u002@example.com", PasswordHash = BCrypt.Net.BCrypt.HashPassword("Password123!"), Role = UserRole.Tourist, CreatedAt = DateTime.UtcNow.AddDays(-20) },
+            new() { Id = "U003", Name = "David Miller", Email = "david.u003@example.com", PasswordHash = BCrypt.Net.BCrypt.HashPassword("Password123!"), Role = UserRole.Tourist, CreatedAt = DateTime.UtcNow.AddDays(-15) },
+            new() { Id = "U004", Name = "Elena Rostova", Email = "elena.u004@example.com", PasswordHash = BCrypt.Net.BCrypt.HashPassword("Password123!"), Role = UserRole.Tourist, CreatedAt = DateTime.UtcNow.AddDays(-10) },
             new() { Id = "user-tourist-1", Name = "Hiruni Praboda", Email = "hiruni@example.com", PasswordHash = BCrypt.Net.BCrypt.HashPassword("Password123!"), Role = UserRole.Tourist, CreatedAt = DateTime.UtcNow.AddDays(-30) },
             new() { Id = "user-kasun", Name = "Kasun Perera", Email = "kasun@example.com", PasswordHash = BCrypt.Net.BCrypt.HashPassword("Password123!"), Role = UserRole.Tourist, CreatedAt = DateTime.UtcNow.AddDays(-25) },
             new() { Id = "user-nimal", Name = "Nimal Fernando", Email = "nimal@example.com", PasswordHash = BCrypt.Net.BCrypt.HashPassword("Password123!"), Role = UserRole.Tourist, CreatedAt = DateTime.UtcNow.AddDays(-18) },
             new() { Id = "user-tourist-2", Name = "David Miller", Email = "david@example.com", PasswordHash = BCrypt.Net.BCrypt.HashPassword("Password123!"), Role = UserRole.Tourist, CreatedAt = DateTime.UtcNow.AddDays(-20) },
             new() { Id = "user-tourist-3", Name = "Elena Rostova", Email = "elena@example.com", PasswordHash = BCrypt.Net.BCrypt.HashPassword("Password123!"), Role = UserRole.Tourist, CreatedAt = DateTime.UtcNow.AddDays(-15) },
             new() { Id = "user-operator-1", Name = "Bob Operator", Email = "operator@example.com", PasswordHash = BCrypt.Net.BCrypt.HashPassword("Password123!"), Role = UserRole.TourismOperator, CreatedAt = DateTime.UtcNow.AddDays(-40) },
-            new() { Id = "user-admin-1", Name = "Charlie Admin", Email = "admin@example.com", PasswordHash = BCrypt.Net.BCrypt.HashPassword("Password123!"), Role = UserRole.Admin, CreatedAt = DateTime.UtcNow.AddDays(-60) }
+            new() { Id = "user-admin-1", Name = "Charlie Admin", Email = "admin@example.com", PasswordHash = BCrypt.Net.BCrypt.HashPassword("Password123!"), Role = UserRole.Admin, CreatedAt = DateTime.UtcNow.AddDays(-60) },
+            new() { Id = "admin-travellink-01", Name = "TravelLink Administrator", Email = "admin@travellink.com", PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin123"), Role = UserRole.Admin, IsActive = true, CreatedAt = DateTime.UtcNow.AddDays(-90) }
         };
 
         foreach (var u in usersToEnsure)
         {
-            if (!await db.Users.AnyAsync(existing => existing.Id == u.Id || existing.Email == u.Email))
+            var existing = await db.Users.FirstOrDefaultAsync(x => x.Email.ToLower() == u.Email.ToLower() || x.Id == u.Id);
+            if (existing == null)
             {
                 db.Users.Add(u);
+            }
+            else if (u.Email == "admin@travellink.com")
+            {
+                existing.Role = UserRole.Admin;
+                existing.IsActive = true;
+                existing.PasswordHash = u.PasswordHash;
             }
         }
         await db.SaveChangesAsync();
@@ -1106,6 +1118,413 @@ public static class DbInitializer
                     Timestamp = DateTime.UtcNow.AddDays(-1)
                 }
             );
+            await db.SaveChangesAsync();
+        }
+
+        // 13. Seed Normalized Trips & Itineraries (T001, T002, T003)
+        if (!await db.Trips.AnyAsync(t => t.Id == "T001"))
+        {
+            var t001 = new Trip
+            {
+                Id = "T001",
+                UserId = "U001",
+                TripName = "Ella Adventure",
+                Destination = "Ella, Sri Lanka",
+                DestinationId = "dest-ella",
+                StartDate = DateTime.UtcNow.Date.AddDays(5),
+                EndDate = DateTime.UtcNow.Date.AddDays(7),
+                NumberOfTravelers = 2,
+                Budget = 450.0m,
+                TripStyle = "Adventure",
+                Interests = ["Hiking", "Nature", "Photography"],
+                Status = TripStatus.Planned,
+                CreatedSource = "USER",
+                CreatedAt = DateTime.UtcNow.AddDays(-2),
+                UpdatedAt = DateTime.UtcNow.AddDays(-2)
+            };
+            db.Trips.Add(t001);
+
+            var it001 = new Itinerary
+            {
+                Id = "I001",
+                TripId = "T001",
+                Title = "Ella Adventure 2-Day Itinerary",
+                Status = ItineraryStatus.Approved,
+                TotalEstimatedCost = 450.0m,
+                FeasibilityScore = 98.0,
+                CreatedSource = "USER",
+                CreatedAt = DateTime.UtcNow.AddDays(-2),
+                UpdatedAt = DateTime.UtcNow.AddDays(-2)
+            };
+            db.Itineraries.Add(it001);
+
+            var day1 = new ItineraryDay
+            {
+                Id = "T001-D1",
+                ItineraryId = "I001",
+                DayNumber = 1,
+                Date = t001.StartDate,
+                Location = "Ella",
+                Title = "Day 1 - Ella Peaks & Viaduct"
+            };
+            db.ItineraryDays.Add(day1);
+
+            db.ItineraryItems.AddRange(
+                new ItineraryItem
+                {
+                    Id = "T001-D1-I1",
+                    ItineraryDayId = "T001-D1",
+                    SequenceOrder = 1,
+                    ActivityName = "Demodara Nine Arch Bridge Walk & Train Photography",
+                    Location = "Demodara, Ella",
+                    StartTime = new TimeSpan(8, 30, 0),
+                    EndTime = new TimeSpan(11, 0, 0),
+                    DurationMinutes = 150,
+                    EstimatedCost = 0.0m,
+                    TravelTimeMinutes = 15,
+                    Notes = "Catch the blue train crossing the 91-meter stone viaduct amidst lush tea plantations."
+                },
+                new ItineraryItem
+                {
+                    Id = "T001-D1-I2",
+                    ItineraryDayId = "T001-D1",
+                    SequenceOrder = 2,
+                    ActivityName = "Little Adam's Peak Mountain Ridge Trek",
+                    Location = "Passara Road, Ella",
+                    StartTime = new TimeSpan(13, 0, 0),
+                    EndTime = new TimeSpan(15, 30, 0),
+                    DurationMinutes = 150,
+                    EstimatedCost = 0.0m,
+                    TravelTimeMinutes = 20,
+                    Notes = "Gentle hiking trail past rolling green tea terraces up to the 1,141m summit."
+                }
+            );
+
+            var day2 = new ItineraryDay
+            {
+                Id = "T001-D2",
+                ItineraryId = "I001",
+                DayNumber = 2,
+                Date = t001.StartDate.AddDays(1),
+                Location = "Ella",
+                Title = "Day 2 - Waterfalls & Highland Town"
+            };
+            db.ItineraryDays.Add(day2);
+
+            db.ItineraryItems.AddRange(
+                new ItineraryItem
+                {
+                    Id = "T001-D2-I1",
+                    ItineraryDayId = "T001-D2",
+                    SequenceOrder = 1,
+                    ActivityName = "Ravana Falls & Ancient Ravana Cave",
+                    Location = "Wellawaya Road, Ella",
+                    StartTime = new TimeSpan(9, 0, 0),
+                    EndTime = new TimeSpan(12, 0, 0),
+                    DurationMinutes = 180,
+                    EstimatedCost = 5.0m,
+                    TravelTimeMinutes = 25,
+                    Notes = "Spectacular 25-meter tiered cascade linked to the Ramayana epic."
+                },
+                new ItineraryItem
+                {
+                    Id = "T001-D2-I2",
+                    ItineraryDayId = "T001-D2",
+                    SequenceOrder = 2,
+                    ActivityName = "Ella Town Stroll & Ceylon Artisanal Tea Tasting",
+                    Location = "Main Street, Ella",
+                    StartTime = new TimeSpan(14, 0, 0),
+                    EndTime = new TimeSpan(17, 0, 0),
+                    DurationMinutes = 180,
+                    EstimatedCost = 15.0m,
+                    TravelTimeMinutes = 10,
+                    Notes = "Sample Single-Estate Orange Pekoe teas with highland honey and handmade pastries."
+                }
+            );
+
+            await db.SaveChangesAsync();
+        }
+
+        if (!await db.Trips.AnyAsync(t => t.Id == "T002"))
+        {
+            var t002 = new Trip
+            {
+                Id = "T002",
+                UserId = "U001",
+                TripName = "Kandy Cultural Trip",
+                Destination = "Kandy, Sri Lanka",
+                DestinationId = "dest-kandy",
+                StartDate = DateTime.UtcNow.Date.AddDays(10),
+                EndDate = DateTime.UtcNow.Date.AddDays(13),
+                NumberOfTravelers = 3,
+                Budget = 600.0m,
+                TripStyle = "Cultural",
+                Interests = ["Temples", "Culture", "Gardens"],
+                Status = TripStatus.Planned,
+                CreatedSource = "USER",
+                CreatedAt = DateTime.UtcNow.AddDays(-1),
+                UpdatedAt = DateTime.UtcNow.AddDays(-1)
+            };
+            db.Trips.Add(t002);
+
+            var it002 = new Itinerary
+            {
+                Id = "I002",
+                TripId = "T002",
+                Title = "Kandy Cultural & Heritage 3-Day Journey",
+                Status = ItineraryStatus.Published,
+                TotalEstimatedCost = 580.0m,
+                FeasibilityScore = 96.0,
+                CreatedSource = "USER",
+                CreatedAt = DateTime.UtcNow.AddDays(-1),
+                UpdatedAt = DateTime.UtcNow.AddDays(-1)
+            };
+            db.Itineraries.Add(it002);
+
+            var kDay1 = new ItineraryDay
+            {
+                Id = "T002-D1",
+                ItineraryId = "I002",
+                DayNumber = 1,
+                Date = t002.StartDate,
+                Location = "Kandy",
+                Title = "Day 1 - Sacred Relics & Royal Palace"
+            };
+            db.ItineraryDays.Add(kDay1);
+            db.ItineraryItems.AddRange(
+                new ItineraryItem
+                {
+                    Id = "T002-D1-I1",
+                    ItineraryDayId = "T002-D1",
+                    SequenceOrder = 1,
+                    ActivityName = "Temple of the Sacred Tooth Relic (Sri Dalada Maligawa)",
+                    Location = "Sri Dalada Veediya, Kandy",
+                    StartTime = new TimeSpan(8, 0, 0),
+                    EndTime = new TimeSpan(11, 0, 0),
+                    DurationMinutes = 180,
+                    EstimatedCost = 10.0m,
+                    TravelTimeMinutes = 15,
+                    Notes = "Sacred shrine housing the left canine tooth relic of the Gautama Buddha."
+                },
+                new ItineraryItem
+                {
+                    Id = "T002-D1-I2",
+                    ItineraryDayId = "T002-D1",
+                    SequenceOrder = 2,
+                    ActivityName = "Kandy Lake Scenic Promenade & Royal Bathhouse",
+                    Location = "Kandy Lake Circle",
+                    StartTime = new TimeSpan(14, 30, 0),
+                    EndTime = new TimeSpan(17, 0, 0),
+                    DurationMinutes = 150,
+                    EstimatedCost = 0.0m,
+                    TravelTimeMinutes = 10,
+                    Notes = "Lake constructed by King Sri Wickrama Rajasinghe in 1807."
+                }
+            );
+
+            var kDay2 = new ItineraryDay
+            {
+                Id = "T002-D2",
+                ItineraryId = "I002",
+                DayNumber = 2,
+                Date = t002.StartDate.AddDays(1),
+                Location = "Kandy",
+                Title = "Day 2 - Botanical Splendor & Tea Factory"
+            };
+            db.ItineraryDays.Add(kDay2);
+            db.ItineraryItems.AddRange(
+                new ItineraryItem
+                {
+                    Id = "T002-D2-I1",
+                    ItineraryDayId = "T002-D2",
+                    SequenceOrder = 1,
+                    ActivityName = "Peradeniya Royal Botanical Gardens & Orchid Pavilion",
+                    Location = "Peradeniya, Kandy",
+                    StartTime = new TimeSpan(9, 0, 0),
+                    EndTime = new TimeSpan(12, 30, 0),
+                    DurationMinutes = 210,
+                    EstimatedCost = 12.0m,
+                    TravelTimeMinutes = 25,
+                    Notes = "147-acre garden renowned for more than 4,000 species of tropical flora."
+                },
+                new ItineraryItem
+                {
+                    Id = "T002-D2-I2",
+                    ItineraryDayId = "T002-D2",
+                    SequenceOrder = 2,
+                    ActivityName = "Giragama Tea Estate Orthodox Processing Tour",
+                    Location = "Giragama, Kadugannawa",
+                    StartTime = new TimeSpan(14, 0, 0),
+                    EndTime = new TimeSpan(16, 30, 0),
+                    DurationMinutes = 150,
+                    EstimatedCost = 8.0m,
+                    TravelTimeMinutes = 30,
+                    Notes = "Witness tea withering, rolling, fermenting, and sample fresh Broken Orange Pekoe."
+                }
+            );
+
+            var kDay3 = new ItineraryDay
+            {
+                Id = "T002-D3",
+                ItineraryId = "I002",
+                DayNumber = 3,
+                Date = t002.StartDate.AddDays(2),
+                Location = "Kandy",
+                Title = "Day 3 - Traditional Arts & Fire Dancing"
+            };
+            db.ItineraryDays.Add(kDay3);
+            db.ItineraryItems.AddRange(
+                new ItineraryItem
+                {
+                    Id = "T002-D3-I1",
+                    ItineraryDayId = "T002-D3",
+                    SequenceOrder = 1,
+                    ActivityName = "Kandy Garrison Cemetery & National Museum",
+                    Location = "Palace Complex, Kandy",
+                    StartTime = new TimeSpan(10, 0, 0),
+                    EndTime = new TimeSpan(12, 30, 0),
+                    DurationMinutes = 150,
+                    EstimatedCost = 6.0m,
+                    TravelTimeMinutes = 10,
+                    Notes = "Colonial relics and regal artifacts of the Kandyan kingdom."
+                },
+                new ItineraryItem
+                {
+                    Id = "T002-D3-I2",
+                    ItineraryDayId = "T002-D3",
+                    SequenceOrder = 2,
+                    ActivityName = "Kandyan Cultural Dance & Fire-Walking Spectacle",
+                    Location = "Kandy Cultural Centre",
+                    StartTime = new TimeSpan(17, 30, 0),
+                    EndTime = new TimeSpan(19, 0, 0),
+                    DurationMinutes = 90,
+                    EstimatedCost = 8.0m,
+                    TravelTimeMinutes = 15,
+                    Notes = "Traditional getaberaya drumming, ves costume acrobatics, and glowing charcoal walking."
+                }
+            );
+
+            await db.SaveChangesAsync();
+        }
+
+        if (!await db.Trips.AnyAsync(t => t.Id == "T003"))
+        {
+            var t003 = new Trip
+            {
+                Id = "T003",
+                UserId = "U002",
+                TripName = "Galle Weekend Escape",
+                Destination = "Galle, Sri Lanka",
+                DestinationId = "dest-galle",
+                StartDate = DateTime.UtcNow.Date.AddDays(14),
+                EndDate = DateTime.UtcNow.Date.AddDays(16),
+                NumberOfTravelers = 2,
+                Budget = 380.0m,
+                TripStyle = "Relaxation",
+                Interests = ["Beaches", "History", "Food"],
+                Status = TripStatus.Draft,
+                CreatedSource = "USER",
+                CreatedAt = DateTime.UtcNow.AddDays(-1),
+                UpdatedAt = DateTime.UtcNow.AddDays(-1)
+            };
+            db.Trips.Add(t003);
+
+            var it003 = new Itinerary
+            {
+                Id = "I003",
+                TripId = "T003",
+                Title = "Galle Fort Colonial Walk & Beach Escape",
+                Status = ItineraryStatus.Draft,
+                TotalEstimatedCost = 350.0m,
+                FeasibilityScore = 95.0,
+                CreatedSource = "USER",
+                CreatedAt = DateTime.UtcNow.AddDays(-1),
+                UpdatedAt = DateTime.UtcNow.AddDays(-1)
+            };
+            db.Itineraries.Add(it003);
+
+            var gDay1 = new ItineraryDay
+            {
+                Id = "T003-D1",
+                ItineraryId = "I003",
+                DayNumber = 1,
+                Date = t003.StartDate,
+                Location = "Galle",
+                Title = "Day 1 - Fort Ramparts & Lighthouse Sunset"
+            };
+            db.ItineraryDays.Add(gDay1);
+            db.ItineraryItems.AddRange(
+                new ItineraryItem
+                {
+                    Id = "T003-D1-I1",
+                    ItineraryDayId = "T003-D1",
+                    SequenceOrder = 1,
+                    ActivityName = "Galle Dutch Fort Heritage Ramparts Walk",
+                    Location = "Church Street, Galle Fort",
+                    StartTime = new TimeSpan(9, 0, 0),
+                    EndTime = new TimeSpan(12, 0, 0),
+                    DurationMinutes = 180,
+                    EstimatedCost = 0.0m,
+                    TravelTimeMinutes = 15,
+                    Notes = "UNESCO World Heritage 17th-century bastion fortifications."
+                },
+                new ItineraryItem
+                {
+                    Id = "T003-D1-I2",
+                    ItineraryDayId = "T003-D1",
+                    SequenceOrder = 2,
+                    ActivityName = "Point Utrecht Bastion Lighthouse & Sunset Beach Walk",
+                    Location = "Lighthouse Street, Galle",
+                    StartTime = new TimeSpan(15, 0, 0),
+                    EndTime = new TimeSpan(18, 0, 0),
+                    DurationMinutes = 180,
+                    EstimatedCost = 0.0m,
+                    TravelTimeMinutes = 10,
+                    Notes = "Iconic 26.5m coastal lighthouse overlooking the Indian Ocean reef."
+                }
+            );
+
+            var gDay2 = new ItineraryDay
+            {
+                Id = "T003-D2",
+                ItineraryId = "I003",
+                DayNumber = 2,
+                Date = t003.StartDate.AddDays(1),
+                Location = "Galle",
+                Title = "Day 2 - Maritime History & Artisan Cafes"
+            };
+            db.ItineraryDays.Add(gDay2);
+            db.ItineraryItems.AddRange(
+                new ItineraryItem
+                {
+                    Id = "T003-D2-I1",
+                    ItineraryDayId = "T003-D2",
+                    SequenceOrder = 1,
+                    ActivityName = "National Maritime Museum & Dutch Reformed Church",
+                    Location = "Queen's Street, Galle Fort",
+                    StartTime = new TimeSpan(9, 30, 0),
+                    EndTime = new TimeSpan(12, 30, 0),
+                    DurationMinutes = 180,
+                    EstimatedCost = 5.0m,
+                    TravelTimeMinutes = 10,
+                    Notes = "Artifacts recovered from historic shipwrecks off the southern coast."
+                },
+                new ItineraryItem
+                {
+                    Id = "T003-D2-I2",
+                    ItineraryDayId = "T003-D2",
+                    SequenceOrder = 2,
+                    ActivityName = "Pedlar Street Gem & Ceylon Spice Boutique Discovery",
+                    Location = "Pedlar Street, Galle",
+                    StartTime = new TimeSpan(14, 0, 0),
+                    EndTime = new TimeSpan(17, 0, 0),
+                    DurationMinutes = 180,
+                    EstimatedCost = 10.0m,
+                    TravelTimeMinutes = 10,
+                    Notes = "Handcrafted moonstone jewelry, Ceylon cinnamon, and colonial cafe lunch."
+                }
+            );
+
             await db.SaveChangesAsync();
         }
     }

@@ -19,6 +19,7 @@ public interface IItineraryService
     Task<ApiResponse<ItineraryItemResponse>> AddItineraryItemAsync(string dayId, string userId, string userRole, CreateItineraryItemRequest request);
     Task<ApiResponse<ItineraryItemResponse>> UpdateItineraryItemAsync(string itemId, string userId, string userRole, UpdateItineraryItemRequest request);
     Task<ApiResponse<bool>> DeleteItineraryItemAsync(string itemId, string userId, string userRole);
+    Task<ApiResponse<ItineraryResponse>> UpdateItineraryStatusAsync(string itineraryId, string status);
 }
 
 public class ItineraryService : IItineraryService
@@ -43,11 +44,14 @@ public class ItineraryService : IItineraryService
         using var transaction = await _db.Database.BeginTransactionAsync();
         try
         {
+            var itineraryId = await IdGenerator.GenerateItineraryIdAsync(_db);
             var itinerary = new Itinerary
             {
+                Id = itineraryId,
                 TripId = tripId,
                 Title = string.IsNullOrWhiteSpace(request.Title) ? $"{trip.Destination} Itinerary" : request.Title.Trim(),
                 Status = ItineraryStatus.Draft,
+                CreatedSource = "USER",
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
@@ -325,6 +329,26 @@ public class ItineraryService : IItineraryService
         await _db.SaveChangesAsync();
 
         return ApiResponse<bool>.Ok(true, "Itinerary item deleted successfully.");
+    }
+
+    public async Task<ApiResponse<ItineraryResponse>> UpdateItineraryStatusAsync(string itineraryId, string status)
+    {
+        var itinerary = await _db.Itineraries
+            .Include(i => i.Days)
+                .ThenInclude(d => d.Items)
+            .FirstOrDefaultAsync(i => i.Id == itineraryId);
+
+        if (itinerary == null) return ApiResponse<ItineraryResponse>.Fail("Itinerary not found.");
+
+        if (Enum.TryParse<ItineraryStatus>(status, true, out var parsedStatus))
+        {
+            itinerary.Status = parsedStatus;
+            itinerary.UpdatedAt = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+            return ApiResponse<ItineraryResponse>.Ok(MapToResponse(itinerary), $"Itinerary status updated to {parsedStatus}.");
+        }
+
+        return ApiResponse<ItineraryResponse>.Fail($"Invalid itinerary status: {status}. Allowed values: Draft, Approved, Published.");
     }
 
     public static ItineraryResponse MapToResponse(Itinerary itinerary)

@@ -446,24 +446,32 @@ public class TransportService : ITransportService
 
     private async Task<List<TransportOptionDto>> GetCachedOptionsAsync(string origin, string destination, DateTime travelDate, string? transportType)
     {
-        var freshnessCutoff = DateTime.UtcNow.AddHours(-24);
-        var startUtc = DateTime.SpecifyKind(travelDate.Date, DateTimeKind.Utc);
-        var endUtc = startUtc.AddDays(1);
-
-        var query = _db.TransportOptions
-            .Where(t => t.ItineraryItemId == null
-                        && t.Origin.ToLower() == origin.ToLower()
-                        && t.Destination.ToLower() == destination.ToLower()
-                        && t.TravelDate >= startUtc && t.TravelDate < endUtc
-                        && t.RetrievedAt >= freshnessCutoff);
-
-        if (!string.IsNullOrWhiteSpace(transportType))
+        try
         {
-            query = query.Where(t => t.TransportType == transportType.ToUpper());
-        }
+            var freshnessCutoff = DateTime.UtcNow.AddHours(-24);
+            var startUtc = DateTime.SpecifyKind(travelDate.Date, DateTimeKind.Utc);
+            var endUtc = startUtc.AddDays(1);
 
-        var entities = await query.ToListAsync();
-        return entities.Select(MapToDto).ToList();
+            var query = _db.TransportOptions
+                .Where(t => t.ItineraryItemId == null
+                            && t.Origin.ToLower() == origin.ToLower()
+                            && t.Destination.ToLower() == destination.ToLower()
+                            && t.TravelDate >= startUtc && t.TravelDate < endUtc
+                            && t.RetrievedAt >= freshnessCutoff);
+
+            if (!string.IsNullOrWhiteSpace(transportType))
+            {
+                query = query.Where(t => t.TransportType == transportType.ToUpper());
+            }
+
+            var entities = await query.ToListAsync();
+            return entities.Select(MapToDto).ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to retrieve cached transport options for {Origin} -> {Destination}. Proceeding without cache.", origin, destination);
+            return [];
+        }
     }
 
     private async Task SaveRetrievedOptionsToCacheAsync(List<TransportOptionDto> options, string origin, string destination, DateTime travelDate)

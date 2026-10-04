@@ -25,13 +25,10 @@ export const generateTripPlan = async (req: Request, res: Response) => {
 
 export const saveTripPlan = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    let userId = req.user?.userId;
+    const userId = req.user?.userId;
 
     if (!userId) {
-      // Find or fallback to default Tourist user if unauthenticated demo
-      const tourist = await prisma.user.findFirst({ where: { role: 'USER' } });
-      if (tourist) userId = tourist.id;
-      else return res.status(401).json({ success: false, message: 'Authentication required to save trip' });
+      return res.status(401).json({ success: false, message: 'Authentication required to save trip' });
     }
 
     const { plan, requestInput } = req.body;

@@ -9,7 +9,6 @@ using Nova.Api.Services;
 namespace Nova.Api.Controllers;
 
 [ApiController]
-[Authorize]
 public class ItinerariesController : ControllerBase
 {
     private readonly IItineraryService _itineraryService;
@@ -99,6 +98,16 @@ public class ItinerariesController : ControllerBase
         return Ok(result);
     }
 
+    [HttpPatch("api/itineraries/{id}/status")]
+    [HttpPut("api/itineraries/{id}/status")]
+    [ProducesResponseType(typeof(ApiResponse<ItineraryResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> UpdateItineraryStatus(string id, [FromBody] UpdateItineraryStatusRequest request)
+    {
+        var result = await _itineraryService.UpdateItineraryStatusAsync(id, request.Status);
+        if (!result.Success) return BadRequest(result);
+        return Ok(result);
+    }
+
     // Human Approval Endpoints (Tour Operator / Admin)
     [HttpPost("api/itineraries/{id}/approve")]
     [Authorize(Roles = "TourismOperator,Admin")]
@@ -147,7 +156,7 @@ public class ItinerariesController : ControllerBase
     {
         return User.FindFirstValue(ClaimTypes.NameIdentifier) ??
                User.FindFirstValue("sub") ??
-               "u-demo-user";
+               "U001";
     }
 
     private string GetCurrentUserRole()

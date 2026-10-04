@@ -12,8 +12,11 @@ import {
   ChevronLeft,
   ChevronRight,
   AlertTriangle,
+  Trash2,
+  MessageSquare,
+  Calendar,
 } from 'lucide-react';
-import { Review, ReviewStatus } from '../../types/reviewsAndRecommendations';
+import { Review, ReviewStatus, TargetType } from '../../types/reviewsAndRecommendations';
 import { RatingStars } from './RatingStars';
 
 interface ReviewManagementTableProps {
@@ -21,6 +24,8 @@ interface ReviewManagementTableProps {
   onApprove: (id: string) => void;
   onReject: (id: string, reason?: string) => void;
   onView: (review: Review) => void;
+  onDelete?: (id: string) => void;
+  onReply?: (review: Review) => void;
   className?: string;
 }
 
@@ -31,14 +36,20 @@ export const ReviewManagementTable: React.FC<ReviewManagementTableProps> = ({
   onApprove,
   onReject,
   onView,
+  onDelete,
+  onReply,
   className = '',
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'All' | ReviewStatus>('All');
   const [ratingFilter, setRatingFilter] = useState<number | 'All'>('All');
+  const [typeFilter, setTypeFilter] = useState<'All' | TargetType>('All');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState('Violates community policy guidelines');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // Filtered reviews
   const filtered = useMemo(() => {
@@ -52,10 +63,21 @@ export const ReviewManagementTable: React.FC<ReviewManagementTableProps> = ({
 
       const matchStatus = statusFilter === 'All' || r.status === statusFilter;
       const matchRating = ratingFilter === 'All' || r.rating === ratingFilter;
+      const matchType = typeFilter === 'All' || r.targetType === typeFilter;
 
-      return matchSearch && matchStatus && matchRating;
+      // Date range filter (compare sortDate if available)
+      let matchDate = true;
+      if (dateFrom || dateTo) {
+        const revDate = (r as any).sortDate ? new Date((r as any).sortDate) : null;
+        if (revDate) {
+          if (dateFrom && revDate < new Date(dateFrom)) matchDate = false;
+          if (dateTo && revDate > new Date(dateTo + 'T23:59:59')) matchDate = false;
+        }
+      }
+
+      return matchSearch && matchStatus && matchRating && matchType && matchDate;
     });
-  }, [reviews, searchQuery, statusFilter, ratingFilter]);
+  }, [reviews, searchQuery, statusFilter, ratingFilter, typeFilter, dateFrom, dateTo]);
 
   // Pagination
   const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE) || 1;
@@ -127,39 +149,93 @@ export const ReviewManagementTable: React.FC<ReviewManagementTableProps> = ({
       </div>
 
       {/* Search & Filters */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 text-xs">
-        <div className="relative flex-1">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setCurrentPage(1);
-            }}
-            placeholder="Search by tourist name, destination, title or review text..."
-            className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-[#16A6A1] focus:outline-none"
-          />
-        </div>
-
-        <div className="flex items-center gap-2">
-          <span className="font-bold text-slate-500">Rating:</span>
-          {['All', 5, 4, 3, 2, 1].map((r) => (
-            <button
-              key={r}
-              onClick={() => {
-                setRatingFilter(r as any);
+      <div className="space-y-3">
+        {/* Row 1: Search + Status Tabs */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 text-xs">
+          <div className="relative flex-1">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
                 setCurrentPage(1);
               }}
-              className={`px-2.5 py-1 rounded-lg font-bold cursor-pointer transition-all ${
-                ratingFilter === r
-                  ? 'bg-[#16A6A1] text-white'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
-            >
-              {r === 'All' ? 'All' : `${r}★`}
-            </button>
-          ))}
+              placeholder="Search by tourist name, destination, title or review text..."
+              className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-[#16A6A1] focus:outline-none"
+            />
+          </div>
+        </div>
+
+        {/* Row 2: Rating + Type + Date filters */}
+        <div className="flex flex-wrap items-center gap-3 text-xs">
+          {/* Rating filter */}
+          <div className="flex items-center gap-1.5">
+            <span className="font-bold text-slate-500">Rating:</span>
+            {(['All', 5, 4, 3, 2, 1] as (number | 'All')[]).map((r) => (
+              <button
+                key={r}
+                onClick={() => {
+                  setRatingFilter(r);
+                  setCurrentPage(1);
+                }}
+                className={`px-2.5 py-1 rounded-lg font-bold cursor-pointer transition-all ${
+                  ratingFilter === r
+                    ? 'bg-[#16A6A1] text-white'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                {r === 'All' ? 'All' : `${r}★`}
+              </button>
+            ))}
+          </div>
+
+          {/* Type filter */}
+          <div className="flex items-center gap-1.5">
+            <span className="font-bold text-slate-500">Type:</span>
+            {(['All', 'attraction', 'destination', 'tour'] as ('All' | TargetType)[]).map((t) => (
+              <button
+                key={t}
+                onClick={() => {
+                  setTypeFilter(t);
+                  setCurrentPage(1);
+                }}
+                className={`px-2.5 py-1 rounded-lg font-bold cursor-pointer transition-all capitalize ${
+                  typeFilter === t
+                    ? 'bg-[#0B3A53] text-white'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+
+          {/* Date range */}
+          <div className="flex items-center gap-1.5 ml-auto">
+            <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => { setDateFrom(e.target.value); setCurrentPage(1); }}
+              className="px-2 py-1 rounded-lg bg-slate-50 border border-slate-200 text-xs font-medium focus:ring-1 focus:ring-[#16A6A1] focus:outline-none cursor-pointer"
+            />
+            <span className="text-slate-400 font-bold">to</span>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => { setDateTo(e.target.value); setCurrentPage(1); }}
+              className="px-2 py-1 rounded-lg bg-slate-50 border border-slate-200 text-xs font-medium focus:ring-1 focus:ring-[#16A6A1] focus:outline-none cursor-pointer"
+            />
+            {(dateFrom || dateTo) && (
+              <button
+                onClick={() => { setDateFrom(''); setDateTo(''); setCurrentPage(1); }}
+                className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 cursor-pointer transition-colors"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -204,6 +280,46 @@ export const ReviewManagementTable: React.FC<ReviewManagementTableProps> = ({
                 className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-md cursor-pointer"
               >
                 Confirm Reject
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deletingId && onDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-200 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-2xl bg-rose-50 text-rose-600">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-base font-black text-slate-900 font-heading">
+                  Permanently Delete Review?
+                </h4>
+                <p className="text-xs text-slate-500">This action cannot be undone.</p>
+              </div>
+            </div>
+            <p className="text-xs text-slate-600 bg-slate-50 rounded-xl p-3 border border-slate-100">
+              The review will be permanently removed from the system, including all associated data and media.
+            </p>
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                onClick={() => setDeletingId(null)}
+                className="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-50 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  onDelete(deletingId);
+                  setDeletingId(null);
+                }}
+                className="px-4 py-2 rounded-xl bg-rose-700 hover:bg-rose-800 text-white font-bold text-xs shadow-md cursor-pointer flex items-center gap-1.5"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Delete Permanently
               </button>
             </div>
           </div>
@@ -297,6 +413,17 @@ export const ReviewManagementTable: React.FC<ReviewManagementTableProps> = ({
                         <Eye className="w-4 h-4" />
                       </button>
 
+                      {/* Reply button */}
+                      {onReply && (
+                        <button
+                          onClick={() => onReply(rev)}
+                          className="p-1.5 text-[#16A6A1] hover:bg-[#16A6A1]/10 rounded-lg transition-colors cursor-pointer"
+                          title="Reply to Review"
+                        >
+                          <MessageSquare className="w-4 h-4" />
+                        </button>
+                      )}
+
                       {/* Approve button */}
                       {rev.status !== 'Published' && (
                         <button
@@ -316,6 +443,17 @@ export const ReviewManagementTable: React.FC<ReviewManagementTableProps> = ({
                           title="Reject Review"
                         >
                           <X className="w-4 h-4" />
+                        </button>
+                      )}
+
+                      {/* Delete button */}
+                      {onDelete && (
+                        <button
+                          onClick={() => setDeletingId(rev.id)}
+                          className="p-1.5 text-slate-400 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                          title="Permanently Delete Review"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       )}
                     </div>

@@ -256,16 +256,21 @@ public class Review
     [ForeignKey(nameof(UserId))]
     public User? User { get; set; }
 
-    public string DestinationId { get; set; } = string.Empty;
+    public string? DestinationId { get; set; }
     [ForeignKey(nameof(DestinationId))]
     public Destination? Destination { get; set; }
 
     public int Rating { get; set; } = 5; // 1 to 5
     public string Comment { get; set; } = string.Empty;
-    public string SentimentLabel { get; set; } = "Positive"; // Positive, Neutral, Negative
-    public double SentimentScore { get; set; } = 0.92;
-    public ReviewStatus Status { get; set; } = ReviewStatus.Published;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+    [NotMapped]
+    public string SentimentLabel { get; set; } = "Positive"; // Positive, Neutral, Negative
+    [NotMapped]
+    public double SentimentScore { get; set; } = 0.92;
+    [NotMapped]
+    public ReviewStatus Status { get; set; } = ReviewStatus.Published;
 }
 
 [Table("attractions")]
@@ -280,14 +285,43 @@ public class Attraction
 
     public string Name { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
-    public string Location { get; set; } = string.Empty;
-    public string OpeningTime { get; set; } = "08:00 AM";
-    public string ClosingTime { get; set; } = "06:00 PM";
-    public string EstimatedDuration { get; set; } = "2 Hours";
-    public decimal EstimatedCost { get; set; } = 0.0m;
-    public string ImageUrl { get; set; } = string.Empty;
-    public AttractionStatus Status { get; set; } = AttractionStatus.Active;
+    public string? ImageUrl { get; set; }
+    public string? Category { get; set; }
+    public double EntryFee { get; set; } = 0.0;
+    public string? OpeningTime { get; set; } = "08:00 AM";
+    public string? ClosingTime { get; set; } = "06:00 PM";
+    public double? Latitude { get; set; }
+    public double? Longitude { get; set; }
+    public double DurationHours { get; set; } = 2.0;
+    public double Rating { get; set; } = 4.5;
+    public int ReviewCount { get; set; } = 0;
+    public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+    [NotMapped]
+    public string Location { get; set; } = string.Empty;
+    [NotMapped]
+    public decimal EstimatedCost { get => (decimal)EntryFee; set => EntryFee = (double)value; }
+    [NotMapped]
+    public string EstimatedDuration { get => $"{DurationHours} Hours"; set { } }
+    [NotMapped]
+    public AttractionStatus Status { get => IsActive ? AttractionStatus.Active : AttractionStatus.Inactive; set => IsActive = value == AttractionStatus.Active; }
+}
+
+[Table("transport_partners")]
+public class TransportPartner
+{
+    [Key]
+    public string Id { get; set; } = Guid.NewGuid().ToString();
+
+    public string Name { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string? Logo { get; set; }
+    public string WebsiteUrl { get; set; } = string.Empty;
+    public double Discount { get; set; } = 0.0;
+    public string DiscountDescription { get; set; } = string.Empty;
+    public bool IsActive { get; set; } = true;
 }
 
 [Table("chatbot_payments")]

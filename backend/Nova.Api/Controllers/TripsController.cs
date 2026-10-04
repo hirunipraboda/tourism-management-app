@@ -10,7 +10,6 @@ namespace Nova.Api.Controllers;
 
 [ApiController]
 [Route("api/trips")]
-[Authorize]
 public class TripsController : ControllerBase
 {
     private readonly ITripService _tripService;
@@ -64,6 +63,14 @@ public class TripsController : ControllerBase
         return Ok(result);
     }
 
+    [HttpGet("user/{userId}")]
+    [ProducesResponseType(typeof(ApiResponse<List<TripResponse>>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetTripsByUser(string userId)
+    {
+        var result = await _tripService.GetTripsByUserIdAsync(userId);
+        return Ok(result);
+    }
+
     [HttpPut("{id}")]
     [ProducesResponseType(typeof(ApiResponse<TripResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<TripResponse>), StatusCodes.Status400BadRequest)]
@@ -111,7 +118,7 @@ public class TripsController : ControllerBase
     {
         return User.FindFirstValue(ClaimTypes.NameIdentifier) ??
                User.FindFirstValue("sub") ??
-               "u-demo-user";
+               "U001";
     }
 
     private string GetCurrentUserRole()

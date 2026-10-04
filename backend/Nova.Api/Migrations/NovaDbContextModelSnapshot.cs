@@ -118,77 +118,17 @@ namespace Nova.Api.Migrations
                     b.ToTable("ai_photo_queries", (string)null);
                 });
 
-            modelBuilder.Entity("Nova.Api.Entities.Activity", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasColumnType("text")
-                        .HasColumnName("id");
-
-                    b.Property<string>("Category")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("category");
-
-                    b.Property<TimeSpan>("ClosingTime")
-                        .HasColumnType("interval")
-                        .HasColumnName("closing_time");
-
-                    b.Property<decimal>("CostPerPerson")
-                        .HasColumnType("numeric")
-                        .HasColumnName("cost_per_person");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("description");
-
-                    b.Property<string>("DestinationId")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("destination_id");
-
-                    b.Property<int>("DurationMinutes")
-                        .HasColumnType("integer")
-                        .HasColumnName("duration_minutes");
-
-                    b.Property<string>("ImageUrl")
-                        .HasColumnType("text")
-                        .HasColumnName("image_url");
-
-                    b.Property<double?>("Latitude")
-                        .HasColumnType("double precision")
-                        .HasColumnName("latitude");
-
-                    b.Property<double?>("Longitude")
-                        .HasColumnType("double precision")
-                        .HasColumnName("longitude");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("name");
-
-                    b.Property<TimeSpan>("OpeningTime")
-                        .HasColumnType("interval")
-                        .HasColumnName("opening_time");
-
-                    b.HasKey("Id")
-                        .HasName("pk_activities");
-
-                    b.HasIndex("DestinationId")
-                        .HasDatabaseName("ix_activities_destination_id");
-
-                    b.ToTable("activities", (string)null);
-                });
-
             modelBuilder.Entity("Nova.Api.Entities.Attraction", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("text")
                         .HasColumnName("id");
 
+                    b.Property<string>("Category")
+                        .HasColumnType("text")
+                        .HasColumnName("category");
+
                     b.Property<string>("ClosingTime")
-                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("closing_time");
 
@@ -206,24 +146,29 @@ namespace Nova.Api.Migrations
                         .HasColumnType("text")
                         .HasColumnName("destination_id");
 
-                    b.Property<decimal>("EstimatedCost")
-                        .HasColumnType("numeric")
-                        .HasColumnName("estimated_cost");
+                    b.Property<double>("DurationHours")
+                        .HasColumnType("double precision")
+                        .HasColumnName("duration_hours");
 
-                    b.Property<string>("EstimatedDuration")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("estimated_duration");
+                    b.Property<double>("EntryFee")
+                        .HasColumnType("double precision")
+                        .HasColumnName("entry_fee");
 
                     b.Property<string>("ImageUrl")
-                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("image_url");
 
-                    b.Property<string>("Location")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("location");
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<double?>("Latitude")
+                        .HasColumnType("double precision")
+                        .HasColumnName("latitude");
+
+                    b.Property<double?>("Longitude")
+                        .HasColumnType("double precision")
+                        .HasColumnName("longitude");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -231,14 +176,25 @@ namespace Nova.Api.Migrations
                         .HasColumnName("name");
 
                     b.Property<string>("OpeningTime")
-                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("opening_time");
+
+                    b.Property<double>("Rating")
+                        .HasColumnType("double precision")
+                        .HasColumnName("rating");
+
+                    b.Property<int>("ReviewCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("review_count");
 
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("status");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
 
                     b.HasKey("Id")
                         .HasName("pk_attractions");
@@ -544,6 +500,18 @@ namespace Nova.Api.Migrations
                         .HasColumnType("text")
                         .HasColumnName("id");
 
+                    b.Property<string>("BestTimeToVisit")
+                        .HasColumnType("text")
+                        .HasColumnName("best_time_to_visit");
+
+                    b.Property<string>("Category")
+                        .HasColumnType("text")
+                        .HasColumnName("category");
+
+                    b.Property<string>("ClosingTime")
+                        .HasColumnType("text")
+                        .HasColumnName("closing_time");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -553,10 +521,21 @@ namespace Nova.Api.Migrations
                         .HasColumnType("text")
                         .HasColumnName("description");
 
+                    b.Property<string>("District")
+                        .HasColumnType("text")
+                        .HasColumnName("district");
+
+                    b.Property<double?>("EntryFee")
+                        .HasColumnType("double precision")
+                        .HasColumnName("entry_fee");
+
                     b.Property<string>("ImageUrl")
-                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("image_url");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
 
                     b.Property<string>("Location")
                         .IsRequired()
@@ -568,19 +547,31 @@ namespace Nova.Api.Migrations
                         .HasColumnType("text")
                         .HasColumnName("name");
 
+                    b.Property<string>("OpeningTime")
+                        .HasColumnType("text")
+                        .HasColumnName("opening_time");
+
                     b.Property<string>("Province")
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("province");
 
-                    b.Property<double>("Rating")
+                    b.Property<double?>("Rating")
                         .HasColumnType("double precision")
                         .HasColumnName("rating");
+
+                    b.Property<int?>("ReviewCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("review_count");
 
                     b.Property<string>("Slug")
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("slug");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
 
                     b.HasKey("Id")
                         .HasName("pk_destinations");
@@ -590,6 +581,130 @@ namespace Nova.Api.Migrations
                         .HasDatabaseName("ix_destinations_slug");
 
                     b.ToTable("destinations", (string)null);
+                });
+
+            modelBuilder.Entity("Nova.Api.Entities.Guide", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AvatarUrl")
+                        .HasColumnType("text")
+                        .HasColumnName("avatar_url");
+
+                    b.Property<string>("Bio")
+                        .HasColumnType("text")
+                        .HasColumnName("bio");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("email");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<List<string>>("Languages")
+                        .HasColumnType("text[]")
+                        .HasColumnName("languages");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.Property<string>("Phone")
+                        .HasColumnType("text")
+                        .HasColumnName("phone");
+
+                    b.Property<decimal>("RatingAvg")
+                        .HasColumnType("numeric")
+                        .HasColumnName("rating_avg");
+
+                    b.Property<int>("RatingCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("rating_count");
+
+                    b.Property<List<string>>("Specialties")
+                        .HasColumnType("text[]")
+                        .HasColumnName("specialties");
+
+                    b.Property<int>("ToursCompleted")
+                        .HasColumnType("integer")
+                        .HasColumnName("tours_completed");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("provider_id");
+
+                    b.Property<string>("VerificationStatus")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("verification_status");
+
+                    b.Property<int?>("YearsExperience")
+                        .HasColumnType("integer")
+                        .HasColumnName("years_experience");
+
+                    b.HasKey("Id")
+                        .HasName("pk_guides");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_guides_provider_id");
+
+                    b.ToTable("guides", (string)null);
+                });
+
+            modelBuilder.Entity("Nova.Api.Entities.GuideAvailability", b =>
+                {
+                    b.Property<int>("AvailabilityId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("availability_id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("AvailabilityId"));
+
+                    b.Property<DateOnly>("AvailableDate")
+                        .HasColumnType("date")
+                        .HasColumnName("available_date");
+
+                    b.Property<TimeOnly>("EndTime")
+                        .HasColumnType("time without time zone")
+                        .HasColumnName("end_time");
+
+                    b.Property<int>("GuideId")
+                        .HasColumnType("integer")
+                        .HasColumnName("guide_id");
+
+                    b.Property<bool>("IsBooked")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_booked");
+
+                    b.Property<TimeOnly>("StartTime")
+                        .HasColumnType("time without time zone")
+                        .HasColumnName("start_time");
+
+                    b.HasKey("AvailabilityId")
+                        .HasName("pk_guide_availabilities");
+
+                    b.HasIndex("GuideId")
+                        .HasDatabaseName("ix_guide_availabilities_guide_id");
+
+                    b.ToTable("guide_availabilities", (string)null);
                 });
 
             modelBuilder.Entity("Nova.Api.Entities.Itinerary", b =>
@@ -614,9 +729,10 @@ namespace Nova.Api.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
-                    b.Property<double>("FeasibilityScore")
-                        .HasColumnType("double precision")
-                        .HasColumnName("feasibility_score");
+                    b.Property<string>("CreatedSource")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("created_source");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -840,9 +956,6 @@ namespace Nova.Api.Migrations
                     b.HasKey("Id")
                         .HasName("pk_itinerary_items");
 
-                    b.HasIndex("ActivityId")
-                        .HasDatabaseName("ix_itinerary_items_activity_id");
-
                     b.HasIndex("ItineraryDayId")
                         .HasDatabaseName("ix_itinerary_items_itinerary_day_id");
 
@@ -1018,6 +1131,74 @@ namespace Nova.Api.Migrations
                     b.ToTable("promo_payments", (string)null);
                 });
 
+            modelBuilder.Entity("Nova.Api.Entities.RecommendationSettings", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("BudgetWeight")
+                        .HasColumnType("numeric")
+                        .HasColumnName("budget_weight");
+
+                    b.Property<decimal>("DistanceWeight")
+                        .HasColumnType("numeric")
+                        .HasColumnName("distance_weight");
+
+                    b.Property<decimal>("HistoryWeight")
+                        .HasColumnType("numeric")
+                        .HasColumnName("history_weight");
+
+                    b.Property<decimal>("InterestWeight")
+                        .HasColumnType("numeric")
+                        .HasColumnName("interest_weight");
+
+                    b.Property<int>("MinReviewCountToRank")
+                        .HasColumnType("integer")
+                        .HasColumnName("min_review_count_to_rank");
+
+                    b.Property<decimal>("PopularityWeight")
+                        .HasColumnType("numeric")
+                        .HasColumnName("popularity_weight");
+
+                    b.Property<decimal>("RatingWeight")
+                        .HasColumnType("numeric")
+                        .HasColumnName("rating_weight");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("UpdatedBy")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_recommendation_settings");
+
+                    b.ToTable("recommendation_settings", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            BudgetWeight = 15m,
+                            DistanceWeight = 15m,
+                            HistoryWeight = 5m,
+                            InterestWeight = 30m,
+                            MinReviewCountToRank = 0,
+                            PopularityWeight = 10m,
+                            RatingWeight = 25m,
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedBy = "System"
+                        });
+                });
+
             modelBuilder.Entity("Nova.Api.Entities.Review", b =>
                 {
                     b.Property<string>("Id")
@@ -1034,7 +1215,6 @@ namespace Nova.Api.Migrations
                         .HasColumnName("created_at");
 
                     b.Property<string>("DestinationId")
-                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("destination_id");
 
@@ -1042,19 +1222,14 @@ namespace Nova.Api.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("rating");
 
-                    b.Property<string>("SentimentLabel")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("sentiment_label");
-
-                    b.Property<double>("SentimentScore")
-                        .HasColumnType("double precision")
-                        .HasColumnName("sentiment_score");
-
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("status");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
 
                     b.Property<string>("UserId")
                         .IsRequired()
@@ -1071,6 +1246,25 @@ namespace Nova.Api.Migrations
                         .HasDatabaseName("ix_reviews_user_id");
 
                     b.ToTable("reviews", (string)null);
+                });
+
+            modelBuilder.Entity("Nova.Api.Entities.ReviewHelpfulVote", b =>
+                {
+                    b.Property<string>("ReviewId")
+                        .HasColumnType("text")
+                        .HasColumnName("review_id");
+
+                    b.Property<string>("TouristId")
+                        .HasColumnType("text")
+                        .HasColumnName("tourist_id");
+
+                    b.HasKey("ReviewId", "TouristId")
+                        .HasName("pk_review_helpful_votes");
+
+                    b.HasIndex("TouristId")
+                        .HasDatabaseName("ix_review_helpful_votes_tourist_id");
+
+                    b.ToTable("review_helpful_votes", (string)null);
                 });
 
             modelBuilder.Entity("Nova.Api.Entities.SystemActivity", b =>
@@ -1112,6 +1306,127 @@ namespace Nova.Api.Migrations
                         .HasName("pk_system_activities");
 
                     b.ToTable("system_activities", (string)null);
+                });
+
+            modelBuilder.Entity("Nova.Api.Entities.TourOperation", b =>
+                {
+                    b.Property<int>("TourOperationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("tour_operation_id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("TourOperationId"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("GuideId")
+                        .HasColumnType("integer")
+                        .HasColumnName("guide_id");
+
+                    b.Property<string>("Notes")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("notes");
+
+                    b.Property<int>("NumberOfTourists")
+                        .HasColumnType("integer")
+                        .HasColumnName("number_of_tourists");
+
+                    b.Property<DateTime>("ScheduledDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("scheduled_date");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("status");
+
+                    b.Property<decimal>("TotalCost")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("total_cost");
+
+                    b.Property<int>("TourPackageId")
+                        .HasColumnType("integer")
+                        .HasColumnName("tour_package_id");
+
+                    b.HasKey("TourOperationId")
+                        .HasName("pk_tour_operations");
+
+                    b.HasIndex("GuideId")
+                        .HasDatabaseName("ix_tour_operations_guide_id");
+
+                    b.HasIndex("TourPackageId")
+                        .HasDatabaseName("ix_tour_operations_tour_package_id");
+
+                    b.ToTable("tour_operations", (string)null);
+                });
+
+            modelBuilder.Entity("Nova.Api.Entities.TourPackage", b =>
+                {
+                    b.Property<int>("TourPackageId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("tour_package_id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("TourPackageId"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("description");
+
+                    b.Property<string>("Destination")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("destination");
+
+                    b.Property<int>("DurationDays")
+                        .HasColumnType("integer")
+                        .HasColumnName("duration_days");
+
+                    b.Property<int>("GuideId")
+                        .HasColumnType("integer")
+                        .HasColumnName("guide_id");
+
+                    b.Property<string>("ImageUrl")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("image_url");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<int>("MaxGroupSize")
+                        .HasColumnType("integer")
+                        .HasColumnName("max_group_size");
+
+                    b.Property<string>("PackageName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)")
+                        .HasColumnName("package_name");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("price");
+
+                    b.HasKey("TourPackageId")
+                        .HasName("pk_tour_packages");
+
+                    b.HasIndex("GuideId")
+                        .HasDatabaseName("ix_tour_packages_guide_id");
+
+                    b.ToTable("tour_packages", (string)null);
                 });
 
             modelBuilder.Entity("Nova.Api.Entities.TrainSchedule", b =>
@@ -1212,39 +1527,30 @@ namespace Nova.Api.Migrations
                         .HasColumnType("text")
                         .HasColumnName("destination");
 
-                    b.Property<string>("Direction")
-                        .HasColumnType("text")
-                        .HasColumnName("direction");
-
                     b.Property<int>("DurationMinutes")
                         .HasColumnType("integer")
                         .HasColumnName("duration_minutes");
+
+                    b.Property<decimal?>("EstimatedCost")
+                        .HasColumnType("numeric")
+                        .HasColumnName("estimated_cost");
 
                     b.Property<decimal?>("EstimatedFare")
                         .HasColumnType("numeric")
                         .HasColumnName("estimated_fare");
 
-                    b.Property<List<string>>("IntermediateStops")
-                        .IsRequired()
-                        .HasColumnType("text[]")
-                        .HasColumnName("intermediate_stops");
-
                     b.Property<bool>("IsSelected")
                         .HasColumnType("boolean")
                         .HasColumnName("is_selected");
-
-                    b.Property<string>("ItineraryItemId")
-                        .HasColumnType("text")
-                        .HasColumnName("itinerary_item_id");
 
                     b.Property<string>("Origin")
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("origin");
 
-                    b.Property<DateTime>("RetrievedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("retrieved_at");
+                    b.Property<string>("Provider")
+                        .HasColumnType("text")
+                        .HasColumnName("provider");
 
                     b.Property<string>("RouteName")
                         .HasColumnType("text")
@@ -1254,10 +1560,9 @@ namespace Nova.Api.Migrations
                         .HasColumnType("text")
                         .HasColumnName("route_number");
 
-                    b.Property<string>("Source")
-                        .IsRequired()
+                    b.Property<string>("Status")
                         .HasColumnType("text")
-                        .HasColumnName("source");
+                        .HasColumnName("status");
 
                     b.Property<string>("TrainName")
                         .HasColumnType("text")
@@ -1284,12 +1589,16 @@ namespace Nova.Api.Migrations
                         .HasColumnType("text")
                         .HasColumnName("trip_id");
 
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("VehicleType")
+                        .HasColumnType("text")
+                        .HasColumnName("vehicle_type");
+
                     b.HasKey("Id")
                         .HasName("pk_transport_options");
-
-                    b.HasIndex("ItineraryItemId")
-                        .IsUnique()
-                        .HasDatabaseName("ix_transport_options_itinerary_item_id");
 
                     b.HasIndex("TripId")
                         .HasDatabaseName("ix_transport_options_trip_id");
@@ -1298,6 +1607,50 @@ namespace Nova.Api.Migrations
                         .HasDatabaseName("ix_transport_options_origin_destination_travel_date");
 
                     b.ToTable("transport_options", (string)null);
+                });
+
+            modelBuilder.Entity("Nova.Api.Entities.TransportPartner", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("description");
+
+                    b.Property<double>("Discount")
+                        .HasColumnType("double precision")
+                        .HasColumnName("discount");
+
+                    b.Property<string>("DiscountDescription")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("discount_description");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("Logo")
+                        .HasColumnType("text")
+                        .HasColumnName("logo");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.Property<string>("WebsiteUrl")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("website_url");
+
+                    b.HasKey("Id")
+                        .HasName("pk_transport_partners");
+
+                    b.ToTable("transport_partners", (string)null);
                 });
 
             modelBuilder.Entity("Nova.Api.Entities.Trip", b =>
@@ -1314,14 +1667,10 @@ namespace Nova.Api.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
-                    b.Property<string>("Destination")
+                    b.Property<string>("CreatedSource")
                         .IsRequired()
                         .HasColumnType("text")
-                        .HasColumnName("destination");
-
-                    b.Property<string>("DestinationId")
-                        .HasColumnType("text")
-                        .HasColumnName("destination_id");
+                        .HasColumnName("created_source");
 
                     b.Property<DateTime>("EndDate")
                         .HasColumnType("timestamp with time zone")
@@ -1345,6 +1694,11 @@ namespace Nova.Api.Migrations
                         .HasColumnType("text")
                         .HasColumnName("status");
 
+                    b.Property<string>("TripName")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("trip_name");
+
                     b.Property<string>("TripStyle")
                         .IsRequired()
                         .HasColumnType("text")
@@ -1362,13 +1716,29 @@ namespace Nova.Api.Migrations
                     b.HasKey("Id")
                         .HasName("pk_trips");
 
-                    b.HasIndex("DestinationId")
-                        .HasDatabaseName("ix_trips_destination_id");
-
                     b.HasIndex("UserId")
                         .HasDatabaseName("ix_trips_user_id");
 
                     b.ToTable("trips", (string)null);
+                });
+
+            modelBuilder.Entity("Nova.Api.Entities.TripDestination", b =>
+                {
+                    b.Property<string>("TripId")
+                        .HasColumnType("text")
+                        .HasColumnName("trip_id");
+
+                    b.Property<string>("DestinationId")
+                        .HasColumnType("text")
+                        .HasColumnName("destination_id");
+
+                    b.HasKey("TripId", "DestinationId")
+                        .HasName("pk_trip_destinations");
+
+                    b.HasIndex("DestinationId")
+                        .HasDatabaseName("ix_trip_destinations_destination_id");
+
+                    b.ToTable("trip_destinations", (string)null);
                 });
 
             modelBuilder.Entity("Nova.Api.Entities.User", b =>
@@ -1386,10 +1756,6 @@ namespace Nova.Api.Migrations
                         .HasColumnType("text")
                         .HasColumnName("email");
 
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_active");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text")
@@ -1400,10 +1766,19 @@ namespace Nova.Api.Migrations
                         .HasColumnType("text")
                         .HasColumnName("password_hash");
 
+                    b.Property<string>("ProfileImage")
+                        .HasColumnType("text")
+                        .HasColumnName("profile_image");
+
                     b.Property<string>("Role")
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("role");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("status");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -1494,22 +1869,10 @@ namespace Nova.Api.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("Nova.Api.Entities.Activity", b =>
-                {
-                    b.HasOne("Nova.Api.Entities.Destination", "Destination")
-                        .WithMany("Activities")
-                        .HasForeignKey("DestinationId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_activities_destinations_destination_id");
-
-                    b.Navigation("Destination");
-                });
-
             modelBuilder.Entity("Nova.Api.Entities.Attraction", b =>
                 {
                     b.HasOne("Nova.Api.Entities.Destination", "Destination")
-                        .WithMany()
+                        .WithMany("Attractions")
                         .HasForeignKey("DestinationId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
@@ -1521,8 +1884,9 @@ namespace Nova.Api.Migrations
             modelBuilder.Entity("Nova.Api.Entities.Booking", b =>
                 {
                     b.HasOne("Nova.Api.Entities.Trip", "Trip")
-                        .WithMany()
+                        .WithMany("Bookings")
                         .HasForeignKey("TripId")
+                        .OnDelete(DeleteBehavior.SetNull)
                         .HasConstraintName("fk_bookings_trips_trip_id");
 
                     b.HasOne("Nova.Api.Entities.User", "User")
@@ -1579,6 +1943,30 @@ namespace Nova.Api.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("Nova.Api.Entities.Guide", b =>
+                {
+                    b.HasOne("Nova.Api.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_guides_users_provider_id");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Nova.Api.Entities.GuideAvailability", b =>
+                {
+                    b.HasOne("Nova.Api.Entities.Guide", "Guide")
+                        .WithMany("Availabilities")
+                        .HasForeignKey("GuideId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_guide_availabilities_guides_guide_id");
+
+                    b.Navigation("Guide");
+                });
+
             modelBuilder.Entity("Nova.Api.Entities.Itinerary", b =>
                 {
                     b.HasOne("Nova.Api.Entities.Trip", "Trip")
@@ -1629,19 +2017,12 @@ namespace Nova.Api.Migrations
 
             modelBuilder.Entity("Nova.Api.Entities.ItineraryItem", b =>
                 {
-                    b.HasOne("Nova.Api.Entities.Activity", "Activity")
-                        .WithMany()
-                        .HasForeignKey("ActivityId")
-                        .HasConstraintName("fk_itinerary_items_activities_activity_id");
-
                     b.HasOne("Nova.Api.Entities.ItineraryDay", "ItineraryDay")
                         .WithMany("Items")
                         .HasForeignKey("ItineraryDayId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_itinerary_items_itinerary_days_itinerary_day_id");
-
-                    b.Navigation("Activity");
 
                     b.Navigation("ItineraryDay");
                 });
@@ -1691,8 +2072,6 @@ namespace Nova.Api.Migrations
                     b.HasOne("Nova.Api.Entities.Destination", "Destination")
                         .WithMany()
                         .HasForeignKey("DestinationId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
                         .HasConstraintName("fk_reviews_destinations_destination_id");
 
                     b.HasOne("Nova.Api.Entities.User", "User")
@@ -1707,32 +2086,73 @@ namespace Nova.Api.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("Nova.Api.Entities.ReviewHelpfulVote", b =>
+                {
+                    b.HasOne("Nova.Api.Entities.Review", "Review")
+                        .WithMany()
+                        .HasForeignKey("ReviewId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_review_helpful_votes_reviews_review_id");
+
+                    b.HasOne("Nova.Api.Entities.User", "Tourist")
+                        .WithMany()
+                        .HasForeignKey("TouristId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_review_helpful_votes_users_tourist_id");
+
+                    b.Navigation("Review");
+
+                    b.Navigation("Tourist");
+                });
+
+            modelBuilder.Entity("Nova.Api.Entities.TourOperation", b =>
+                {
+                    b.HasOne("Nova.Api.Entities.Guide", "Guide")
+                        .WithMany("TourOperations")
+                        .HasForeignKey("GuideId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_tour_operations_guides_guide_id");
+
+                    b.HasOne("Nova.Api.Entities.TourPackage", "TourPackage")
+                        .WithMany("TourOperations")
+                        .HasForeignKey("TourPackageId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_tour_operations_tour_packages_tour_package_id");
+
+                    b.Navigation("Guide");
+
+                    b.Navigation("TourPackage");
+                });
+
+            modelBuilder.Entity("Nova.Api.Entities.TourPackage", b =>
+                {
+                    b.HasOne("Nova.Api.Entities.Guide", "Guide")
+                        .WithMany("TourPackages")
+                        .HasForeignKey("GuideId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_tour_packages_guides_guide_id");
+
+                    b.Navigation("Guide");
+                });
+
             modelBuilder.Entity("Nova.Api.Entities.TransportOption", b =>
                 {
-                    b.HasOne("Nova.Api.Entities.ItineraryItem", "ItineraryItem")
-                        .WithOne("SelectedTransport")
-                        .HasForeignKey("Nova.Api.Entities.TransportOption", "ItineraryItemId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .HasConstraintName("fk_transport_options_itinerary_items_itinerary_item_id");
-
                     b.HasOne("Nova.Api.Entities.Trip", "Trip")
                         .WithMany("TransportOptions")
                         .HasForeignKey("TripId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .HasConstraintName("fk_transport_options_trips_trip_id");
 
-                    b.Navigation("ItineraryItem");
-
                     b.Navigation("Trip");
                 });
 
             modelBuilder.Entity("Nova.Api.Entities.Trip", b =>
                 {
-                    b.HasOne("Nova.Api.Entities.Destination", "DestinationEntity")
-                        .WithMany()
-                        .HasForeignKey("DestinationId")
-                        .HasConstraintName("fk_trips_destinations_destination_id");
-
                     b.HasOne("Nova.Api.Entities.User", "User")
                         .WithMany("Trips")
                         .HasForeignKey("UserId")
@@ -1740,9 +2160,28 @@ namespace Nova.Api.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_trips_users_user_id");
 
-                    b.Navigation("DestinationEntity");
-
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Nova.Api.Entities.TripDestination", b =>
+                {
+                    b.HasOne("Nova.Api.Entities.Destination", "Destination")
+                        .WithMany("TripDestinations")
+                        .HasForeignKey("DestinationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_trip_destinations_destinations_destination_id");
+
+                    b.HasOne("Nova.Api.Entities.Trip", "Trip")
+                        .WithMany("TripDestinations")
+                        .HasForeignKey("TripId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_trip_destinations_trips_trip_id");
+
+                    b.Navigation("Destination");
+
+                    b.Navigation("Trip");
                 });
 
             modelBuilder.Entity("Nova.Api.Entities.WorkflowAuditLog", b =>
@@ -1764,7 +2203,18 @@ namespace Nova.Api.Migrations
 
             modelBuilder.Entity("Nova.Api.Entities.Destination", b =>
                 {
-                    b.Navigation("Activities");
+                    b.Navigation("Attractions");
+
+                    b.Navigation("TripDestinations");
+                });
+
+            modelBuilder.Entity("Nova.Api.Entities.Guide", b =>
+                {
+                    b.Navigation("Availabilities");
+
+                    b.Navigation("TourOperations");
+
+                    b.Navigation("TourPackages");
                 });
 
             modelBuilder.Entity("Nova.Api.Entities.Itinerary", b =>
@@ -1784,21 +2234,25 @@ namespace Nova.Api.Migrations
                     b.Navigation("AuditLogs");
                 });
 
-            modelBuilder.Entity("Nova.Api.Entities.ItineraryItem", b =>
-                {
-                    b.Navigation("SelectedTransport");
-                });
-
             modelBuilder.Entity("Nova.Api.Entities.PromoCode", b =>
                 {
                     b.Navigation("Usages");
                 });
 
+            modelBuilder.Entity("Nova.Api.Entities.TourPackage", b =>
+                {
+                    b.Navigation("TourOperations");
+                });
+
             modelBuilder.Entity("Nova.Api.Entities.Trip", b =>
                 {
+                    b.Navigation("Bookings");
+
                     b.Navigation("Itineraries");
 
                     b.Navigation("TransportOptions");
+
+                    b.Navigation("TripDestinations");
 
                     b.Navigation("Workflows");
                 });

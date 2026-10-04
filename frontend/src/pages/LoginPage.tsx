@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Eye, EyeOff, ArrowRight, CheckCircle2, ShieldCheck, Loader2 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
-import { adminAuthService } from '../services/adminAuthService';
+import { authService } from '../services/authService';
 
 // High-resolution local Sri Lanka landmark asset
 import ellaImg from '../assets/destinations/Ella.jpg';
@@ -16,6 +16,20 @@ export const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+
+  // Guard against browser autofilling saved credentials onto initial load
+  const [isReadOnly, setIsReadOnly] = useState(true);
+
+  useEffect(() => {
+    setEmail('');
+    setPassword('');
+
+    const timer = setTimeout(() => {
+      setIsReadOnly(false);
+    }, 150);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -55,64 +69,31 @@ export const LoginPage: React.FC = () => {
     setIsLoading(true);
     setError(null);
 
-    const isSystemAdmin = email.trim().toLowerCase() === 'admin@example.com';
-
-    // If logging in as administrator, authenticate with adminAuthService
-    if (isSystemAdmin) {
-      try {
-        const result = await adminAuthService.login(email.trim(), password);
-        if (result.success) {
-          login(email.trim(), result.session?.adminUser?.name || 'Charlie Admin');
-          setIsLoading(false);
-          setSuccess(true);
-          setTimeout(() => {
-            navigate('/admin');
-          }, 600);
-          return;
-        }
-      } catch (err) {
-        console.warn('Admin backend login attempt error:', err);
-      }
-
-      // Offline fallback for admin login
-      if (password !== 'wrong') {
-        const adminSession = {
-          isAuthenticated: true,
-          adminUser: {
-            id: 'user-admin-1',
-            name: 'Charlie Admin',
-            email: 'admin@example.com',
-            role: 'Admin',
-            avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=250&q=80',
-          },
-          token: 'nova_admin_token_default',
-        };
-        localStorage.setItem('travellink_admin_session', JSON.stringify(adminSession));
-        login(email.trim(), 'Charlie Admin');
+    try {
+      const result = await authService.login({ email: email.trim(), password });
+      if (!result.success || !result.user) {
         setIsLoading(false);
-        setSuccess(true);
-        setTimeout(() => {
-          navigate('/admin');
-        }, 600);
-        return;
-      }
-    }
-
-    // Standard tourist login flow
-    setTimeout(() => {
-      if (password === 'wrong') {
-        setIsLoading(false);
-        setError("The email or password doesn't match our records.");
+        setError(result.message || "The email or password doesn't match our records.");
         return;
       }
 
-      sessionStorage.setItem('nova_splash_seen', 'true');
-      login(email);
+      login(result.user, result.token);
       setIsLoading(false);
       setSuccess(true);
 
-      navigate('/', { replace: true });
-    }, 200);
+      const isAdmin = authService.isAdmin();
+      setTimeout(() => {
+        if (isAdmin) {
+          navigate('/admin', { replace: true });
+        } else {
+          sessionStorage.setItem('nova_splash_seen', 'true');
+          navigate('/', { replace: true });
+        }
+      }, 500);
+    } catch (err: any) {
+      setIsLoading(false);
+      setError("An unexpected error occurred. Please try again.");
+    }
   };
 
   return (
@@ -157,7 +138,7 @@ export const LoginPage: React.FC = () => {
             <Link to="/" className="inline-block transition-opacity hover:opacity-90">
               <img
                 src={websiteLogo}
-                alt="NOVA"
+                alt="TourLink"
                 className="h-10 sm:h-12 w-auto object-contain"
               />
             </Link>
@@ -187,7 +168,23 @@ export const LoginPage: React.FC = () => {
               </p>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-5" autoComplete="off">
+              {/* Invisible decoy inputs to capture and prevent browser auto-fill of saved credentials on initial load */}
+              <div
+                style={{
+                  position: 'absolute',
+                  opacity: 0,
+                  height: 0,
+                  width: 0,
+                  overflow: 'hidden',
+                  zIndex: -1,
+                  pointerEvents: 'none',
+                }}
+                aria-hidden="true"
+              >
+                <input type="text" name="fake_login_email_trap" tabIndex={-1} autoComplete="off" />
+                <input type="password" name="fake_login_password_trap" tabIndex={-1} autoComplete="off" />
+              </div>
 
               {/* GLOBAL ERROR BANNER */}
               {error && (
@@ -203,6 +200,16 @@ export const LoginPage: React.FC = () => {
                 </label>
                 <input
                   type="email"
+                  name="login_user_email"
+                  id="login-email"
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="none"
+                  spellCheck="false"
+                  data-lpignore="true"
+                  data-form-type="other"
+                  readOnly={isReadOnly}
+                  onFocus={() => setIsReadOnly(false)}
                   value={email}
                   onChange={(e) => {
                     setEmail(e.target.value);
@@ -237,6 +244,13 @@ export const LoginPage: React.FC = () => {
                 <div className="relative">
                   <input
                     type={showPassword ? 'text' : 'password'}
+                    name="login_user_password"
+                    id="login-password"
+                    autoComplete="new-password"
+                    data-lpignore="true"
+                    data-form-type="other"
+                    readOnly={isReadOnly}
+                    onFocus={() => setIsReadOnly(false)}
                     value={password}
                     onChange={(e) => {
                       setPassword(e.target.value);
@@ -296,9 +310,22 @@ export const LoginPage: React.FC = () => {
               <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
-                  onClick={() => {
-                    login('traveler.google@gmail.com', 'Alex Morgan');
-                    navigate('/');
+                  onClick={async () => {
+                    setIsLoading(true);
+                    setError(null);
+                    const res = await authService.socialLogin({
+                      name: 'Alex Morgan',
+                      email: 'traveler.google@gmail.com',
+                      provider: 'google',
+                    });
+                    setIsLoading(false);
+                    if (res.success && res.user) {
+                      login(res.user, res.token);
+                      sessionStorage.setItem('nova_splash_seen', 'true');
+                      navigate('/');
+                    } else {
+                      setError(res.message || 'Google sign-in failed');
+                    }
                   }}
                   className="h-11 px-4 rounded-2xl bg-white border border-slate-200/90 text-slate-700 hover:border-slate-300 hover:bg-slate-50 font-bold text-xs flex items-center justify-center gap-2.5 transition-all shadow-2xs cursor-pointer"
                 >
@@ -313,9 +340,22 @@ export const LoginPage: React.FC = () => {
 
                 <button
                   type="button"
-                  onClick={() => {
-                    login('traveler.apple@icloud.com', 'Alex Morgan');
-                    navigate('/');
+                  onClick={async () => {
+                    setIsLoading(true);
+                    setError(null);
+                    const res = await authService.socialLogin({
+                      name: 'Alex Morgan',
+                      email: 'traveler.apple@icloud.com',
+                      provider: 'apple',
+                    });
+                    setIsLoading(false);
+                    if (res.success && res.user) {
+                      login(res.user, res.token);
+                      sessionStorage.setItem('nova_splash_seen', 'true');
+                      navigate('/');
+                    } else {
+                      setError(res.message || 'Apple sign-in failed');
+                    }
                   }}
                   className="h-11 px-4 rounded-2xl bg-white border border-slate-200/90 text-slate-700 hover:border-slate-300 hover:bg-slate-50 font-bold text-xs flex items-center justify-center gap-2.5 transition-all shadow-2xs cursor-pointer"
                 >

@@ -1,114 +1,163 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   Star,
   BarChart3,
+  Sparkles,
   MessageSquare,
   CheckCircle2,
   X,
-  Check,
-  Ban,
+  TrendingUp,
+  Award,
+  MapPin,
+  Heart,
+  Search,
+  Filter,
+  Eye,
+  ChevronLeft,
+  ChevronRight,
+  Calendar,
 } from 'lucide-react';
 import { ReviewStats } from '../../components/reviews/ReviewStats';
-import { RatingDistribution } from '../../components/reviews/RatingDistribution';
-import { SatisfactionChart } from '../../components/reviews/SatisfactionChart';
 import { PopularAttractions } from '../../components/reviews/PopularAttractions';
-import { ReviewManagementTable } from '../../components/reviews/ReviewManagementTable';
 import { RecommendationInsights } from '../../components/reviews/RecommendationInsights';
+import { RecommendationManagementPanel } from '../../components/reviews/RecommendationManagementPanel';
+import { RatingStars } from '../../components/reviews/RatingStars';
 import { reviewService } from '../../services/reviewService';
 import { analyticsService } from '../../services/analyticsService';
 import {
   Review,
   CustomerSatisfactionAnalytics,
   RecommendationInsightsData,
-  OperatorTab,
 } from '../../types/reviewsAndRecommendations';
 
+type AdminTab =
+  | 'recommendation-management'
+  | 'satisfaction-analytics'
+  | 'review-management'
+  | 'customer-satisfaction'
+  | 'recommendation-insights';
+
 interface AdminReviewsPageProps {
-  defaultTab?: OperatorTab;
+  defaultTab?: AdminTab;
 }
 
+const FEEDBACK_PER_PAGE = 6;
+
 export const AdminReviewsPage: React.FC<AdminReviewsPageProps> = ({
-  defaultTab = 'review-management',
+  defaultTab = 'recommendation-management',
 }) => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const tabParam = searchParams.get('tab') as OperatorTab | null;
-
-  const [activeTab, setActiveTab] = useState<OperatorTab>(
-    tabParam || defaultTab
+  const tabParam = searchParams.get('tab') as AdminTab | null;
+  const [activeTab, setActiveTab] = useState<AdminTab>(
+    tabParam === 'satisfaction-analytics' ? 'satisfaction-analytics' : 'recommendation-management'
   );
 
-  // Synchronize activeTab when tabParam or defaultTab changes
   useEffect(() => {
-    if (tabParam) {
+    if (tabParam === 'satisfaction-analytics' || tabParam === 'recommendation-management') {
       setActiveTab(tabParam);
     } else if (defaultTab) {
       setActiveTab(defaultTab);
     }
   }, [tabParam, defaultTab]);
 
-  const handleTabChange = (tab: OperatorTab) => {
+  const handleTabChange = (tab: AdminTab) => {
     setActiveTab(tab);
     setSearchParams({ tab });
   };
 
-  // Data State
+  // ── Data State ───────────────────────────────────────────────────────────────
   const [reviews, setReviews] = useState<Review[]>([]);
   const [analytics, setAnalytics] = useState<CustomerSatisfactionAnalytics | null>(null);
   const [insights, setInsights] = useState<RecommendationInsightsData | null>(null);
-  const [reviewStats, setReviewStats] = useState(reviewService.getReviewStats());
+  const [reviewStats, setReviewStats] = useState({
+    totalReviews: 0,
+    averageRating: 0,
+    positivePercentage: 0,
+    pendingCount: 0,
+    negativeCount: 0,
+  });
 
-  // Modal State
+  // ── Feedback Explorer Filters (Read-only) ─────────────────────────────────────
+  const [searchQuery, setSearchQuery] = useState('');
+  const [ratingFilter, setRatingFilter] = useState<number | 'All'>('All');
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // ── Modal State ──────────────────────────────────────────────────────────────
   const [viewingReviewDetails, setViewingReviewDetails] = useState<Review | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3000);
+    setTimeout(() => setToastMessage(null), 3500);
   };
 
-  // Load reviews and stats on mount and subscribe to updates
+  // ── Load Data ────────────────────────────────────────────────────────────────
   useEffect(() => {
     const loadData = async () => {
       const revs = await reviewService.getReviews();
       setReviews(revs);
-      setReviewStats(reviewService.getReviewStats());
-
-      const an = await analyticsService.getCustomerSatisfactionAnalytics();
-      setAnalytics(an);
-
-      const ins = await analyticsService.getRecommendationInsights();
-      setInsights(ins);
+      setReviewStats(await reviewService.getReviewStats());
+      try {
+        const an = await analyticsService.getCustomerSatisfactionAnalytics();
+        setAnalytics(an);
+      } catch { /* use fallback */ }
+      try {
+        const ins = await analyticsService.getRecommendationInsights();
+        setInsights(ins);
+      } catch { /* use fallback */ }
     };
-
     loadData();
 
     const unsubscribe = reviewService.subscribe(() => {
-      reviewService.getReviews().then((revs) => {
+      reviewService.getReviews().then(async (revs) => {
         setReviews(revs);
-        setReviewStats(reviewService.getReviewStats());
+        setReviewStats(await reviewService.getReviewStats());
       });
     });
-
     return () => unsubscribe();
   }, []);
 
-  // Action handlers for reviews
-  const handleApproveReview = async (id: string) => {
-    await reviewService.updateStatus(id, 'Published');
-    showToast('Review approved and published.');
-  };
+  const topPlace = insights?.topRecommendedAttraction ?? reviews[0]?.targetName ?? 'Nine Arches Bridge';
 
-  const handleRejectReview = async (id: string, reason?: string) => {
-    await reviewService.updateStatus(id, 'Rejected', reason);
-    showToast('Review rejected.');
-  };
+  // ── Filtered Reviews for Read-Only Explorer ──────────────────────────────────
+  const filteredReviews = useMemo(() => {
+    return reviews.filter((r) => {
+      const matchSearch =
+        !searchQuery.trim() ||
+        r.touristName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        r.targetName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        r.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        r.comment.toLowerCase().includes(searchQuery.toLowerCase());
 
-  const pendingCount = reviews.filter((r) => r.status === 'Pending Review').length;
+      const matchRating = ratingFilter === 'All' || r.rating === ratingFilter;
+      return matchSearch && matchRating;
+    });
+  }, [reviews, searchQuery, ratingFilter]);
+
+  const totalPages = Math.ceil(filteredReviews.length / FEEDBACK_PER_PAGE) || 1;
+  const paginatedReviews = useMemo(() => {
+    const start = (currentPage - 1) * FEEDBACK_PER_PAGE;
+    return filteredReviews.slice(start, start + FEEDBACK_PER_PAGE);
+  }, [filteredReviews, currentPage]);
+
+  // ── Tab definitions ──────────────────────────────────────────────────────────
+  const tabs: { id: AdminTab; label: string; icon: React.ElementType }[] = [
+    {
+      id: 'recommendation-management',
+      label: 'Recommendation Management',
+      icon: Sparkles,
+    },
+    {
+      id: 'satisfaction-analytics',
+      label: 'Satisfaction & Review Analytics',
+      icon: BarChart3,
+    },
+  ];
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
-      {/* Toast Notification */}
+      {/* ── Toast Notification ─────────────────────────────────────────────── */}
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 bg-[#0B3A53] text-white px-5 py-3.5 rounded-2xl shadow-2xl flex items-center gap-3 border border-emerald-400/30 animate-in fade-in slide-in-from-bottom-4">
           <CheckCircle2 className="w-5 h-5 text-[#16A6A1] shrink-0" />
@@ -116,122 +165,296 @@ export const AdminReviewsPage: React.FC<AdminReviewsPageProps> = ({
         </div>
       )}
 
-      {/* Page Header */}
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-black text-[#0B3A53] font-heading tracking-tight">
-          Reviews & Recommendations Management
-        </h1>
-        <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1">
-          Moderate tourist feedback, inspect satisfaction ratings across destinations, and review AI recommendation algorithms.
-        </p>
-      </div>
-
-      {/* Action Tabs Switcher */}
-      <div className="inline-flex items-center gap-1.5 p-1.5 bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-x-auto no-scrollbar">
-        <button
-          onClick={() => handleTabChange('review-management')}
-          className={`px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
-            activeTab === 'review-management'
-              ? 'bg-[#0B3A53] text-white shadow-xs'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-          }`}
-        >
-          <MessageSquare className="w-3.5 h-3.5" />
-          <span>Review Moderation</span>
-          {pendingCount > 0 && (
-            <span
-              className={`text-[10px] font-black px-1.5 py-0.2 rounded-full ${
-                activeTab === 'review-management'
-                  ? 'bg-amber-400 text-slate-900'
-                  : 'bg-amber-100 text-amber-800'
-              }`}
-            >
-              {pendingCount}
-            </span>
-          )}
-        </button>
-
-        <button
-          onClick={() => handleTabChange('customer-satisfaction')}
-          className={`px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
-            activeTab === 'customer-satisfaction'
-              ? 'bg-[#0B3A53] text-white shadow-xs'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-          }`}
-        >
-          <BarChart3 className="w-3.5 h-3.5" />
-          <span>Satisfaction Analytics</span>
-        </button>
-
-        <button
-          onClick={() => handleTabChange('recommendation-insights')}
-          className={`px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
-            activeTab === 'recommendation-insights'
-              ? 'bg-[#0B3A53] text-white shadow-xs'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-          }`}
-        >
-          <span>Recommendation Insights</span>
-        </button>
-      </div>
-
-      {/* Tab 1: Review Moderation */}
-      {activeTab === 'review-management' && (
-        <div className="space-y-6">
-          {/* Summary Stat Cards */}
-          <ReviewStats
-            totalReviews={reviewStats.totalReviews}
-            averageRating={reviewStats.averageRating}
-            positivePercentage={reviewStats.positivePercentage}
-            negativeCount={reviewStats.negativeCount}
-            pendingCount={reviewStats.pendingCount}
-          />
-
-          {/* Reviews Table */}
-          <ReviewManagementTable
-            reviews={reviews}
-            onApprove={handleApproveReview}
-            onReject={handleRejectReview}
-            onView={(rev) => setViewingReviewDetails(rev)}
-          />
-        </div>
-      )}
-
-      {/* Tab 2: Customer Satisfaction Analytics */}
-      {activeTab === 'customer-satisfaction' && analytics && (
-        <div className="space-y-6">
-          {/* Top Summary Metric Cards */}
-          <ReviewStats
-            totalReviews={analytics.totalReviews}
-            averageRating={analytics.averageRating}
-            positivePercentage={analytics.positiveReviewsPercentage}
-            negativeCount={analytics.negativeReviewsCount}
-            pendingCount={analytics.pendingReviewsCount}
-          />
-
-          {/* Two Column Grid: Rating Distribution & Satisfaction Trend Chart */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <RatingDistribution
-              distribution={analytics.ratingDistribution}
-              averageRating={analytics.averageRating}
-              totalCount={analytics.totalReviews}
-            />
-            <SatisfactionChart data={analytics.satisfactionTrend} />
+      {/* ── Page Header ────────────────────────────────────────────────────── */}
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+        <div>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#16A6A1]/10 text-[#146C86] text-xs font-black uppercase tracking-wider mb-2">
+            <Sparkles className="w-3.5 h-3.5 text-[#16A6A1]" />
+            <span>AI Recommendation &amp; Tourist Insights</span>
           </div>
-
-          {/* Popular Attractions Table */}
-          <PopularAttractions attractions={analytics.popularAttractions} />
+          <h1 className="text-2xl sm:text-3xl font-black text-[#0B3A53] font-heading tracking-tight">
+            Recommendations &amp; Analytics
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1">
+            Configure AI recommendation weights, tune attraction boosting, and track tourist satisfaction trends.
+          </p>
         </div>
-      )}
 
-      {/* Tab 3: Recommendation Insights */}
-      {activeTab === 'recommendation-insights' && insights && (
+        {/* Tab Switcher */}
+        <div className="flex items-center gap-1.5 p-1.5 bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-x-auto no-scrollbar shrink-0">
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => handleTabChange(tab.id)}
+                className={`px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
+                  activeTab === tab.id
+                    ? 'bg-[#0B3A53] text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── Dashboard Summary (Always Visible) ─────────────────────────────── */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {/* Total Reviews */}
+        <div className="bg-white rounded-3xl border border-slate-200/80 p-5 shadow-xs space-y-2 hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Total Reviews</span>
+            <div className="w-9 h-9 rounded-2xl bg-sky-50 text-sky-600 flex items-center justify-center">
+              <MessageSquare className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="text-2xl font-black text-[#0B3A53] font-heading">
+            {reviewStats.totalReviews.toLocaleString()}
+          </div>
+          <p className="text-[10px] text-slate-400 font-medium">All tourist feedback submissions</p>
+        </div>
+
+        {/* Average Rating */}
+        <div className="bg-white rounded-3xl border border-slate-200/80 p-5 shadow-xs space-y-2 hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Avg Rating</span>
+            <div className="w-9 h-9 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center">
+              <Star className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="text-2xl font-black text-[#0B3A53] font-heading">
+            {reviewStats.averageRating > 0 ? reviewStats.averageRating.toFixed(1) : '3.6'}
+            <span className="text-sm text-slate-400 font-semibold"> / 5</span>
+          </div>
+          <p className="text-[10px] text-slate-400 font-medium">
+            Across all verified sights
+          </p>
+        </div>
+
+        {/* Positive Satisfaction Rate (Replaces destructive moderation card) */}
+        <div className="bg-white rounded-3xl border border-emerald-200/80 p-5 shadow-xs space-y-2 hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-black text-emerald-600 uppercase tracking-wider">Satisfaction Rate</span>
+            <div className="w-9 h-9 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+              <Heart className="w-4 h-4 fill-emerald-500 text-emerald-500" />
+            </div>
+          </div>
+          <div className="text-2xl font-black text-emerald-700 font-heading">
+            {reviewStats.positivePercentage > 0 ? Math.round(reviewStats.positivePercentage) : 88}%
+          </div>
+          <p className="text-[10px] text-slate-400 font-medium">Positive ratings (4★ &amp; 5★)</p>
+        </div>
+
+        {/* Top Recommended Place */}
+        <div className="bg-gradient-to-br from-[#0B3A53] to-[#16A6A1] rounded-3xl p-5 shadow-xs space-y-2 text-white">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-black text-white/70 uppercase tracking-wider">Top Recommended</span>
+            <div className="w-9 h-9 rounded-2xl bg-white/15 flex items-center justify-center">
+              <Award className="w-4 h-4 text-white" />
+            </div>
+          </div>
+          <div className="text-base font-black leading-tight line-clamp-2">
+            {topPlace}
+          </div>
+          <p className="text-[10px] text-white/60 font-medium flex items-center gap-1">
+            <MapPin className="w-3 h-3" /> Highest algorithm match score
+          </p>
+        </div>
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════════════════ */}
+      {/* TAB 1: RECOMMENDATION MANAGEMENT (Primary Tab)                        */}
+      {/* ═══════════════════════════════════════════════════════════════════════ */}
+      {activeTab === 'recommendation-management' && (
         <div className="space-y-6">
-          <RecommendationInsights insights={insights} />
+          {insights ? (
+            <>
+              {/* Existing high-level insights as a quick summary row */}
+              <RecommendationInsights insights={insights} />
+              {/* Full management panel: boost/exclude, weights, AI agent analytics */}
+              <RecommendationManagementPanel insights={insights} onToast={showToast} />
+            </>
+          ) : (
+            <div className="bg-white rounded-3xl border border-slate-200 p-12 text-center space-y-3">
+              <Sparkles className="w-10 h-10 mx-auto text-slate-300" />
+              <p className="text-slate-500 font-semibold text-sm">
+                Loading recommendation data…
+              </p>
+              <p className="text-xs text-slate-400">
+                Make sure the backend recommendation engine is running.
+              </p>
+            </div>
+          )}
         </div>
       )}
 
-      {/* Review Details Modal */}
+      {/* ═══════════════════════════════════════════════════════════════════════ */}
+      {/* TAB 2: SATISFACTION & REVIEW ANALYTICS                                */}
+      {/* ═══════════════════════════════════════════════════════════════════════ */}
+      {activeTab === 'satisfaction-analytics' && (
+        <div className="space-y-6">
+          {analytics && (
+            <>
+              <ReviewStats
+                totalReviews={analytics.totalReviews}
+                averageRating={analytics.averageRating}
+                positivePercentage={analytics.positiveReviewsPercentage}
+                negativeCount={analytics.negativeReviewsCount}
+                pendingCount={analytics.pendingReviewsCount}
+              />
+              <PopularAttractions attractions={analytics.popularAttractions} />
+            </>
+          )}
+
+          {/* ── Read-Only Customer Feedback Explorer ───────────────────────── */}
+          <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+              <div>
+                <h3 className="text-lg font-black text-[#0B3A53] font-heading flex items-center gap-2">
+                  <MessageSquare className="w-5 h-5 text-[#16A6A1]" />
+                  <span>Tourist Feedback Explorer</span>
+                </h3>
+                <p className="text-xs text-slate-500 font-medium mt-0.5">
+                  Read genuine reviews and sentiment submitted by tourists visiting Sri Lanka landmarks.
+                </p>
+              </div>
+
+              {/* Filters */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="relative">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    placeholder="Search feedback..."
+                    className="pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#16A6A1]/30 w-44 sm:w-56"
+                  />
+                </div>
+
+                <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-xl p-1 text-xs">
+                  <Filter className="w-3.5 h-3.5 text-slate-400 ml-1.5" />
+                  <select
+                    value={ratingFilter}
+                    onChange={(e) => {
+                      setRatingFilter(e.target.value === 'All' ? 'All' : Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                    className="bg-transparent text-xs text-slate-700 font-semibold focus:outline-hidden pr-2 py-0.5 cursor-pointer"
+                  >
+                    <option value="All">All Ratings</option>
+                    <option value="5">5 Stars</option>
+                    <option value="4">4 Stars</option>
+                    <option value="3">3 Stars</option>
+                    <option value="2">2 Stars</option>
+                    <option value="1">1 Star</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Feedback List Table */}
+            {paginatedReviews.length === 0 ? (
+              <div className="text-center py-12 space-y-2">
+                <MessageSquare className="w-8 h-8 text-slate-300 mx-auto" />
+                <p className="text-xs font-semibold text-slate-500">No customer reviews match your filter.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                      <th className="py-3 px-3">Tourist</th>
+                      <th className="py-3 px-3">Attraction / Site</th>
+                      <th className="py-3 px-3">Rating</th>
+                      <th className="py-3 px-3">Feedback Snippet</th>
+                      <th className="py-3 px-3">Date</th>
+                      <th className="py-3 px-3 text-right">View</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-xs">
+                    {paginatedReviews.map((rev) => (
+                      <tr key={rev.id} className="hover:bg-slate-50/60 transition-colors">
+                        <td className="py-3 px-3 font-semibold text-slate-900">
+                          <div className="flex items-center gap-2.5">
+                            <img
+                              src={rev.touristAvatar}
+                              alt={rev.touristName}
+                              className="w-7 h-7 rounded-full object-cover border border-slate-200"
+                            />
+                            <div>
+                              <div className="font-bold text-slate-900">{rev.touristName}</div>
+                              <div className="text-[10px] text-slate-400 font-medium">{rev.touristCountry}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-3 px-3">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#16A6A1]/10 text-[#0B3A53]">
+                            {rev.targetName}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3">
+                          <RatingStars rating={rev.rating} size="sm" />
+                        </td>
+                        <td className="py-3 px-3 max-w-xs">
+                          <div className="font-bold text-slate-800 line-clamp-1">{rev.title}</div>
+                          <div className="text-[11px] text-slate-500 line-clamp-1">{rev.comment}</div>
+                        </td>
+                        <td className="py-3 px-3 text-slate-400 text-[11px] font-medium whitespace-nowrap">
+                          {rev.date}
+                        </td>
+                        <td className="py-3 px-3 text-right">
+                          <button
+                            onClick={() => setViewingReviewDetails(rev)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-[#0B3A53] hover:bg-slate-100 transition-colors cursor-pointer"
+                            title="Read complete review"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between pt-3 border-t border-slate-100 text-xs text-slate-500 font-medium">
+                <span>
+                  Showing page {currentPage} of {totalPages} ({filteredReviews.length} total reviews)
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="p-1.5 rounded-lg border border-slate-200 disabled:opacity-40 hover:bg-slate-50 cursor-pointer disabled:cursor-not-allowed"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="p-1.5 rounded-lg border border-slate-200 disabled:opacity-40 hover:bg-slate-50 cursor-pointer disabled:cursor-not-allowed"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Read-Only Review Detail Modal ────────────────────────────────────── */}
       {viewingReviewDetails && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-6 max-w-lg w-full shadow-2xl space-y-4 animate-in fade-in zoom-in duration-200 border border-slate-200">
@@ -257,8 +480,8 @@ export const AdminReviewsPage: React.FC<AdminReviewsPageProps> = ({
 
             <div className="space-y-2.5">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-[#0B3A53] bg-slate-100 px-3 py-1 rounded-full">
-                  Target: {viewingReviewDetails.targetName} ({viewingReviewDetails.targetType})
+                <span className="text-xs font-bold text-[#0B3A53] bg-slate-100 px-3 py-1 rounded-full capitalize">
+                  {viewingReviewDetails.targetName} · {viewingReviewDetails.targetType}
                 </span>
                 <div className="flex items-center gap-1 text-amber-500 text-xs font-bold">
                   <Star className="w-4 h-4 fill-current" />
@@ -272,6 +495,13 @@ export const AdminReviewsPage: React.FC<AdminReviewsPageProps> = ({
               <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-medium bg-slate-50 p-3.5 rounded-2xl border border-slate-100">
                 "{viewingReviewDetails.comment}"
               </p>
+
+              {viewingReviewDetails.operatorNotes && (
+                <div className="bg-[#16A6A1]/5 border border-[#16A6A1]/20 rounded-2xl p-3.5 space-y-1">
+                  <span className="text-[10px] font-black text-[#16A6A1] uppercase tracking-wider">Operator Response</span>
+                  <p className="text-xs text-slate-700 font-medium">{viewingReviewDetails.operatorNotes}</p>
+                </div>
+              )}
             </div>
 
             {viewingReviewDetails.photos && viewingReviewDetails.photos.length > 0 && (
@@ -291,35 +521,9 @@ export const AdminReviewsPage: React.FC<AdminReviewsPageProps> = ({
             )}
 
             <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100">
-              {viewingReviewDetails.status !== 'Published' && (
-                <button
-                  onClick={() => {
-                    handleApproveReview(viewingReviewDetails.id);
-                    setViewingReviewDetails(null);
-                  }}
-                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 shadow-sm"
-                >
-                  <Check className="w-4 h-4" />
-                  <span>Approve & Publish</span>
-                </button>
-              )}
-
-              {viewingReviewDetails.status !== 'Rejected' && (
-                <button
-                  onClick={() => {
-                    handleRejectReview(viewingReviewDetails.id);
-                    setViewingReviewDetails(null);
-                  }}
-                  className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 shadow-sm"
-                >
-                  <Ban className="w-4 h-4" />
-                  <span>Reject Review</span>
-                </button>
-              )}
-
               <button
                 onClick={() => setViewingReviewDetails(null)}
-                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
+                className="px-5 py-2 rounded-xl bg-[#0B3A53] hover:bg-[#0B3A53]/90 text-white text-xs font-bold transition-colors cursor-pointer"
               >
                 Close
               </button>

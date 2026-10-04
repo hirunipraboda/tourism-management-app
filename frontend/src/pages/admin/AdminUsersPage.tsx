@@ -8,6 +8,8 @@ import {
   X,
   ShieldCheck,
   Power,
+  UserPlus,
+  Loader2,
 } from 'lucide-react';
 import { adminService } from '../../services/adminService';
 import { AdminUserItem } from '../../types/adminTypes';
@@ -19,6 +21,44 @@ export const AdminUsersPage: React.FC = () => {
   const [selectedRole, setSelectedRole] = useState('All');
   const [activeUserModal, setActiveUserModal] = useState<AdminUserItem | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+
+  // New user creation modal state
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [creatingUser, setCreatingUser] = useState(false);
+  const [createError, setCreateError] = useState('');
+  const [newUserName, setNewUserName] = useState('');
+  const [newUserEmail, setNewUserEmail] = useState('');
+  const [newUserPassword, setNewUserPassword] = useState('Password123!');
+  const [newUserRole, setNewUserRole] = useState<'USER' | 'ADMIN'>('USER');
+  const [newUserPhone, setNewUserPhone] = useState('');
+
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newUserName.trim() || !newUserEmail.trim()) {
+      setCreateError('Name and email are required');
+      return;
+    }
+    setCreatingUser(true);
+    setCreateError('');
+    try {
+      await adminService.createUser({
+        name: newUserName.trim(),
+        email: newUserEmail.trim(),
+        password: newUserPassword,
+        role: newUserRole,
+        phone: newUserPhone.trim(),
+      });
+      setIsCreateModalOpen(false);
+      setNewUserName('');
+      setNewUserEmail('');
+      setNewUserPhone('');
+      await loadUsers();
+    } catch (err: any) {
+      setCreateError(err.message || 'Failed to create user in database');
+    } finally {
+      setCreatingUser(false);
+    }
+  };
 
   const loadUsers = async () => {
     setLoading(true);
@@ -76,6 +116,65 @@ export const AdminUsersPage: React.FC = () => {
           <p className="text-xs sm:text-sm text-slate-500 font-medium">
             Inspect, manage, and toggle account activation status for registered users and administrators.
           </p>
+        </div>
+        <button
+          onClick={() => {
+            setCreateError('');
+            setIsCreateModalOpen(true);
+          }}
+          className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-[#0B3A53] hover:bg-[#072537] text-white text-xs font-black uppercase tracking-wider shadow-md hover:shadow-lg transition-all cursor-pointer shrink-0"
+        >
+          <UserPlus className="w-4 h-4 text-[#16A6A1]" />
+          <span>Add New User</span>
+        </button>
+      </div>
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-white p-4 rounded-3xl border border-slate-200/80 shadow-xs flex items-center justify-between">
+          <div>
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Users</p>
+            <p className="text-2xl font-black text-[#0B3A53] mt-0.5">{users.length}</p>
+          </div>
+          <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+            <Users className="w-5 h-5" />
+          </div>
+        </div>
+
+        <div className="bg-white p-4 rounded-3xl border border-slate-200/80 shadow-xs flex items-center justify-between">
+          <div>
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Active Status</p>
+            <p className="text-2xl font-black text-emerald-600 mt-0.5">
+              {users.filter((u) => u.status === 'Active').length}
+            </p>
+          </div>
+          <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
+            <CheckCircle2 className="w-5 h-5" />
+          </div>
+        </div>
+
+        <div className="bg-white p-4 rounded-3xl border border-slate-200/80 shadow-xs flex items-center justify-between">
+          <div>
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Administrators</p>
+            <p className="text-2xl font-black text-rose-600 mt-0.5">
+              {users.filter((u) => u.role === 'Admin').length}
+            </p>
+          </div>
+          <div className="w-10 h-10 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center font-bold">
+            <ShieldCheck className="w-5 h-5" />
+          </div>
+        </div>
+
+        <div className="bg-white p-4 rounded-3xl border border-slate-200/80 shadow-xs flex items-center justify-between">
+          <div>
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Travelers</p>
+            <p className="text-2xl font-black text-[#16A6A1] mt-0.5">
+              {users.filter((u) => u.role !== 'Admin').length}
+            </p>
+          </div>
+          <div className="w-10 h-10 rounded-2xl bg-teal-50 text-[#16A6A1] flex items-center justify-center font-bold">
+            <Users className="w-5 h-5" />
+          </div>
         </div>
       </div>
 
@@ -269,6 +368,135 @@ export const AdminUsersPage: React.FC = () => {
                 Close Profile
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* CREATE NEW USER MODAL */}
+      {isCreateModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl space-y-5 animate-in fade-in zoom-in duration-200">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-[#16A6A1]/10 text-[#16A6A1] flex items-center justify-center font-bold">
+                  <UserPlus className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-[#0B3A53] font-heading">
+                    Add New User
+                  </h3>
+                  <p className="text-xs text-slate-400">Save directly to PostgreSQL database</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsCreateModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 text-slate-400 hover:text-slate-600 flex items-center justify-center cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {createError && (
+              <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold">
+                {createError}
+              </div>
+            )}
+
+            <form onSubmit={handleCreateUser} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">
+                  Full Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Kasun Fernando"
+                  value={newUserName}
+                  onChange={(e) => setNewUserName(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-semibold text-slate-800 placeholder-slate-400 focus:outline-hidden focus:border-[#16A6A1]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">
+                  Email Address *
+                </label>
+                <input
+                  type="email"
+                  required
+                  placeholder="e.g. kasun@example.com"
+                  value={newUserEmail}
+                  onChange={(e) => setNewUserEmail(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-semibold text-slate-800 placeholder-slate-400 focus:outline-hidden focus:border-[#16A6A1]"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">
+                    Password
+                  </label>
+                  <input
+                    type="password"
+                    placeholder="Password123!"
+                    value={newUserPassword}
+                    onChange={(e) => setNewUserPassword(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-semibold text-slate-800 placeholder-slate-400 focus:outline-hidden focus:border-[#16A6A1]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">
+                    Account Role
+                  </label>
+                  <select
+                    value={newUserRole}
+                    onChange={(e) => setNewUserRole(e.target.value as any)}
+                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:border-[#16A6A1]"
+                  >
+                    <option value="USER">User (Tourist)</option>
+                    <option value="ADMIN">Admin</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">
+                  Phone (Optional)
+                </label>
+                <input
+                  type="tel"
+                  placeholder="+94 77 123 4567"
+                  value={newUserPhone}
+                  onChange={(e) => setNewUserPhone(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-semibold text-slate-800 placeholder-slate-400 focus:outline-hidden focus:border-[#16A6A1]"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setIsCreateModalOpen(false)}
+                  className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl text-xs font-bold cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={creatingUser}
+                  className="px-6 py-2.5 bg-[#0B3A53] hover:bg-[#072537] text-white rounded-2xl text-xs font-extrabold shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center gap-2 disabled:opacity-50"
+                >
+                  {creatingUser ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-[#16A6A1]" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <span>Save to Database</span>
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

@@ -8,8 +8,8 @@ import { adminAuthService } from '../../services/adminAuthService';
 export const AdminLoginPage: React.FC = () => {
   const navigate = useNavigate();
 
-  const [email, setEmail] = useState('admin@example.com');
-  const [password, setPassword] = useState('Password123!');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -150,8 +150,8 @@ export const AdminLoginPage: React.FC = () => {
 
             {/* Quick Demo Info */}
             <div className="bg-white/5 p-3 rounded-2xl border border-white/10 text-[11px] text-slate-300 flex items-center justify-between">
-              <span>Demo Credentials:</span>
-              <span className="font-mono font-bold text-[#16A6A1]">admin@travellink.lk / admin123</span>
+              <span>Admin Credentials:</span>
+              <span className="font-mono font-bold text-[#16A6A1]">admin@tourlink.com / admin123</span>
             </div>
 
             {/* Submit CTA Button */}

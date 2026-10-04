@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Compass,
   Plus,
@@ -21,33 +21,60 @@ import {
   Car,
   Trash2,
   AlertTriangle,
+  Building2,
+  FileText,
+  Receipt,
+  Search,
 } from 'lucide-react';
 import { LandingNavbar } from '../components/navigation/LandingNavbar';
 import { Footer } from '../components/navigation/Footer';
 import { MOCK_USER_TRIPS, UserTrip, TripDayItinerary, TripActivityDetail, TripBookingDetail } from '../mock/tripsData';
 import { AIBotGuideModal } from '../components/guide/AIBotGuideModal';
+import { BookingConfirmationReceiptModal } from '../components/staycations/BookingConfirmationReceiptModal';
+import { tripService } from '../services/tripService';
+import {
+  getTripTimeline,
+  getItineraryDayTimelineStatus,
+  getActivityTimelineStatus,
+  getTransportTimelineStatus,
+  formatTripDateRange,
+} from '../utils/tripTimeline';
 
 export const TripsPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const normalizeTrip = (t: UserTrip): UserTrip => {
-    if (t.id === 'trip-kandy-escape') {
+    const timeline = getTripTimeline(
+      t.startDate || t.dates,
+      t.endDate || t.dates,
+      t.status
+    );
+
+    const updatedDailyItinerary = t.dailyItinerary?.map((day) => {
+      const dayStatus = getItineraryDayTimelineStatus(day.date);
+      const updatedActivities = day.activities?.map((act) => ({
+        ...act,
+        activityStatus: getActivityTimelineStatus(day.date, act.time),
+      }));
+
       return {
-        ...t,
-        status: 'Ongoing',
-        isFeatured: true,
-        progress: t.progress
-          ? {
-              destination: t.progress.destination,
-              preferences: t.progress.preferences,
-              aiPlanning: t.progress.aiPlanning,
-              itinerary: t.progress.itinerary,
-              bookings: true,
-            }
-          : undefined,
+        ...day,
+        status: dayStatus,
+        activities: updatedActivities || [],
       };
-    }
-    return t;
+    });
+
+    return {
+      ...t,
+      status: timeline.status,
+      timelineLabel: timeline.timelineLabel,
+      startDate: timeline.startDate ? timeline.startDate.toISOString().split('T')[0] : t.startDate,
+      endDate: timeline.endDate ? timeline.endDate.toISOString().split('T')[0] : t.endDate,
+      duration: `${timeline.totalDays} Days`,
+      isFeatured: t.isFeatured || timeline.status === 'Ongoing',
+      dailyItinerary: updatedDailyItinerary || t.dailyItinerary,
+    };
   };
 
   // Deleted trips tracker (persisted in localStorage)
@@ -59,58 +86,153 @@ export const TripsPage: React.FC = () => {
     return new Set();
   };
 
+  // Robust trip deduplication by ID and normalized Name/Destination signature
+  const deduplicateUserTrips = (tripsList: UserTrip[], deletedIds: Set<string>): UserTrip[] => {
+    const seenIds = new Set<string>();
+    const seenNames = new Map<string, UserTrip>();
+    const result: UserTrip[] = [];
+
+    for (const rawTrip of tripsList) {
+      if (!rawTrip || !rawTrip.id || deletedIds.has(rawTrip.id)) continue;
+      if (seenIds.has(rawTrip.id)) continue;
+
+      const trip = normalizeTrip(rawTrip);
+      const cleanName = (trip.name || '').toLowerCase().trim();
+
+      if (cleanName && seenNames.has(cleanName)) {
+        const existing = seenNames.get(cleanName)!;
+        // Merge rich details: if current item has bookings/staycations and existing doesn't, enrich it
+        if ((trip.bookingsList && trip.bookingsList.length > 0) && (!existing.bookingsList || existing.bookingsList.length === 0)) {
+          existing.bookingsList = trip.bookingsList;
+          existing.spentBudget = trip.spentBudget;
+          if (existing.progress) existing.progress.bookings = true;
+        }
+        seenIds.add(trip.id);
+        continue;
+      }
+
+      seenIds.add(trip.id);
+      if (cleanName) {
+        seenNames.set(cleanName, trip);
+      }
+      result.push(trip);
+    }
+
+    return result;
+  };
+
   // State Management
   const [trips, setTrips] = useState<UserTrip[]>(() => {
     const deletedIds = getDeletedTripIds();
     const saved = localStorage.getItem('nova_user_trips');
+    let localSaved: UserTrip[] = [];
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          const normalized: UserTrip[] = parsed.map(normalizeTrip);
-          const existingIds = new Set(normalized.map((t: UserTrip) => t.id));
-          const uniqueMocks = MOCK_USER_TRIPS.filter((t) => !existingIds.has(t.id));
-          return [...normalized, ...uniqueMocks].filter((t) => !deletedIds.has(t.id));
+          localSaved = parsed;
         }
       } catch (e) {
         console.error('Failed to parse saved trips', e);
       }
     }
-    return MOCK_USER_TRIPS.filter((t) => !deletedIds.has(t.id));
+    return deduplicateUserTrips([...localSaved, ...MOCK_USER_TRIPS], deletedIds);
   });
 
   useEffect(() => {
+    let isMounted = true;
+
+    // Primary Source of Truth: Fetch from PostgreSQL backend
+    const loadBackendTrips = async () => {
+      try {
+        const deletedIds = getDeletedTripIds();
+        const serverTrips = await tripService.getUserTrips('U001');
+
+        // Also retrieve any local trips in localStorage to ensure newly planned trips are visible immediately
+        const savedRaw = localStorage.getItem('nova_user_trips');
+        let localSaved: UserTrip[] = [];
+        if (savedRaw) {
+          try {
+            const p = JSON.parse(savedRaw);
+            if (Array.isArray(p)) localSaved = p;
+          } catch {}
+        }
+
+        // Put server trips first, followed by local saved trips, then mock trips
+        const combined = [...serverTrips, ...localSaved, ...MOCK_USER_TRIPS];
+        const deduped = deduplicateUserTrips(combined, deletedIds);
+
+        // Also clean up localStorage to keep only deduplicated user trips (strip out duplicate drafts)
+        const cleanedLocal = deduplicateUserTrips(localSaved, deletedIds);
+        if (cleanedLocal.length !== localSaved.length) {
+          localStorage.setItem('nova_user_trips', JSON.stringify(cleanedLocal));
+        }
+
+        if (isMounted) {
+          setTrips(deduped);
+        }
+      } catch (e) {
+        console.warn('Failed to load trips from backend, keeping cached state', e);
+      }
+    };
+    loadBackendTrips();
+
     const syncTrips = () => {
       const deletedIds = getDeletedTripIds();
       const saved = localStorage.getItem('nova_user_trips');
+      let localSaved: UserTrip[] = [];
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            const normalized: UserTrip[] = parsed.map(normalizeTrip);
-            const existingIds = new Set(normalized.map((t: UserTrip) => t.id));
-            const uniqueMocks = MOCK_USER_TRIPS.filter((t) => !existingIds.has(t.id));
-            setTrips([...normalized, ...uniqueMocks].filter((t) => !deletedIds.has(t.id)));
-            return;
+            localSaved = parsed;
           }
         } catch (e) {
           console.error('Failed to parse saved trips', e);
         }
       }
-      setTrips(MOCK_USER_TRIPS.filter((t) => !deletedIds.has(t.id)));
+      setTrips(deduplicateUserTrips([...localSaved, ...MOCK_USER_TRIPS], deletedIds));
     };
-    syncTrips();
+
     window.addEventListener('storage', syncTrips);
-    return () => window.removeEventListener('storage', syncTrips);
+    return () => {
+      isMounted = false;
+      window.removeEventListener('storage', syncTrips);
+    };
   }, []);
+
   const [activeTab, setActiveTab] = useState<'All' | 'Upcoming' | 'Planning' | 'Ongoing' | 'Completed'>('All');
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const handledHighlightRef = useRef<string | null>(null);
+
+  // Open saved trip modal and show toast ONLY ONCE when redirected from AI/Manual Trip Planner
+  useEffect(() => {
+    const targetId = location.state?.highlightedTripId;
+    if (targetId && handledHighlightRef.current !== targetId) {
+      const foundTrip = trips.find((t) => t.id === targetId);
+      if (foundTrip) {
+        handledHighlightRef.current = targetId;
+        setSelectedTripModal(foundTrip);
+        if (location.state?.message) {
+          triggerToast(location.state.message);
+        }
+        // Clear React Router location state so subsequent tab clicks never re-trigger modal opening
+        navigate(location.pathname, { replace: true, state: {} });
+      }
+    }
+  }, [location.state, trips, navigate, location.pathname]);
 
   // Modals State
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedTripModal, setSelectedTripModal] = useState<UserTrip | null>(null);
   const [tripToDelete, setTripToDelete] = useState<UserTrip | null>(null);
   const [isAIBotModalOpen, setIsAIBotModalOpen] = useState(false);
+  const [activeReceiptBooking, setActiveReceiptBooking] = useState<{
+    booking: TripBookingDetail;
+    tripName: string;
+  } | null>(null);
 
   // Handle Delete Trip (restricted to 'Planning' and 'Upcoming')
   const handleDeleteTrip = (tripId: string) => {
@@ -122,6 +244,9 @@ export const TripsPage: React.FC = () => {
     }
 
     setTrips((prev) => prev.filter((t) => t.id !== tripId));
+
+    // Delete in PostgreSQL backend
+    tripService.deleteTrip(tripId).catch((err) => console.warn('Backend delete sync failed:', err));
 
     // Save to deleted IDs set
     const deletedIds = getDeletedTripIds();
@@ -214,24 +339,82 @@ export const TripsPage: React.FC = () => {
 
   // Filtered Trips List
   const filteredTrips = useMemo(() => {
-    if (activeTab === 'All') return trips;
-    return trips.filter((t) => t.status === activeTab);
-  }, [trips, activeTab]);
+    let list = trips;
+    if (activeTab === 'Planning') {
+      list = trips.filter((t) => t.status === 'Planning');
+    } else if (activeTab === 'Upcoming') {
+      list = trips.filter((t) => t.status === 'Upcoming' || t.status === 'Planning');
+    } else if (activeTab !== 'All') {
+      list = trips.filter((t) => t.status === activeTab);
+    }
+
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return list;
+
+    return list.filter((t) => {
+      // Trip title / name
+      if (t.name?.toLowerCase().includes(q)) return true;
+      // Destination
+      if (t.destination?.toLowerCase().includes(q)) return true;
+      // Interests
+      if (t.interests?.some((i) => i.toLowerCase().includes(q))) return true;
+      // Notes
+      if (t.notes?.toLowerCase().includes(q)) return true;
+      // Dates
+      if (t.dates?.toLowerCase().includes(q)) return true;
+      // Status
+      if (t.status?.toLowerCase().includes(q)) return true;
+      // Bookings: Hotel provider, confirmation code, destination
+      if (t.bookingsList?.some((b) => 
+        b.provider?.toLowerCase().includes(q) ||
+        b.confirmationCode?.toLowerCase().includes(q) ||
+        b.destination?.toLowerCase().includes(q)
+      )) return true;
+      // Itinerary activity titles or places
+      if (t.dailyItinerary?.some((d) => 
+        d.title?.toLowerCase().includes(q) || 
+        d.activities?.some((a) => a.title?.toLowerCase().includes(q) || a.location?.toLowerCase().includes(q))
+      )) return true;
+      return false;
+    });
+  }, [trips, activeTab, searchQuery]);
 
   // Featured Trip (Primary active or ongoing trip - prioritizes Ongoing)
   const featuredTrip = useMemo(() => {
     return trips.find((t) => t.status === 'Ongoing') || trips.find((t) => t.isFeatured) || trips[0];
   }, [trips]);
 
-  const handleManualTripSubmit = () => {
+  const handleManualTripSubmit = async () => {
     if (!manualDestination.trim()) {
       triggerToast('Please enter a destination for your trip.');
       return;
     }
 
+    const fallbackImg = featuredTrip?.imageUrl || 'https://images.unsplash.com/photo-1588598198321-9735fd52455b?w=800&auto=format&fit=crop&q=80';
+    let savedTripId = `trip-manual-${Date.now()}`;
+    const tripTitle = manualTripName || `${manualDestination} Journey`;
+
+    try {
+      const res = await tripService.createTrip({
+        tripName: tripTitle,
+        destination: `${manualDestination}, Sri Lanka`,
+        startDate: new Date().toISOString(),
+        endDate: new Date(Date.now() + 5 * 86400000).toISOString(),
+        numberOfTravelers: manualTravelersCount,
+        budget: manualMaxBudget,
+        interests: manualInterests.length > 0 ? manualInterests : ['Cultural'],
+        tripStyle: manualTransportMode === 'Private' ? 'Private Vehicle' : 'Public Transport',
+      });
+      if (res?.data?.id || (res as any)?.id) {
+        savedTripId = res?.data?.id || (res as any)?.id;
+      }
+    } catch (apiErr) {
+      console.warn('Backend save for manual modal trip fallback:', apiErr);
+    }
+
     const createdTrip: UserTrip = {
-      id: `trip-manual-${Date.now()}`,
-      name: manualTripName || `${manualDestination} Journey`,
+      id: savedTripId,
+      name: tripTitle,
       destination: `${manualDestination}, Sri Lanka`,
       destinationId: manualDestination.toLowerCase().includes('sigiriya')
         ? 'sigiriya'
@@ -245,7 +428,7 @@ export const TripsPage: React.FC = () => {
       travelers: manualTravelersCount,
       travelerNames: ['Sanath Wickramasinghe', 'Anula Wickramasinghe'],
       status: 'Planning',
-      imageUrl: featuredTrip.imageUrl,
+      imageUrl: fallbackImg,
       budget: `$${manualMinBudget} – $${manualMaxBudget}`,
       spentBudget: '$0',
       interests: manualInterests,
@@ -291,10 +474,18 @@ export const TripsPage: React.FC = () => {
       })),
     };
 
-    setTrips([createdTrip, ...trips]);
+    const cleanTitle = tripTitle.toLowerCase().trim();
+    const updatedTrips = deduplicateUserTrips(
+      [createdTrip, ...trips.filter((t) => t.id !== savedTripId && (t.name || '').toLowerCase().trim() !== cleanTitle)],
+      getDeletedTripIds()
+    );
+    setTrips(updatedTrips);
+    try {
+      localStorage.setItem('nova_user_trips', JSON.stringify(updatedTrips));
+    } catch {}
     setIsCreateModalOpen(false);
     setPlannerStep(1);
-    triggerToast(`Created new manual trip: ${createdTrip.name}!`);
+    triggerToast(`🎉 Created new manual trip: ${createdTrip.name}!`);
   };
 
   const toggleManualInterest = (interest: string) => {
@@ -354,11 +545,18 @@ export const TripsPage: React.FC = () => {
           {(['All', 'Upcoming', 'Planning', 'Ongoing', 'Completed'] as const).map((tab) => {
             const isActive = activeTab === tab;
             const count =
-              tab === 'All' ? trips.length : trips.filter((t) => t.status === tab).length;
+              tab === 'All'
+                ? trips.length
+                : tab === 'Planning'
+                ? trips.filter((t) => t.status === 'Planning').length
+                : tab === 'Upcoming'
+                ? trips.filter((t) => t.status === 'Upcoming' || t.status === 'Planning').length
+                : trips.filter((t) => t.status === tab).length;
 
             return (
               <button
                 key={tab}
+                type="button"
                 onClick={() => setActiveTab(tab)}
                 className={`py-3 text-sm font-bold transition-all cursor-pointer whitespace-nowrap relative flex items-center gap-2 ${
                   isActive
@@ -450,6 +648,44 @@ export const TripsPage: React.FC = () => {
                   </div>
                 )}
 
+                {/* Staycation Confirmed Receipt Banner inside Featured Trip Card */}
+                {(() => {
+                  const stayBookings = featuredTrip.bookingsList?.filter((b) => b.type === 'Hotel') || [];
+                  if (stayBookings.length === 0) return null;
+
+                  return (
+                    <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 bg-emerald-50/50 p-3 rounded-2xl border border-emerald-200/60">
+                      <div className="flex items-center gap-2">
+                        <span className="p-1.5 rounded-lg bg-emerald-100 text-emerald-800">
+                          <Building2 className="w-4 h-4" />
+                        </span>
+                        <div>
+                          <span className="text-xs font-extrabold text-slate-800 block">
+                            Confirmed Staycation: {stayBookings[0].provider}
+                          </span>
+                          <span className="text-[11px] text-slate-500">
+                            Ref: {stayBookings[0].confirmationCode} · {stayBookings[0].amount}
+                          </span>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setActiveReceiptBooking({
+                            booking: stayBookings[0],
+                            tripName: featuredTrip.name,
+                          })
+                        }
+                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-extrabold transition-all cursor-pointer shadow-xs"
+                      >
+                        <Receipt className="w-3.5 h-3.5" />
+                        <span>View Confirmation Receipt</span>
+                      </button>
+                    </div>
+                  );
+                })()}
+
                 {/* 6. ONGOING JOURNEY LIVE DETAILS OR PLANNING PROGRESS */}
                 {featuredTrip.status === 'Ongoing' ? (
                   <div className="pt-4 border-t border-slate-100 space-y-3">
@@ -462,38 +698,58 @@ export const TripsPage: React.FC = () => {
                         <span>Ongoing Journey Live Status</span>
                       </span>
                       <span className="text-[11px] font-black text-emerald-700 bg-emerald-100/80 px-2.5 py-0.5 rounded-full border border-emerald-300">
-                        Day 2 of 3 · Happening Today
+                        {featuredTrip.timelineLabel || 'Happening Today'}
                       </span>
                     </div>
 
-                    {/* Day-by-Day Live Progress Cards */}
+                    {/* Day-by-Day Live Progress Cards dynamically derived from itinerary days */}
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-left">
-                      <div className="p-3 rounded-2xl border bg-slate-50 border-slate-200/80 space-y-1">
-                        <div className="flex items-center justify-between text-[10px] font-bold">
-                          <span className="text-slate-500">Day 1 · 12 Sep</span>
-                          <span className="text-emerald-600 flex items-center gap-0.5"><Check className="w-3 h-3" /> Done</span>
-                        </div>
-                        <h4 className="text-xs font-bold text-slate-800 truncate">Scenic Train & Temple</h4>
-                        <p className="text-[10px] text-slate-500">Arrival & Puja ceremony</p>
-                      </div>
+                      {(featuredTrip.dailyItinerary && featuredTrip.dailyItinerary.length > 0
+                        ? featuredTrip.dailyItinerary.slice(0, 3)
+                        : [
+                            { day: 1, date: featuredTrip.dates, title: 'Scenic Exploration', activities: [] },
+                          ]
+                      ).map((day) => {
+                        const dayStatus = day.status || getItineraryDayTimelineStatus(day.date);
+                        const isToday = dayStatus === 'Today';
+                        const isDone = dayStatus === 'Completed';
 
-                      <div className="p-3 rounded-2xl border-2 border-emerald-500 bg-emerald-50/60 shadow-xs space-y-1 relative">
-                        <div className="flex items-center justify-between text-[10px] font-black">
-                          <span className="text-emerald-900">Day 2 · 13 Sep (Today)</span>
-                          <span className="px-1.5 py-0.2 bg-emerald-600 text-white rounded-full text-[9px] font-black animate-pulse">ACTIVE</span>
-                        </div>
-                        <h4 className="text-xs font-black text-slate-900 truncate">Botanical Gardens & Tea</h4>
-                        <p className="text-[10px] text-emerald-800 font-semibold">📍 Gardens Tour In Progress</p>
-                      </div>
-
-                      <div className="p-3 rounded-2xl border bg-slate-50 border-slate-200/80 space-y-1">
-                        <div className="flex items-center justify-between text-[10px] font-bold">
-                          <span className="text-slate-500">Day 3 · 14 Sep</span>
-                          <span className="text-slate-400">Tomorrow</span>
-                        </div>
-                        <h4 className="text-xs font-bold text-slate-800 truncate">Forest Canopy & Crafts</h4>
-                        <p className="text-[10px] text-slate-500">Udawatta hike & shopping</p>
-                      </div>
+                        return (
+                          <div
+                            key={day.day}
+                            className={`p-3 rounded-2xl border space-y-1 ${
+                              isToday
+                                ? 'border-2 border-emerald-500 bg-emerald-50/70 shadow-xs'
+                                : isDone
+                                ? 'border-slate-200/80 bg-slate-50'
+                                : 'border-slate-200/80 bg-white'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between text-[10px] font-black">
+                              <span className={isToday ? 'text-emerald-950 font-black' : 'text-slate-500 font-bold'}>
+                                Day {day.day} · {day.date}
+                              </span>
+                              {isToday ? (
+                                <span className="px-1.5 py-0.5 bg-emerald-600 text-white rounded-full text-[9px] font-black animate-pulse">
+                                  ACTIVE
+                                </span>
+                              ) : isDone ? (
+                                <span className="text-emerald-600 flex items-center gap-0.5 font-bold">
+                                  <Check className="w-3 h-3" /> Done
+                                </span>
+                              ) : (
+                                <span className="text-slate-400 font-medium">Upcoming</span>
+                              )}
+                            </div>
+                            <h4 className={`text-xs truncate ${isToday ? 'font-black text-slate-900' : 'font-bold text-slate-700'}`}>
+                              {day.title}
+                            </h4>
+                            <p className="text-[10px] text-slate-500 truncate">
+                              {day.activities?.[0]?.title || `Activities in ${featuredTrip.destination}`}
+                            </p>
+                          </div>
+                        );
+                      })}
                     </div>
 
                     {/* Live Context Indicators */}
@@ -593,14 +849,40 @@ export const TripsPage: React.FC = () => {
 
       {/* 7 & 8. YOUR TRIPS GRID SECTION */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
-        <div className="flex items-center justify-between mb-8 border-b border-slate-200/80 pb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 border-b border-slate-200/80 pb-4">
           <div>
             <h2 className="text-2xl sm:text-3xl font-black text-[#0B3A53] tracking-tight font-heading">
               Your Trips
             </h2>
             <p className="text-xs text-slate-500 font-medium">
-              Showing {filteredTrips.length} journeys
+              {searchQuery.trim()
+                ? `Showing ${filteredTrips.length} matching journey${filteredTrips.length === 1 ? '' : 's'}`
+                : `Showing ${filteredTrips.length} journeys`}
             </p>
+          </div>
+
+          {/* Search Input Bar */}
+          <div className="relative w-full sm:w-80 md:w-96">
+            <div className="relative flex items-center">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 pointer-events-none" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search trips, destinations, staycations..."
+                className="w-full pl-10 pr-9 py-2.5 rounded-full border border-slate-300 focus:border-[#16A6A1] focus:ring-2 focus:ring-[#16A6A1]/20 bg-white text-xs font-medium text-slate-800 placeholder-slate-400 shadow-2xs outline-none transition-all"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 p-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+                  title="Clear search"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
@@ -625,7 +907,11 @@ export const TripsPage: React.FC = () => {
                     <div className={`absolute top-3 right-3 px-3 py-1 rounded-full backdrop-blur-md text-[11px] font-bold border ${
                       trip.status === 'Ongoing'
                         ? 'bg-emerald-950/90 text-emerald-400 border-emerald-500/40 flex items-center gap-1.5 shadow-md'
-                        : 'bg-slate-900/80 text-white border-white/15'
+                        : trip.status === 'Completed'
+                        ? 'bg-slate-900/80 text-slate-300 border-white/20'
+                        : trip.status === 'Cancelled'
+                        ? 'bg-rose-950/90 text-rose-300 border-rose-500/40'
+                        : 'bg-sky-950/90 text-sky-300 border-sky-400/30'
                     }`}>
                       {trip.status === 'Ongoing' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />}
                       <span>{trip.status}</span>
@@ -653,7 +939,55 @@ export const TripsPage: React.FC = () => {
                       {trip.dates} · {trip.duration} · {trip.travelers} Travelers
                     </p>
 
+                    {/* Dynamic Real Calendar Timeline Badge */}
+                    {trip.timelineLabel && (
+                      <div className="pt-0.5">
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold ${
+                          trip.status === 'Ongoing'
+                            ? 'bg-emerald-50 text-emerald-800 border border-emerald-300'
+                            : trip.status === 'Completed'
+                            ? 'bg-slate-100 text-slate-600 border border-slate-200'
+                            : trip.status === 'Cancelled'
+                            ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                            : 'bg-sky-50 text-[#0B3A53] border border-sky-200'
+                        }`}>
+                          <Clock className="w-3.5 h-3.5 text-[#16A6A1]" />
+                          <span>{trip.timelineLabel}</span>
+                        </span>
+                      </div>
+                    )}
 
+                    {/* Staycation Booked Receipt Bar Inside Trip Card */}
+                    {(() => {
+                      const stayBookings = trip.bookingsList?.filter((b) => b.type === 'Hotel') || [];
+                      if (stayBookings.length === 0) return null;
+
+                      return (
+                        <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-2.5 py-1 rounded-xl">
+                            <Building2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                            <span>
+                              {stayBookings.length} Staycation{stayBookings.length > 1 ? 's' : ''} Booked
+                            </span>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveReceiptBooking({
+                                booking: stayBookings[0],
+                                tripName: trip.name,
+                              });
+                            }}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-teal-50 text-[#16A6A1] hover:text-[#146C86] text-xs font-black rounded-lg border border-teal-200 shadow-2xs transition-all cursor-pointer"
+                          >
+                            <Receipt className="w-3.5 h-3.5" />
+                            <span>View Receipt</span>
+                          </button>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
 
@@ -668,8 +1002,30 @@ export const TripsPage: React.FC = () => {
               </div>
             ))}
           </div>
+        ) : searchQuery.trim() ? (
+          /* SEARCH EMPTY STATE */
+          <div className="bg-white py-14 px-6 rounded-3xl border border-slate-200/70 shadow-sm text-center max-w-lg mx-auto space-y-4 my-8">
+            <div className="w-16 h-16 rounded-full bg-slate-100 text-slate-500 mx-auto flex items-center justify-center">
+              <Search className="w-7 h-7 text-slate-400" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-xl font-black text-[#0B3A53] font-heading">
+                No journeys found
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-500 leading-relaxed font-medium">
+                We couldn't find any trips matching &ldquo;<span className="font-semibold text-slate-800">{searchQuery}</span>&rdquo;. Try searching by destination, hotel, or trip name.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              className="bg-[#16A6A1] hover:bg-[#146C86] text-white font-extrabold text-xs uppercase tracking-wider px-6 py-2.5 rounded-full shadow-md transition-colors cursor-pointer"
+            >
+              Clear Search
+            </button>
+          </div>
         ) : (
-          /* 9. EMPTY STATE */
+          /* 9. DEFAULT EMPTY STATE */
           <div className="bg-white py-16 px-6 rounded-3xl border border-slate-200/70 shadow-sm text-center max-w-lg mx-auto space-y-4 my-8">
             <div className="w-16 h-16 rounded-full bg-[#16A6A1]/10 text-[#16A6A1] mx-auto flex items-center justify-center">
               <Compass className="w-8 h-8 text-[#16A6A1]" />
@@ -1187,9 +1543,25 @@ export const TripsPage: React.FC = () => {
                     <span className="px-3.5 py-1.5 rounded-full bg-white/20 backdrop-blur-md text-white text-xs font-extrabold border border-white/30">
                       {selectedTripModal.destination}
                     </span>
-                    <span className="px-3.5 py-1.5 rounded-full bg-[#16A6A1] text-white text-xs font-black">
-                      {selectedTripModal.status}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      {selectedTripModal.timelineLabel && (
+                        <span className="px-3 py-1 rounded-full bg-slate-900/70 backdrop-blur-md text-white text-xs font-semibold border border-white/20 flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 text-[#16A6A1]" />
+                          <span>{selectedTripModal.timelineLabel}</span>
+                        </span>
+                      )}
+                      <span className={`px-3.5 py-1.5 rounded-full text-xs font-black border ${
+                        selectedTripModal.status === 'Ongoing'
+                          ? 'bg-emerald-500 text-white border-emerald-400'
+                          : selectedTripModal.status === 'Completed'
+                          ? 'bg-slate-700 text-slate-200 border-slate-600'
+                          : selectedTripModal.status === 'Cancelled'
+                          ? 'bg-rose-600 text-white border-rose-500'
+                          : 'bg-[#16A6A1] text-white border-[#146C86]'
+                      }`}>
+                        {selectedTripModal.status}
+                      </span>
+                    </div>
                   </div>
 
                   <div className="space-y-2">
@@ -1317,40 +1689,72 @@ export const TripsPage: React.FC = () => {
                             <span className="w-8 h-8 rounded-xl bg-[#0B3A53] text-white text-xs font-black flex items-center justify-center">
                               0{day.day}
                             </span>
-                            <h4 className="text-base font-extrabold text-[#0B3A53]">
-                              Day {day.day}: {day.title}
-                            </h4>
+                            <div>
+                              <h4 className="text-base font-extrabold text-[#0B3A53]">
+                                Day {day.day}: {day.title}
+                              </h4>
+                              <span className="text-xs font-semibold text-slate-400">{day.date}</span>
+                            </div>
                           </div>
-                          <span className="text-xs font-semibold text-slate-400">{day.date}</span>
+                          {(() => {
+                            const dayStatus = day.status || getItineraryDayTimelineStatus(day.date);
+                            return (
+                              <span className={`px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider border ${
+                                dayStatus === 'Today'
+                                  ? 'bg-emerald-100 text-emerald-800 border-emerald-300 animate-pulse'
+                                  : dayStatus === 'Completed'
+                                  ? 'bg-slate-100 text-slate-600 border-slate-200'
+                                  : 'bg-sky-50 text-sky-800 border-sky-200'
+                              }`}>
+                                {dayStatus === 'Today' ? '● Today' : dayStatus}
+                              </span>
+                            );
+                          })()}
                         </div>
 
                         <div className="space-y-3 pl-2 sm:pl-4 border-l-2 border-[#16A6A1]/40">
-                          {day.activities.map((act: TripActivityDetail, aIdx: number) => (
-                            <div
-                              key={aIdx}
-                              className="bg-white p-4 rounded-2xl border border-slate-200/70 shadow-xs space-y-1.5"
-                            >
-                              <div className="flex items-center justify-between gap-2">
-                                <div className="flex items-center gap-2">
-                                  <span className="px-2.5 py-0.5 rounded-full bg-[#0B3A53] text-white text-[10px] font-black">
-                                    {act.time}
-                                  </span>
-                                  <span className="text-xs font-extrabold text-[#0B3A53]">
-                                    {act.title}
-                                  </span>
+                          {day.activities.map((act: TripActivityDetail, aIdx: number) => {
+                            const actStatus = act.activityStatus || getActivityTimelineStatus(day.date, act.time);
+                            return (
+                              <div
+                                key={aIdx}
+                                className="bg-white p-4 rounded-2xl border border-slate-200/70 shadow-xs space-y-1.5"
+                              >
+                                <div className="flex items-center justify-between gap-2">
+                                  <div className="flex items-center gap-2">
+                                    <span className="px-2.5 py-0.5 rounded-full bg-[#0B3A53] text-white text-[10px] font-black">
+                                      {act.time}
+                                    </span>
+                                    <span className="text-xs font-extrabold text-[#0B3A53]">
+                                      {act.title}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-1.5">
+                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-black border ${
+                                      actStatus === 'In Progress'
+                                        ? 'bg-emerald-500 text-white border-emerald-400 animate-pulse'
+                                        : actStatus === 'Completed'
+                                        ? 'bg-slate-100 text-slate-500 border-slate-200'
+                                        : actStatus === 'Today'
+                                        ? 'bg-teal-50 text-teal-800 border-teal-200'
+                                        : 'bg-slate-50 text-slate-600 border-slate-200'
+                                    }`}>
+                                      {actStatus}
+                                    </span>
+                                    <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-extrabold">
+                                      {act.type}
+                                    </span>
+                                  </div>
                                 </div>
-                                <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-extrabold">
-                                  {act.type}
+                                <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                                  {act.description}
+                                </p>
+                                <span className="text-[11px] text-[#146C86] font-bold block pt-1">
+                                  📍 {act.location}
                                 </span>
                               </div>
-                              <p className="text-xs text-slate-600 leading-relaxed font-medium">
-                                {act.description}
-                              </p>
-                              <span className="text-[11px] text-[#146C86] font-bold block pt-1">
-                                📍 {act.location}
-                              </span>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       </div>
                     ))}
@@ -1390,6 +1794,21 @@ export const TripsPage: React.FC = () => {
                           <span className="font-semibold text-slate-400">Ref: {bk.confirmationCode}</span>
                           <span className="font-black text-[#0B3A53]">{bk.amount}</span>
                         </div>
+                        {bk.type === 'Hotel' && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setActiveReceiptBooking({
+                                booking: bk,
+                                tripName: selectedTripModal.name,
+                              })
+                            }
+                            className="w-full mt-2 py-2 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-800 text-xs font-extrabold rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                          >
+                            <Receipt className="w-3.5 h-3.5 text-emerald-700" />
+                            <span>View Official Confirmation Receipt</span>
+                          </button>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -1507,6 +1926,14 @@ export const TripsPage: React.FC = () => {
       <AIBotGuideModal
         isOpen={isAIBotModalOpen}
         onClose={() => setIsAIBotModalOpen(false)}
+      />
+
+      {/* STAYCATION CONFIRMATION RECEIPT MODAL */}
+      <BookingConfirmationReceiptModal
+        isOpen={activeReceiptBooking !== null}
+        onClose={() => setActiveReceiptBooking(null)}
+        booking={activeReceiptBooking?.booking || null}
+        tripName={activeReceiptBooking?.tripName}
       />
     </div>
   );

@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -45,7 +46,8 @@ builder.Services.AddScoped<IApprovalService, ApprovalService>();
 builder.Services.AddHttpClient<IGoogleTransportService, GoogleTransportService>();
 builder.Services.AddScoped<ITransportService, TransportService>();
 
-// 4. Register Four Tourism Agents
+// 4. Register Four Tourism Agents & AI Agent Microservice Client
+builder.Services.AddHttpClient<IAiAgentClient, AiAgentClient>();
 builder.Services.AddScoped<ITravelPlanningAgent, TravelPlanningAgent>();
 builder.Services.AddScoped<IDestinationResearchAgent, DestinationResearchAgent>();
 builder.Services.AddScoped<ITravelLogisticsAgent, TravelLogisticsAgent>();
@@ -54,9 +56,12 @@ builder.Services.AddScoped<ISafetyValidationAgent, SafetyValidationAgent>();
 // 5. Register Agentic AI Workflow Orchestrator
 builder.Services.AddScoped<IItineraryGenerationService, ItineraryGenerationService>();
 
+// 6. Register Reviews & Guide Services (merged from sub-projects)
+builder.Services.AddScoped<IReviewService, ReviewService>();
+
 
 // 7. JWT Authentication & Role-Based Authorization
-var jwtSecret = builder.Configuration["Jwt:Secret"] ?? "SuperSecretNovaEnterpriseTourismKey2026!#$";
+var jwtSecret = builder.Configuration["Jwt:Secret"] ?? "travel_link_super_secret_jwt_key_2026_enterprise_production_secure_key";
 var key = Encoding.UTF8.GetBytes(jwtSecret);
 
 builder.Services.AddAuthentication(options =>
@@ -74,15 +79,44 @@ builder.Services.AddAuthentication(options =>
         IssuerSigningKey = new SymmetricSecurityKey(key),
         ValidateIssuer = false,
         ValidateAudience = false,
-        ClockSkew = TimeSpan.Zero
+        ClockSkew = TimeSpan.Zero,
+        RoleClaimType = ClaimTypes.Role,
+        NameClaimType = ClaimTypes.Name
+    };
+    options.Events = new JwtBearerEvents
+    {
+        OnChallenge = context =>
+        {
+            context.HandleResponse();
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            context.Response.ContentType = "application/json";
+            return context.Response.WriteAsync(JsonSerializer.Serialize(new
+            {
+                success = false,
+                status = 401,
+                message = "Authentication required or invalid/expired token."
+            }));
+        },
+        OnForbidden = context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            context.Response.ContentType = "application/json";
+            return context.Response.WriteAsync(JsonSerializer.Serialize(new
+            {
+                success = false,
+                status = 403,
+                message = "Forbidden: Insufficient permissions for this resource."
+            }));
+        }
     };
 });
 
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy("TouristOnly", policy => policy.RequireRole("Tourist"));
-    options.AddPolicy("OperatorOrAdmin", policy => policy.RequireRole("TourismOperator", "Admin"));
-    options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
+    options.AddPolicy("TouristOnly", policy => policy.RequireRole("Tourist", "USER", "User"));
+    options.AddPolicy("OperatorOrAdmin", policy => policy.RequireRole("TourismOperator", "Admin", "ADMIN", "ROLE_ADMIN"));
+    options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin", "ADMIN", "ROLE_ADMIN"));
+    options.AddPolicy("UserOnly", policy => policy.RequireRole("Tourist", "USER", "User"));
 });
 
 // 8. CORS Policy
@@ -141,6 +175,19 @@ using (var scope = app.Services.CreateScope())
     try
     {
         var db = scope.ServiceProvider.GetRequiredService<NovaDbContext>();
+        try
+        {
+            await db.Database.ExecuteSqlRawAsync(@"
+                ALTER TABLE users ADD COLUMN IF NOT EXISTS phone text;
+                ALTER TABLE users ADD COLUMN IF NOT EXISTS bio text;
+                ALTER TABLE users ADD COLUMN IF NOT EXISTS location text;
+                ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_image text;
+            ");
+        }
+        catch (Exception colEx)
+        {
+            Console.WriteLine($"[Schema Sync Warning] {colEx.Message}");
+        }
         await db.Database.MigrateAsync();
         await DbInitializer.SeedAsync(db);
     }

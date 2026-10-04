@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   MapPin,
@@ -37,13 +37,33 @@ import {
   Copy,
   Bus,
   Train,
+  Receipt,
+  FileText,
 } from 'lucide-react';
 import { LandingNavbar } from '../components/navigation/LandingNavbar';
 import { Footer } from '../components/navigation/Footer';
 import { tripService } from '../services/tripService';
-import { UserTrip } from '../mock/tripsData';
+import { tripPlannerService } from '../services/tripPlannerService';
+import { TripPlan } from '../types/tripPlanner';
+import { UserTrip, TripBookingDetail } from '../mock/tripsData';
 import { PublicTransportExplorer } from '../components/transport/PublicTransportExplorer';
 import { TransportOption } from '../services/transportService';
+import { StaycationBookingModal } from '../components/staycations/StaycationBookingModal';
+import { BookingConfirmationReceiptModal } from '../components/staycations/BookingConfirmationReceiptModal';
+import {
+  TransitLegSelectionModal,
+  TripTransitLeg,
+  PRIVATE_VEHICLE_OPTIONS,
+} from '../components/transport/TransitLegSelectionModal';
+import { ItineraryTransportSection } from '../components/transport/ItineraryTransportSection';
+import {
+  getTripTimeline,
+  getItineraryDayTimelineStatus,
+  getActivityTimelineStatus,
+  formatTripDateRange,
+  validateTripDateConsistency,
+  normalizeCalendarDate,
+} from '../utils/tripTimeline';
 import {
   SRI_LANKA_DESTINATIONS,
   TRAVEL_STYLES_LIST,
@@ -94,7 +114,7 @@ export const ManualTripPlannerPage: React.FC = () => {
   // ----------------------------------------------------
   const [tripName, setTripName] = useState<string>('');
   const [selectedDestinations, setSelectedDestinations] = useState<string[]>([]);
-  
+
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
 
@@ -102,15 +122,48 @@ export const ManualTripPlannerPage: React.FC = () => {
   const [childrenCount, setChildrenCount] = useState<number>(0);
   const [budgetAmount, setBudgetAmount] = useState<number | ''>('');
 
-  // Calculate Duration
+  // Calculate Duration with calendar normalization
   const calculateDuration = () => {
     if (!startDate || !endDate) return 0;
-    const s = new Date(startDate);
-    const e = new Date(endDate);
+    const s = normalizeCalendarDate(startDate);
+    const e = normalizeCalendarDate(endDate);
+    if (!s || !e) return 0;
     const diff = Math.ceil((e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24)) + 1;
     return isNaN(diff) || diff <= 0 ? 0 : diff;
   };
   const durationDays = calculateDuration();
+
+  // Automatic timeline synchronization when dates change
+  const handleStartDateChange = (newStart: string) => {
+    setStartDate(newStart);
+    let targetEnd = endDate;
+    if (endDate && newStart && endDate < newStart) {
+      targetEnd = newStart;
+      setEndDate(newStart);
+    }
+    // Update existing itinerary days to stay logically consistent with new start date
+    if (newStart && plannedDays.length > 0) {
+      const base = normalizeCalendarDate(newStart) || new Date(newStart);
+      const updatedDays = plannedDays.map((day, idx) => {
+        const dayD = new Date(base);
+        dayD.setDate(base.getDate() + idx);
+        return {
+          ...day,
+          dateStr: dayD.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        };
+      });
+      setPlannedDays(updatedDays);
+      syncTransitLegs(updatedDays, transitLegs);
+    }
+  };
+
+  const handleEndDateChange = (newEnd: string) => {
+    if (startDate && newEnd && newEnd < startDate) {
+      triggerToast('End date cannot be earlier than start date.');
+      return;
+    }
+    setEndDate(newEnd);
+  };
 
   const toggleDestination = (dest: string) => {
     if (selectedDestinations.includes(dest)) {
@@ -126,6 +179,14 @@ export const ManualTripPlannerPage: React.FC = () => {
   const [preferredAccommodationType, setPreferredAccommodationType] = useState<AccommodationType | null>(null);
   // Selected accommodation per destination: { [destination]: AccommodationItem }
   const [selectedAccommodations, setSelectedAccommodations] = useState<Record<string, AccommodationItem>>({});
+
+  // Staycation Bookings State
+  const [bookedStaycations, setBookedStaycations] = useState<Record<string, TripBookingDetail>>({});
+  const [activeStaycationToBook, setActiveStaycationToBook] = useState<AccommodationItem | null>(null);
+  const [activeReceiptBooking, setActiveReceiptBooking] = useState<{
+    booking: TripBookingDetail;
+    staycation?: AccommodationItem;
+  } | null>(null);
 
   // Filter available accommodations based on selected destinations and type
   const visibleAccommodations = useMemo(() => {
@@ -166,11 +227,154 @@ export const ManualTripPlannerPage: React.FC = () => {
   };
 
   // ----------------------------------------------------
-  // STEP 4: TRANSPORTATION & MOBILITY
+  // STEP 4: TRANSPORTATION & MOBILITY (MULTI-LEG & MULTI-DAY)
   // ----------------------------------------------------
+  const [transitStrategy, setTransitStrategy] = useState<'MULTI_LEG' | 'WHOLE_TRIP_PRIVATE' | 'OPEN_PUBLIC'>('MULTI_LEG');
   const [transportMode, setTransportMode] = useState<'PUBLIC_TRANSPORT' | 'PRIVATE'>('PUBLIC_TRANSPORT');
   const [selectedPublicTransport, setSelectedPublicTransport] = useState<TransportOption | null>(null);
   const [privateVehicleType, setPrivateVehicleType] = useState<string>('AC Sedan');
+
+  // Multi-Leg & Day-by-day transit list
+  const [transitLegs, setTransitLegs] = useState<TripTransitLeg[]>([]);
+  const [activeLegToEdit, setActiveLegToEdit] = useState<TripTransitLeg | null>(null);
+  const [isTransitModalOpen, setIsTransitModalOpen] = useState<boolean>(false);
+
+  // Helper to synchronize inter-day transit legs from plannedDays
+  const syncTransitLegs = (days: PlannedDay[], currentLegs: TripTransitLeg[]) => {
+    if (!days || days.length === 0) return;
+    const derived: TripTransitLeg[] = [];
+
+    for (let i = 0; i < days.length - 1; i++) {
+      const cur = days[i];
+      const next = days[i + 1];
+      if (cur.destination && next.destination && cur.destination !== next.destination) {
+        const legId = `leg-day-${cur.dayNumber}-${next.dayNumber}`;
+        const existing = currentLegs.find(
+          (l) => l.id === legId || (l.fromDayNumber === cur.dayNumber && l.fromDestination === cur.destination && l.toDestination === next.destination)
+        );
+
+        if (existing) {
+          derived.push({
+            ...existing,
+            id: legId,
+            fromDayNumber: cur.dayNumber,
+            toDayNumber: next.dayNumber,
+            fromDestination: cur.destination,
+            toDestination: next.destination,
+            dateStr: cur.dateStr,
+          });
+        } else {
+          // If a global public transport was selected matching this route, link it
+          const matchingPublic = selectedPublicTransport &&
+            selectedPublicTransport.origin.toLowerCase().includes(cur.destination.toLowerCase()) &&
+            selectedPublicTransport.destination.toLowerCase().includes(next.destination.toLowerCase())
+            ? selectedPublicTransport
+            : null;
+
+          const pax = adultsCount + childrenCount > 0 ? adultsCount + childrenCount : 1;
+          derived.push({
+            id: legId,
+            fromDayNumber: cur.dayNumber,
+            toDayNumber: next.dayNumber,
+            fromDestination: cur.destination,
+            toDestination: next.destination,
+            dateStr: cur.dateStr,
+            mode: matchingPublic ? 'PUBLIC_TRANSPORT' : 'PUBLIC_TRANSPORT',
+            publicTransport: matchingPublic,
+            privateVehicleType: 'AC Sedan',
+            estimatedCostUSD: matchingPublic
+              ? Math.max(3, Math.round(((matchingPublic.estimatedFare || 0) / 300) * pax))
+              : 6 * pax,
+          });
+        }
+      }
+    }
+
+    // Preserve custom legs
+    const customLegs = currentLegs.filter((l) => l.isCustom);
+    derived.push(...customLegs);
+
+    // If no inter-day transitions were detected (single day or same destination), but user selected multiple destinations:
+    if (derived.length === 0 && selectedDestinations.length > 1) {
+      for (let i = 0; i < selectedDestinations.length - 1; i++) {
+        const origin = selectedDestinations[i];
+        const dest = selectedDestinations[i + 1];
+        const legId = `leg-dest-${i}-${i + 1}`;
+        const existing = currentLegs.find((l) => l.id === legId);
+        if (existing) {
+          derived.push(existing);
+        } else {
+          const pax = adultsCount + childrenCount > 0 ? adultsCount + childrenCount : 1;
+          derived.push({
+            id: legId,
+            fromDayNumber: i + 1,
+            toDayNumber: i + 2,
+            fromDestination: origin,
+            toDestination: dest,
+            mode: 'PUBLIC_TRANSPORT',
+            publicTransport: null,
+            privateVehicleType: 'AC Sedan',
+            estimatedCostUSD: 6 * pax,
+          });
+        }
+      }
+    }
+
+    setTransitLegs(derived);
+  };
+
+  const handleSaveTransitLeg = (savedLeg: TripTransitLeg) => {
+    setTransitLegs((prev) => {
+      const idx = prev.findIndex((l) => l.id === savedLeg.id);
+      if (idx >= 0) {
+        const next = [...prev];
+        next[idx] = savedLeg;
+        return next;
+      }
+      return [...prev, savedLeg];
+    });
+
+    if (savedLeg.mode === 'PUBLIC_TRANSPORT' && savedLeg.publicTransport) {
+      setSelectedPublicTransport(savedLeg.publicTransport);
+    }
+
+    const typeDesc = savedLeg.mode === 'PUBLIC_TRANSPORT'
+      ? savedLeg.publicTransport
+        ? `${savedLeg.publicTransport.transportType === 'BUS' ? 'Bus Route ' + (savedLeg.publicTransport.routeNumber || '') : 'Train ' + (savedLeg.publicTransport.trainNumber || '')}`
+        : 'Public Transport'
+      : `Private ${savedLeg.privateVehicleType}`;
+
+    triggerToast(`Updated transport for ${savedLeg.fromDestination} ➔ ${savedLeg.toDestination}: ${typeDesc}!`);
+  };
+
+  const handleAddCustomTransitLeg = (defaultOrigin?: string, defaultDest?: string) => {
+    const origin = defaultOrigin || (selectedDestinations[0] || 'Yala');
+    const dest = defaultDest || (selectedDestinations[1] || selectedDestinations[0] || 'Colombo');
+    const newLeg: TripTransitLeg = {
+      id: `leg-custom-${Date.now()}`,
+      fromDayNumber: 1,
+      toDayNumber: 2,
+      fromDestination: origin,
+      toDestination: dest,
+      mode: 'PUBLIC_TRANSPORT',
+      publicTransport: null,
+      privateVehicleType: 'AC Sedan',
+      estimatedCostUSD: 35,
+      isCustom: true,
+    };
+    setActiveLegToEdit(newLeg);
+    setIsTransitModalOpen(true);
+  };
+
+  const handleEditTransitLeg = (leg: TripTransitLeg) => {
+    setActiveLegToEdit(leg);
+    setIsTransitModalOpen(true);
+  };
+
+  const handleRemoveTransitLeg = (legId: string) => {
+    setTransitLegs((prev) => prev.filter((l) => l.id !== legId));
+    triggerToast('Removed transit leg.');
+  };
 
   // ----------------------------------------------------
   // STEP 5: ITINERARY BUILDER (DRAG & DROP + AI RECOMMENDATIONS)
@@ -184,24 +388,31 @@ export const ManualTripPlannerPage: React.FC = () => {
 
   // Sync planned days count and dates whenever dates change
   const syncDaysWithDates = () => {
-    if (!startDate || !endDate || durationDays <= 0) {
-      setPlannedDays([]);
-      return;
-    }
-    const s = new Date(startDate);
+    const effDuration = durationDays > 0
+      ? durationDays
+      : (selectedDestinations.length > 0 ? Math.max(3, selectedDestinations.length * 2) : 5);
+
+    const baseDate = startDate ? new Date(startDate) : new Date(Date.now() + 86400000);
     const newDays: PlannedDay[] = [];
 
-    for (let i = 0; i < durationDays; i++) {
-      const d = new Date(s);
-      d.setDate(s.getDate() + i);
+    for (let i = 0; i < effDuration; i++) {
+      const d = new Date(baseDate);
+      d.setDate(baseDate.getDate() + i);
       const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-      
-      // Preserve existing day if present, or create with alternating selected destination
+
+      // Preserve existing day if present, or group destinations sequentially in blocks across days
       const existing = plannedDays[i];
-      const defaultDest = selectedDestinations.length > 0
-        ? selectedDestinations[i % selectedDestinations.length]
-        : 'Sri Lanka';
-      const assignedDest = existing && existing.destination ? existing.destination : defaultDest;
+      let assignedDest = 'Sri Lanka';
+      if (existing && existing.destination) {
+        assignedDest = existing.destination;
+      } else if (selectedDestinations.length > 0) {
+        const numDests = selectedDestinations.length;
+        const daysPerDest = Math.max(1, Math.floor(effDuration / numDests));
+        const destIdx = Math.min(Math.floor(i / daysPerDest), numDests - 1);
+        assignedDest = selectedDestinations[destIdx];
+      } else {
+        assignedDest = 'Colombo';
+      }
 
       newDays.push({
         dayNumber: i + 1,
@@ -212,30 +423,62 @@ export const ManualTripPlannerPage: React.FC = () => {
     }
 
     setPlannedDays(newDays);
+    if (transitLegs.length === 0) {
+      syncTransitLegs(newDays, transitLegs);
+    }
   };
 
-  // Re-generate / AI Optimize Itinerary
+  // Ensure planned days are generated when arriving at Step 5
+  useEffect(() => {
+    if (step === 5 && plannedDays.length === 0) {
+      syncDaysWithDates();
+    }
+  }, [step, plannedDays.length]);
+
+  // Re-generate / AI Optimize Itinerary with Strict Budget Adherence
   const handleAIOptimizeItinerary = () => {
+    const numBudget = typeof budgetAmount === 'number' && budgetAmount > 0 ? budgetAmount : 800;
+    // Calculate committed non-activity costs
+    const fixedCosts = totalAccommodationCost + estimatedTransportCost;
+    const maxAvailableForActivities = Math.max(15, numBudget - fixedCosts);
+
+    let runningActivityTotal = 0;
+
     const updated = plannedDays.map((day, dIdx) => {
       // Find suitable activities for this day's destination
       const available = ACTIVITIES_CATALOG.filter(
         (a) => a.destination.toLowerCase() === day.destination.toLowerCase()
       );
 
-      // Prioritize by user travel styles
+      // Prioritize by user travel styles and cost efficiency
       const scored = available.sort((a, b) => {
         const aScore = a.travelStyles.filter((s) => selectedStyles.includes(s)).length;
         const bScore = b.travelStyles.filter((s) => selectedStyles.includes(s)).length;
-        return bScore - aScore;
+        if (bScore !== aScore) return bScore - aScore;
+        return a.estimatedCost - b.estimatedCost;
       });
+
+      // Filter activities that fit within remaining activity budget
+      const chosenActs: typeof available = [];
+      for (const act of scored) {
+        if (chosenActs.length >= 3) break;
+        if (
+          runningActivityTotal + act.estimatedCost <= maxAvailableForActivities ||
+          act.estimatedCost === 0 ||
+          chosenActs.length === 0
+        ) {
+          chosenActs.push(act);
+          runningActivityTotal += act.estimatedCost;
+        }
+      }
 
       // Pick up to 3 harmonious activities (Morning, Afternoon, Evening)
       const morningTimes = ['08:30 AM', '09:00 AM'];
       const afternoonTimes = ['01:30 PM', '02:30 PM'];
       const sunsetTimes = ['05:00 PM', '06:30 PM'];
 
-      const chosen = scored.slice(0, 3).map((act, actIdx) => ({
-        id: `sched-ai-${dIdx + 1}-${act.id}-${Date.now()}`,
+      const chosen = chosenActs.map((act, actIdx) => ({
+        id: `sched-ai-${dIdx + 1}-${act.id}-${Date.now()}-${actIdx}`,
         sourceActivityId: act.id,
         name: act.name,
         destination: act.destination,
@@ -253,7 +496,7 @@ export const ManualTripPlannerPage: React.FC = () => {
     });
 
     setPlannedDays(updated);
-    triggerToast('✨ AI Itinerary Optimizer sequenced activities for your travel styles & destinations!');
+    triggerToast(`✨ AI Itinerary Optimizer sequenced activities sticking strictly within your $${numBudget} budget!`);
   };
 
   // Drag and drop handlers
@@ -325,6 +568,7 @@ export const ManualTripPlannerPage: React.FC = () => {
     const updated = [...plannedDays];
     updated[dayIdx].destination = newDest;
     setPlannedDays(updated);
+    syncTransitLegs(updated, transitLegs);
   };
 
   // Realism Check: Calculate total hours on day
@@ -346,7 +590,7 @@ export const ManualTripPlannerPage: React.FC = () => {
   // ----------------------------------------------------
   // Total nights
   const totalNights = Math.max(0, durationDays - 1);
-  
+
   // Accommodation total cost: average nights allocated across selected hotels
   const totalAccommodationCost = useMemo(() => {
     const activeHotels = Object.values(selectedAccommodations);
@@ -363,12 +607,25 @@ export const ManualTripPlannerPage: React.FC = () => {
     );
   }, [plannedDays]);
 
-  // Transport total cost
+  // Transport total cost: calculate sum of all multi-leg choices or whole trip rate
   const estimatedTransportCost = useMemo(() => {
+    if (transitStrategy === 'WHOLE_TRIP_PRIVATE') {
+      if (durationDays <= 0) return 0;
+      const ratePerDay = privateVehicleType === 'Tourist Van' ? 55 : privateVehicleType === 'Luxury SUV' ? 75 : 35;
+      return durationDays * ratePerDay;
+    }
+    if (transitStrategy === 'OPEN_PUBLIC') {
+      const totalPax = adultsCount + childrenCount > 0 ? adultsCount + childrenCount : 1;
+      return Math.max(1, durationDays) * 6 * totalPax;
+    }
+    // MULTI_LEG strategy
+    if (transitLegs.length > 0) {
+      return transitLegs.reduce((sum, leg) => sum + (leg.estimatedCostUSD || 0), 0);
+    }
     if (transportMode === 'PUBLIC_TRANSPORT') {
       if (!selectedPublicTransport) return 0;
       const totalPax = adultsCount + childrenCount > 0 ? adultsCount + childrenCount : 1;
-      const fareUSD = selectedPublicTransport.estimatedFare 
+      const fareUSD = selectedPublicTransport.estimatedFare
         ? Math.round((selectedPublicTransport.estimatedFare / 300) * totalPax)
         : 6 * totalPax;
       return fareUSD;
@@ -376,7 +633,7 @@ export const ManualTripPlannerPage: React.FC = () => {
     if (durationDays <= 0) return 0;
     const ratePerDay = privateVehicleType === 'Tourist Van' ? 55 : privateVehicleType === 'Luxury SUV' ? 75 : 35;
     return durationDays * ratePerDay;
-  }, [durationDays, transportMode, selectedPublicTransport, privateVehicleType, adultsCount, childrenCount]);
+  }, [transitStrategy, transitLegs, durationDays, transportMode, selectedPublicTransport, privateVehicleType, adultsCount, childrenCount]);
 
   const taxesAndFees = Math.round((totalAccommodationCost + totalActivityCost + estimatedTransportCost) * 0.08); // 8% government tourism VAT/levy
   const totalEstimatedTripCost = totalAccommodationCost + totalActivityCost + estimatedTransportCost + taxesAndFees;
@@ -408,68 +665,162 @@ export const ManualTripPlannerPage: React.FC = () => {
       const primaryDestination = selectedDestinations[0] || 'Sri Lanka';
       const totalTravelers = adultsCount + childrenCount > 0 ? adultsCount + childrenCount : 1;
       const finalBudget = typeof budgetAmount === 'number' && budgetAmount > 0 ? budgetAmount : totalEstimatedTripCost;
-
-      // 1. Backend payload
-      const tripPayload = {
-        destination: selectedDestinations.join(', '),
-        startDate: new Date(startDate).toISOString(),
-        endDate: new Date(endDate).toISOString(),
-        numberOfTravelers: totalTravelers,
-        budget: finalBudget,
-        interests: selectedStyles.length > 0 ? selectedStyles : ['Cultural'],
-        tripStyle: selectedStyles[0] || 'Cultural',
-      };
-
-      const apiResult = await tripService.createTrip(tripPayload);
+      const finalTripName = tripName.trim() || `${selectedDestinations.join(' & ')} Journey`;
 
       // Primary accommodation info
       const firstHotel = Object.values(selectedAccommodations)[0];
       const hotelName = firstHotel ? `${firstHotel.name} (${firstHotel.type})` : 'Self-Arranged Accommodation';
 
-      // 2. Format as UserTrip
+      const staycationsTotal = Object.values(bookedStaycations).reduce((sum, b) => {
+        const num = parseInt(b.amount.replace(/[^0-9]/g, '') || '0', 10);
+        return sum + num;
+      }, 0);
+
+      const transportSummary = transitLegs.length > 0
+        ? transitLegs.map((l) => `${l.fromDestination} → ${l.toDestination}: ${l.mode === 'PUBLIC_TRANSPORT' ? (l.publicTransport ? `${l.publicTransport.transportType === 'BUS' ? 'Bus ' + (l.publicTransport.routeNumber || '') : 'Train ' + (l.publicTransport.trainNumber || '')}` : 'Public Bus/Train') : `Private ${l.privateVehicleType || 'Sedan'}`}`).join(' | ')
+        : transportMode === 'PUBLIC_TRANSPORT' && selectedPublicTransport
+          ? `${selectedPublicTransport.transportType}: ${selectedPublicTransport.routeNumber || selectedPublicTransport.trainNumber}`
+          : `Private Vehicle (${privateVehicleType})`;
+
+      // 1. Prepare Plan DTO for PostgreSQL
+      const manualPlanDto: TripPlan = {
+        trip: {
+          title: finalTripName,
+          description: `Custom planned itinerary for ${selectedDestinations.join(', ')}`,
+          duration: durationDays,
+          destinations: selectedDestinations,
+          travelers: totalTravelers,
+          transportPreference: transportSummary,
+          accommodationPreference: hotelName,
+        },
+        days: plannedDays.map((d) => ({
+          day: d.dayNumber,
+          date: d.dateStr,
+          title: `Day in ${d.destination}`,
+          location: d.destination,
+          estimatedCost: 0,
+          activities: d.activities.map((a, idx) => ({
+            id: a.id || `act-${d.dayNumber}-${idx + 1}`,
+            title: a.name,
+            time: a.time,
+            location: a.destination,
+            durationMinutes: 120,
+            estimatedCost: 0,
+            description: a.description || `${a.category} in ${a.destination}`,
+            notes: a.description,
+            type: a.category === 'Dining' ? 'Dining' : a.category === 'Sightseeing' ? 'Attraction' : 'Activity',
+          })),
+        })),
+        budget: {
+          total: finalBudget,
+          currency: 'USD',
+          accommodation: staycationsTotal,
+          transportation: 0,
+          activities: 0,
+          food: 0,
+          other: 0,
+          remaining: 0,
+        },
+        warnings: [],
+        recommendations: [],
+        metadata: {
+          generatedAt: new Date().toISOString(),
+          agent: 'Manual Planner',
+          aiScore: 100,
+        },
+      };
+
+      let savedTripId = `trip-manual-${Date.now()}`;
+      try {
+        const savedRes = await tripPlannerService.saveTripPlan(manualPlanDto, {
+          tripName: finalTripName,
+          destination: selectedDestinations.join(', '),
+          destinations: selectedDestinations,
+          startDate: startDate,
+          endDate: endDate,
+          travelers: totalTravelers,
+          budget: { amount: finalBudget, currency: 'USD', category: 'Moderate' },
+          travelStyle: selectedStyles,
+          activities: selectedStyles,
+        });
+
+        const returnedId = savedRes?.id || savedRes?.tripId || savedRes?.data?.id || savedRes?.data?.tripId;
+        if (returnedId) {
+          savedTripId = returnedId;
+        }
+      } catch (saveErr) {
+        console.warn('Backend saveTripPlan fallback:', saveErr);
+        try {
+          const apiResult = await tripService.createTrip({
+            tripName: finalTripName,
+            destination: selectedDestinations.join(', '),
+            startDate: new Date(startDate).toISOString(),
+            endDate: new Date(endDate).toISOString(),
+            numberOfTravelers: totalTravelers,
+            budget: finalBudget,
+            interests: selectedStyles.length > 0 ? selectedStyles : ['Cultural'],
+            tripStyle: selectedStyles[0] || 'Cultural',
+          });
+          const apiId = apiResult?.id || apiResult?.data?.id;
+          if (apiId) {
+            savedTripId = apiId;
+          }
+        } catch { }
+      }
+
+      // 2. Format as UserTrip with dynamic calendar timeline
+      const timeline = getTripTimeline(startDate, endDate);
+      const formattedDates = formatTripDateRange(startDate, endDate);
+
       const newTrip: UserTrip = {
-        id: apiResult?.id || `trip-manual-${Date.now()}`,
-        name: tripName.trim() || `${selectedDestinations.join(' & ')} Journey`,
+        id: savedTripId,
+        name: finalTripName,
         destination: `${selectedDestinations.join(' · ')}, Sri Lanka`,
         destinationId: primaryDestination.toLowerCase(),
-        dates: `${startDate} – ${endDate}`,
+        startDate: startDate,
+        endDate: endDate,
+        dates: formattedDates,
         duration: `${durationDays} Days`,
         travelers: totalTravelers,
         travelerNames: [`Lead Traveler (${totalTravelers} Pax)`],
-        status: 'Upcoming', // Marked as Upcoming after finalization
+        status: timeline.status,
+        timelineLabel: timeline.timelineLabel,
         imageUrl: firstHotel?.image || SRI_LANKA_DESTINATIONS.find((d) => d.name === primaryDestination)?.img || '',
         budget: `$${finalBudget}`,
-        spentBudget: `$${totalEstimatedTripCost}`,
-        isFeatured: true,
+        spentBudget: `$${staycationsTotal > 0 ? staycationsTotal : totalEstimatedTripCost}`,
+        isFeatured: timeline.status === 'Ongoing',
         interests: selectedStyles,
-        notes: `Accommodation: ${hotelName}. Local Transport: ${
-          transportMode === 'PUBLIC_TRANSPORT' && selectedPublicTransport
-            ? `Public Transport (${selectedPublicTransport.transportType === 'BUS' ? `Bus Route ${selectedPublicTransport.routeNumber || ''}` : `Train ${selectedPublicTransport.trainNumber || ''}`}: ${selectedPublicTransport.origin} to ${selectedPublicTransport.destination}, Fare: LKR ${(selectedPublicTransport.estimatedFare || 0).toLocaleString()})`
-            : transportMode === 'PUBLIC_TRANSPORT'
-            ? 'Public Transport (Self-arranged Bus / Train)'
-            : `Private Transport (${privateVehicleType})`
-        }.`,
+        notes: `Accommodation: ${hotelName}. Local Transport: ${transportSummary}.`,
         weatherForecast: '27°C · Pleasant & Tropical',
         progress: {
           destination: true,
           preferences: true,
           aiPlanning: false,
           itinerary: true,
-          bookings: true,
+          bookings: Object.values(bookedStaycations).length > 0,
         },
-        dailyItinerary: plannedDays.map((d) => ({
-          day: d.dayNumber,
-          date: d.dateStr,
-          title: `Day in ${d.destination}`,
-          activities: d.activities.map((a) => ({
-            time: a.time,
-            title: a.name,
-            location: a.destination,
-            description: a.description || `${a.category} in ${a.destination}`,
-            status: 'Planned',
-            type: a.category === 'Dining' ? 'Dining' : a.category === 'Sightseeing' ? 'Sightseeing' : 'Activity',
-          })),
-        })),
+        dailyItinerary: plannedDays.map((d) => {
+          const dayStatus = getItineraryDayTimelineStatus(d.dateStr);
+          return {
+            day: d.dayNumber,
+            date: d.dateStr,
+            title: `Day in ${d.destination}`,
+            status: dayStatus,
+            activities: d.activities.map((a) => {
+              const actStatus = getActivityTimelineStatus(d.dateStr, a.time);
+              return {
+                time: a.time,
+                title: a.name,
+                location: a.destination,
+                description: a.description || `${a.category} in ${a.destination}`,
+                status: actStatus,
+                activityStatus: actStatus,
+                type: a.category === 'Dining' ? 'Dining' : a.category === 'Sightseeing' ? 'Sightseeing' : 'Activity',
+              };
+            }),
+          };
+        }),
+        bookingsList: Object.values(bookedStaycations),
       };
 
       // 3. Persist to localStorage for permanent display on TripsPage
@@ -478,21 +829,35 @@ export const ManualTripPlannerPage: React.FC = () => {
       if (existingSaved) {
         try {
           currentTrips = JSON.parse(existingSaved);
+          if (!Array.isArray(currentTrips)) currentTrips = [];
         } catch {
           currentTrips = [];
         }
       }
-      localStorage.setItem('nova_user_trips', JSON.stringify([newTrip, ...currentTrips]));
+      const cleanName = finalTripName.toLowerCase().trim();
+      const updatedList = [
+        newTrip,
+        ...currentTrips.filter(
+          (t) => t.id !== savedTripId && (t.name || '').toLowerCase().trim() !== cleanName
+        ),
+      ];
+      localStorage.setItem('nova_user_trips', JSON.stringify(updatedList));
+      window.dispatchEvent(new Event('storage'));
 
       triggerToast('🎉 Your trip has been finalized and added to Upcoming Trips!');
       setTimeout(() => {
-        navigate('/trips');
-      }, 1200);
+        navigate('/trips', {
+          state: {
+            highlightedTripId: savedTripId,
+            message: `🎉 "${finalTripName}" has been added to Your Trips!`,
+          },
+        });
+      }, 800);
     } catch (err: any) {
       triggerToast('Saved locally to Upcoming Trips.');
       setTimeout(() => {
         navigate('/trips');
-      }, 1200);
+      }, 800);
     } finally {
       setIsFinalizing(false);
     }
@@ -503,7 +868,7 @@ export const ManualTripPlannerPage: React.FC = () => {
       <LandingNavbar />
 
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-8 pt-24 pb-20">
-        
+
         {/* Header Title & Progress Indicator */}
         <div className="mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
@@ -549,23 +914,21 @@ export const ManualTripPlannerPage: React.FC = () => {
                     setStep(st.num);
                   }
                 }}
-                className={`p-2.5 rounded-2xl border text-left transition-all ${
-                  step === st.num
+                className={`p-2.5 rounded-2xl border text-left transition-all ${step === st.num
                     ? 'bg-white border-[#16A6A1] shadow-md ring-2 ring-[#16A6A1]/20'
                     : step > st.num
-                    ? 'bg-teal-50/70 border-teal-200 text-teal-900 cursor-pointer'
-                    : 'bg-white/60 border-slate-200 opacity-60'
-                }`}
+                      ? 'bg-teal-50/70 border-teal-200 text-teal-900 cursor-pointer'
+                      : 'bg-white/60 border-slate-200 opacity-60'
+                  }`}
               >
                 <div className="flex items-center gap-2">
                   <span
-                    className={`w-5 h-5 rounded-full text-[11px] font-black flex items-center justify-center shrink-0 ${
-                      step === st.num
+                    className={`w-5 h-5 rounded-full text-[11px] font-black flex items-center justify-center shrink-0 ${step === st.num
                         ? 'bg-[#16A6A1] text-white'
                         : step > st.num
-                        ? 'bg-teal-700 text-white'
-                        : 'bg-slate-200 text-slate-600'
-                    }`}
+                          ? 'bg-teal-700 text-white'
+                          : 'bg-slate-200 text-slate-600'
+                      }`}
                   >
                     {step > st.num ? '✓' : st.num}
                   </span>
@@ -621,11 +984,10 @@ export const ManualTripPlannerPage: React.FC = () => {
                         key={dest.name}
                         type="button"
                         onClick={() => toggleDestination(dest.name)}
-                        className={`relative overflow-hidden rounded-2xl text-left border-2 transition-all p-3 flex flex-col justify-between h-40 cursor-pointer ${
-                          isSelected
+                        className={`relative overflow-hidden rounded-2xl text-left border-2 transition-all p-3 flex flex-col justify-between h-40 cursor-pointer ${isSelected
                             ? 'border-[#16A6A1] shadow-lg ring-2 ring-[#16A6A1]/20 scale-[1.01]'
                             : 'border-slate-200 hover:border-slate-300 opacity-70 hover:opacity-95'
-                        }`}
+                          }`}
                       >
                         <img src={dest.img} alt={dest.name} className="absolute inset-0 w-full h-full object-cover -z-10" />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent -z-10" />
@@ -666,7 +1028,7 @@ export const ManualTripPlannerPage: React.FC = () => {
                   <input
                     type="date"
                     value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
+                    onChange={(e) => handleStartDateChange(e.target.value)}
                     className="w-full p-3 rounded-xl bg-slate-50 border border-slate-300 font-bold text-[#0B3A53] focus:outline-none focus:border-[#16A6A1]"
                   />
                 </div>
@@ -678,7 +1040,8 @@ export const ManualTripPlannerPage: React.FC = () => {
                   <input
                     type="date"
                     value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
+                    min={startDate || undefined}
+                    onChange={(e) => handleEndDateChange(e.target.value)}
                     className="w-full p-3 rounded-xl bg-slate-50 border border-slate-300 font-bold text-[#0B3A53] focus:outline-none focus:border-[#16A6A1]"
                   />
                 </div>
@@ -827,11 +1190,10 @@ export const ManualTripPlannerPage: React.FC = () => {
                         key={type}
                         type="button"
                         onClick={() => setPreferredAccommodationType(isFilterActive ? null : type)}
-                        className={`px-3.5 py-1.5 rounded-full text-xs font-extrabold border transition-all cursor-pointer ${
-                          isFilterActive
+                        className={`px-3.5 py-1.5 rounded-full text-xs font-extrabold border transition-all cursor-pointer ${isFilterActive
                             ? 'bg-[#0B3A53] text-white border-[#0B3A53] shadow-sm'
                             : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'
-                        }`}
+                          }`}
                       >
                         {type}
                       </button>
@@ -881,114 +1243,135 @@ export const ManualTripPlannerPage: React.FC = () => {
                             No accommodations {preferredAccommodationType ? `matching "${preferredAccommodationType}"` : 'available'} in {dest}.
                           </p>
                         ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                          {destAccommodations.map((acc) => {
-                            const isChosen = selectedForThisDest?.id === acc.id;
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                            {destAccommodations.map((acc) => {
+                              const isChosen = selectedForThisDest?.id === acc.id;
+                              const booking = bookedStaycations[acc.id];
+                              const isBooked = !!booking;
 
-                            return (
-                              <div
-                                key={acc.id}
-                                className={`rounded-2xl border-2 transition-all overflow-hidden flex flex-col justify-between bg-white ${
-                                  isChosen
-                                    ? 'border-[#16A6A1] shadow-lg ring-2 ring-[#16A6A1]/20'
-                                    : 'border-slate-200 hover:border-slate-300'
-                                }`}
-                              >
-                                <div>
-                                  {/* Photo & Badges */}
-                                  <div className="relative h-44 w-full overflow-hidden">
-                                    <img src={acc.image} alt={acc.name} className="w-full h-full object-cover" />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-                                    
-                                    <div className="absolute top-3 left-3 flex items-center gap-1.5">
-                                      <span className="px-2.5 py-1 bg-black/70 backdrop-blur-md text-white text-[10px] font-black uppercase rounded-lg">
-                                        {acc.type}
-                                      </span>
-                                      <span
-                                        className={`px-2 py-0.5 text-[10px] font-extrabold rounded-md ${
-                                          acc.availability === 'Instant Confirmation'
-                                            ? 'bg-emerald-600 text-white'
-                                            : acc.availability === 'Few Rooms Left'
-                                            ? 'bg-amber-600 text-white'
-                                            : 'bg-slate-800 text-white'
-                                        }`}
-                                      >
-                                        {acc.availability}
-                                      </span>
-                                    </div>
-
-                                    <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between text-white">
-                                      <div>
-                                        <p className="font-extrabold text-sm leading-tight text-white">{acc.name}</p>
-                                        <p className="text-[11px] text-slate-200">📍 {acc.destination}</p>
-                                      </div>
-                                      <div className="flex items-center gap-1 bg-amber-400/90 text-slate-950 px-2 py-0.5 rounded text-xs font-black">
-                                        <Star className="w-3.5 h-3.5 fill-slate-950 text-slate-950" />
-                                        <span>{acc.rating}</span>
-                                      </div>
-                                    </div>
-                                  </div>
-
-                                  {/* Package & Key Amenities Details */}
-                                  <div className="p-4 space-y-3">
-                                    <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/80">
-                                      <span className="text-[10px] font-bold text-slate-400 uppercase block">Featured Package</span>
-                                      <p className="text-xs font-extrabold text-[#0B3A53]">{acc.packageName}</p>
-                                      <p className="text-[10px] text-slate-500">{acc.packageDuration}</p>
-                                    </div>
-
-                                    <div>
-                                      <span className="text-[10px] font-bold text-slate-500 uppercase block mb-1">
-                                        Included Facilities:
-                                      </span>
-                                      <ul className="text-[11px] text-slate-600 space-y-1">
-                                        {acc.includedFacilities.slice(0, 3).map((fac, i) => (
-                                          <li key={i} className="flex items-center gap-1.5 truncate">
-                                            <Check className="w-3 h-3 text-emerald-600 shrink-0" />
-                                            <span className="truncate">{fac}</span>
-                                          </li>
-                                        ))}
-                                      </ul>
-                                    </div>
-
-                                    <div className="flex flex-wrap gap-1 pt-1 border-t border-slate-100">
-                                      {acc.keyAmenities.slice(0, 3).map((amenity, i) => (
-                                        <span key={i} className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-medium">
-                                          {amenity}
-                                        </span>
-                                      ))}
-                                    </div>
-                                  </div>
-                                </div>
-
-                                {/* Price & Selection Button */}
-                                <div className="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between">
-                                  <div>
-                                    <span className="text-base font-black text-[#0B3A53]">${acc.pricePerNight}</span>
-                                    <span className="text-[10px] text-slate-500 font-medium"> / night</span>
-                                  </div>
-
-                                  <button
-                                    type="button"
-                                    onClick={() => handleSelectAccommodation(dest, acc)}
-                                    className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
-                                      isChosen
-                                        ? 'bg-emerald-700 text-white'
-                                        : 'bg-[#0B3A53] hover:bg-[#146C86] text-white shadow-sm'
+                              return (
+                                <div
+                                  key={acc.id}
+                                  className={`rounded-2xl border-2 transition-all overflow-hidden flex flex-col justify-between bg-white ${isChosen
+                                      ? 'border-[#16A6A1] shadow-lg ring-2 ring-[#16A6A1]/20'
+                                      : 'border-slate-200 hover:border-slate-300'
                                     }`}
-                                  >
-                                    {isChosen ? '✓ Selected' : 'Select Stay'}
-                                  </button>
+                                >
+                                  <div>
+                                    {/* Photo & Badges */}
+                                    <div className="relative h-44 w-full overflow-hidden">
+                                      <img src={acc.image} alt={acc.name} className="w-full h-full object-cover" />
+                                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+
+                                      <div className="absolute top-3 left-3 flex items-center gap-1.5">
+                                        <span className="px-2.5 py-1 bg-black/70 backdrop-blur-md text-white text-[10px] font-black uppercase rounded-lg">
+                                          {acc.type}
+                                        </span>
+                                        {isBooked && (
+                                          <span className="px-2 py-0.5 bg-emerald-600 text-white text-[10px] font-black rounded-md flex items-center gap-1">
+                                            <Check className="w-3 h-3" /> Booked
+                                          </span>
+                                        )}
+                                        <span
+                                          className={`px-2 py-0.5 text-[10px] font-extrabold rounded-md ${acc.availability === 'Instant Confirmation'
+                                              ? 'bg-emerald-600 text-white'
+                                              : acc.availability === 'Few Rooms Left'
+                                                ? 'bg-amber-600 text-white'
+                                                : 'bg-slate-800 text-white'
+                                            }`}
+                                        >
+                                          {acc.availability}
+                                        </span>
+                                      </div>
+
+                                      <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between text-white">
+                                        <div>
+                                          <p className="font-extrabold text-sm leading-tight text-white">{acc.name}</p>
+                                          <p className="text-[11px] text-slate-200">📍 {acc.destination}</p>
+                                        </div>
+                                        <div className="flex items-center gap-1 bg-amber-400/90 text-slate-950 px-2 py-0.5 rounded text-xs font-black">
+                                          <Star className="w-3.5 h-3.5 fill-slate-950 text-slate-950" />
+                                          <span>{acc.rating}</span>
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    {/* Package & Key Amenities Details */}
+                                    <div className="p-4 space-y-3">
+                                      <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/80">
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase block">Featured Package</span>
+                                        <p className="text-xs font-extrabold text-[#0B3A53]">{acc.packageName}</p>
+                                        <p className="text-[10px] text-slate-500">{acc.packageDuration}</p>
+                                      </div>
+
+                                      <div>
+                                        <span className="text-[10px] font-bold text-slate-500 uppercase block mb-1">
+                                          Included Facilities:
+                                        </span>
+                                        <ul className="text-[11px] text-slate-600 space-y-1">
+                                          {acc.includedFacilities.slice(0, 3).map((fac, i) => (
+                                            <li key={i} className="flex items-center gap-1.5 truncate">
+                                              <Check className="w-3 h-3 text-emerald-600 shrink-0" />
+                                              <span className="truncate">{fac}</span>
+                                            </li>
+                                          ))}
+                                        </ul>
+                                      </div>
+
+                                      <div className="flex flex-wrap gap-1 pt-1 border-t border-slate-100">
+                                        {acc.keyAmenities.slice(0, 3).map((amenity, i) => (
+                                          <span key={i} className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-medium">
+                                            {amenity}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Price & Selection Button */}
+                                  <div className="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between">
+                                    <div>
+                                      <span className="text-base font-black text-[#0B3A53]">${acc.pricePerNight}</span>
+                                      <span className="text-[10px] text-slate-500 font-medium"> / night</span>
+                                    </div>
+
+                                    <div className="flex items-center gap-2">
+                                      {isBooked && (
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setActiveReceiptBooking({ booking, staycation: acc });
+                                          }}
+                                          className="px-3 py-2 rounded-xl text-xs font-black bg-emerald-100 hover:bg-emerald-200 text-emerald-800 flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
+                                          title="View Booking Confirmation Receipt"
+                                        >
+                                          <Receipt className="w-3.5 h-3.5" />
+                                          <span>Receipt</span>
+                                        </button>
+                                      )}
+
+                                      <button
+                                        type="button"
+                                        onClick={() => handleSelectAccommodation(dest, acc)}
+                                        className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${isChosen
+                                            ? 'bg-emerald-700 text-white'
+                                            : 'bg-[#0B3A53] hover:bg-[#146C86] text-white shadow-sm'
+                                          }`}
+                                      >
+                                        {isChosen ? '✓ Selected' : 'Select Stay'}
+                                      </button>
+                                    </div>
+                                  </div>
                                 </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })
-              )}
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
               </div>
             </div>
 
@@ -1038,11 +1421,10 @@ export const ManualTripPlannerPage: React.FC = () => {
                       key={st.id}
                       type="button"
                       onClick={() => toggleTravelStyle(st.id)}
-                      className={`p-4 rounded-2xl border-2 text-left transition-all flex items-start gap-3.5 ${
-                        isSelected
+                      className={`p-4 rounded-2xl border-2 text-left transition-all flex items-start gap-3.5 ${isSelected
                           ? 'border-[#16A6A1] bg-teal-50/60 shadow-md ring-2 ring-[#16A6A1]/20'
                           : 'border-slate-200 hover:border-slate-300 bg-white hover:bg-slate-50'
-                      }`}
+                        }`}
                     >
                       <span className="text-2xl p-2 bg-white rounded-xl shadow-xs border border-slate-200/80">
                         {st.icon}
@@ -1076,6 +1458,9 @@ export const ManualTripPlannerPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => {
+                  if (plannedDays.length === 0) {
+                    syncDaysWithDates();
+                  }
                   setStep(4);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
@@ -1089,179 +1474,50 @@ export const ManualTripPlannerPage: React.FC = () => {
         )}
 
         {/* ========================================================================= */}
-        {/* STEP 4: TRANSPORTATION & MOBILITY                                         */}
+        {/* STEP 4: TRANSPORTATION & ROUTE LOGISTICS (BUS & TRAIN PER TRAVEL LEG)     */}
         {/* ========================================================================= */}
         {step === 4 && (
-          <div className="space-y-8 animate-in fade-in duration-200">
-            <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
-              <div>
-                <h2 className="text-xl font-bold text-[#0B3A53] flex items-center gap-2">
-                  <Car className="w-5 h-5 text-[#16A6A1]" /> Transportation & Local Mobility
-                </h2>
-                <p className="text-xs text-slate-500 mt-1">
-                  Choose how you'd like to get around during your holiday. Explore authentic Public Transport (Intercity Buses & Sri Lanka Railways scenic trains) or arrange dedicated Private Transport.
-                </p>
-              </div>
-
-              {/* Transport Mode Switcher Tabs */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Mode 1: Public Transport (Bus & Train) */}
-                <button
-                  type="button"
-                  onClick={() => setTransportMode('PUBLIC_TRANSPORT')}
-                  className={`p-5 rounded-2xl border-2 text-left transition-all relative flex flex-col justify-between cursor-pointer ${
-                    transportMode === 'PUBLIC_TRANSPORT'
-                      ? 'border-[#16A6A1] bg-teal-50/60 shadow-md ring-2 ring-[#16A6A1]/20'
-                      : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/50'
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-3 mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-xl bg-teal-100/70 text-[#146C86] flex items-center justify-center shrink-0">
-                        <div className="flex items-center gap-0.5">
-                          <Bus className="w-4 h-4 text-[#16A6A1]" />
-                          <Train className="w-4 h-4 text-[#0B3A53]" />
-                        </div>
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-extrabold text-slate-900 text-base">1. Public Transport</h3>
-                          {selectedPublicTransport && (
-                            <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-teal-100 text-teal-800">
-                              Option Selected
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs text-slate-500">Express highway buses & Sri Lanka Railways trains</p>
-                      </div>
-                    </div>
-                    {transportMode === 'PUBLIC_TRANSPORT' && (
-                      <span className="w-6 h-6 rounded-full bg-[#16A6A1] text-white flex items-center justify-center text-xs shrink-0">
-                        <Check className="w-3.5 h-3.5" />
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-xs text-slate-600 bg-white/80 rounded-xl p-3 border border-teal-200/70 space-y-1">
-                    <span className="font-bold text-[#0B3A53] block">Features:</span>
-                    <span>Subsidized local fares, verified timetables, route intermediate stops, and mountain railways.</span>
-                  </div>
-                </button>
-
-                {/* Mode 2: Private Transport */}
-                <button
-                  type="button"
-                  onClick={() => setTransportMode('PRIVATE')}
-                  className={`p-5 rounded-2xl border-2 text-left transition-all relative flex flex-col justify-between cursor-pointer ${
-                    transportMode === 'PRIVATE'
-                      ? 'border-[#16A6A1] bg-teal-50/60 shadow-md ring-2 ring-[#16A6A1]/20'
-                      : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/50'
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-3 mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center shrink-0">
-                        <Car className="w-6 h-6 text-[#16A6A1]" />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-extrabold text-slate-900 text-base">2. Private Transport</h3>
-                          <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-slate-200 text-slate-800">
-                            {privateVehicleType}
-                          </span>
-                        </div>
-                        <p className="text-xs text-slate-500">Dedicated licensed chauffeur vehicle</p>
-                      </div>
-                    </div>
-                    {transportMode === 'PRIVATE' && (
-                      <span className="w-6 h-6 rounded-full bg-[#16A6A1] text-white flex items-center justify-center text-xs shrink-0">
-                        <Check className="w-3.5 h-3.5" />
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-xs text-slate-600 bg-white/80 rounded-xl p-3 border border-slate-200 space-y-1">
-                    <span className="font-bold text-[#0B3A53] block">Features:</span>
-                    <span>Door-to-door flexibility, English-speaking driver, luggage space, and air conditioning.</span>
-                  </div>
-                </button>
-              </div>
-
-              {/* Mode 1 Content: Private Transport Options */}
-              {transportMode === 'PRIVATE' && (
-                <div className="space-y-4 pt-2">
-                  <h3 className="font-extrabold text-slate-900 text-sm">Select Vehicle Category</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    {[
-                      { type: 'AC Sedan', pax: '3 Pax', rate: '$35/day', desc: 'Compact sedan with AC, ideal for couples or solo travelers.' },
-                      { type: 'Tourist Van', pax: '7 Pax', rate: '$55/day', desc: 'Spacious high-roof mini-van, perfect for families and small groups.' },
-                      { type: 'Luxury SUV', pax: '4 Pax', rate: '$75/day', desc: 'Premium 4WD SUV with extra comfort for hill-country touring.' },
-                    ].map((v) => (
-                      <div
-                        key={v.type}
-                        onClick={() => setPrivateVehicleType(v.type)}
-                        className={`p-4 rounded-2xl border-2 transition-all cursor-pointer space-y-2 ${
-                          privateVehicleType === v.type
-                            ? 'border-[#16A6A1] bg-teal-50/50 shadow-sm'
-                            : 'border-slate-200 bg-white hover:border-slate-300'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="font-bold text-slate-900 text-sm">{v.type}</span>
-                          <span className="text-[10px] font-black uppercase text-slate-500">{v.pax}</span>
-                        </div>
-                        <div className="text-base font-black text-[#146C86]">{v.rate}</div>
-                        <p className="text-xs text-slate-500">{v.desc}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Mode 2 Content: Public Transport Explorer (Bus & Train) */}
-              {transportMode === 'PUBLIC_TRANSPORT' && (
-                <div className="space-y-6 pt-2">
-                  <PublicTransportExplorer
-                    defaultOrigin={selectedDestinations[0] || 'Colombo Fort'}
-                    defaultDestination={selectedDestinations[1] || selectedDestinations[0] || 'Kandy'}
-                    defaultDate={startDate}
-                    travelersCount={adultsCount + childrenCount > 0 ? adultsCount + childrenCount : 1}
-                    availableDestinations={selectedDestinations}
-                    selectedTransport={selectedPublicTransport}
-                    onSelectTransport={(opt: TransportOption) => {
-                      setSelectedPublicTransport(opt);
-                      triggerToast(`Selected ${opt.transportType === 'BUS' ? 'Bus Route ' + (opt.routeNumber || '') : 'Train ' + (opt.trainNumber || '')}: ${opt.origin} to ${opt.destination}!`);
-                    }}
-                    onClearTransport={() => {
-                      setSelectedPublicTransport(null);
-                      triggerToast('Cleared public transport choice.');
-                    }}
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* Bottom Actions */}
-            <div className="flex justify-between items-center pt-4">
-              <button
-                type="button"
-                onClick={() => setStep(3)}
-                className="px-6 py-3.5 rounded-full bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs uppercase tracking-wider flex items-center gap-2"
-              >
-                <ArrowLeft className="w-4 h-4" /> Back to Styles
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  syncDaysWithDates();
-                  setStep(5);
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                className="inline-flex items-center gap-2 bg-[#16A6A1] hover:bg-[#146C86] text-white font-extrabold text-xs uppercase tracking-wider px-8 py-4 rounded-full shadow-lg hover:shadow-xl transition-all"
-              >
-                <span>Proceed to Drag-and-Drop Itinerary</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
+          <ItineraryTransportSection
+            plannedDays={plannedDays.map((d) => ({
+              dayNumber: d.dayNumber,
+              dateStr: d.dateStr,
+              destination: d.destination,
+            }))}
+            selectedDestinations={selectedDestinations}
+            startDate={startDate}
+            endDate={endDate}
+            durationDays={durationDays}
+            travelersCount={adultsCount + childrenCount > 0 ? adultsCount + childrenCount : 1}
+            currentTransitLegs={transitLegs}
+            onSaveTransportationPlan={(updatedLegs: TripTransitLeg[], mode?: 'PUBLIC_TRANSPORT' | 'PRIVATE', privateVehicle?: string) => {
+              setTransitLegs(updatedLegs);
+              if (plannedDays.length === 0) {
+                syncDaysWithDates();
+              }
+              if (mode === 'PRIVATE') {
+                setTransportMode('PRIVATE');
+                setTransitStrategy('WHOLE_TRIP_PRIVATE');
+                if (privateVehicle) {
+                  setPrivateVehicleType(privateVehicle);
+                }
+                triggerToast(`✓ Private Transportation confirmed! Dedicated ${privateVehicle || 'chauffeur'} reserved.`);
+              } else {
+                setTransportMode('PUBLIC_TRANSPORT');
+                setTransitStrategy('OPEN_PUBLIC');
+                const firstPublic = updatedLegs.find((l) => l.publicTransport)?.publicTransport;
+                if (firstPublic) {
+                  setSelectedPublicTransport(firstPublic);
+                }
+                triggerToast('✓ Public Transportation confirmed! Journey service locked in.');
+              }
+              setStep(5);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            onBack={() => {
+              setStep(3);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+          />
         )}
 
         {/* ========================================================================= */}
@@ -1295,7 +1551,7 @@ export const ManualTripPlannerPage: React.FC = () => {
 
             {/* Main Builder Two-Column Layout */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              
+
               {/* LEFT: Date-by-Date Schedule Timeline (7 cols) */}
               <div className="lg:col-span-7 space-y-5">
                 <div className="flex items-center justify-between">
@@ -1307,170 +1563,239 @@ export const ManualTripPlannerPage: React.FC = () => {
                   </span>
                 </div>
 
-                {/* Selected Public Transport Intercity Connection Banner */}
-                {transportMode === 'PUBLIC_TRANSPORT' && selectedPublicTransport && (
-                  <div className="bg-gradient-to-r from-teal-50 to-blue-50 border border-teal-200/80 rounded-2xl p-4 flex items-center justify-between gap-3 shadow-xs">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-[#0B3A53] text-white flex items-center justify-center shrink-0">
-                        {selectedPublicTransport.transportType === 'BUS' ? (
-                          <Bus className="w-5 h-5 text-emerald-300" />
-                        ) : (
-                          <Train className="w-5 h-5 text-amber-300" />
-                        )}
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-black uppercase tracking-wider bg-teal-100 text-[#0B3A53] px-2 py-0.5 rounded-full">
-                            Transit Link: {selectedPublicTransport.transportType === 'BUS' ? `Bus Route ${selectedPublicTransport.routeNumber}` : `Train ${selectedPublicTransport.trainNumber}`}
-                          </span>
-                          <span className="text-xs font-bold text-slate-700">
-                            {selectedPublicTransport.origin} → {selectedPublicTransport.destination}
-                          </span>
-                        </div>
-                        <p className="text-xs text-slate-500 mt-0.5">
-                          {selectedPublicTransport.departureTime} – {selectedPublicTransport.arrivalTime} ({selectedPublicTransport.durationMinutes} mins) · Fare: LKR {(selectedPublicTransport.estimatedFare || 0).toLocaleString()}
-                        </p>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setStep(4)}
-                      className="text-xs font-bold text-[#16A6A1] hover:underline shrink-0 cursor-pointer"
-                    >
-                      Change Transit
-                    </button>
-                  </div>
-                )}
+
 
                 {plannedDays.map((day, dIdx) => {
                   const dayMinutes = getDayTotalMinutes(day);
                   const isOverloaded = dayMinutes > 480; // > 8 hours of activities in 1 day
 
                   return (
-                    <div
-                      key={day.dayNumber}
-                      onDragOver={(e) => e.preventDefault()}
-                      onDrop={() => handleDropOnDay(dIdx)}
-                      className={`bg-white border-2 rounded-2xl p-5 shadow-sm transition-all ${
-                        activeDateIndex === dIdx
-                          ? 'border-[#16A6A1] ring-2 ring-[#16A6A1]/15'
-                          : 'border-slate-200 hover:border-slate-300'
-                      }`}
-                      onClick={() => setActiveDateIndex(dIdx)}
-                    >
-                      {/* Day Header */}
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-3 mb-3">
-                        <div className="flex items-center gap-2">
-                          <span className="px-2.5 py-1 bg-[#0B3A53] text-white rounded-lg text-xs font-black">
-                            Day 0{day.dayNumber}
-                          </span>
-                          <div>
-                            <span className="text-xs font-bold text-slate-800 block">{day.dateStr}</span>
+                    <React.Fragment key={day.dayNumber}>
+                      <div
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={() => handleDropOnDay(dIdx)}
+                        className={`bg-white border-2 rounded-2xl p-5 shadow-sm transition-all ${activeDateIndex === dIdx
+                            ? 'border-[#16A6A1] ring-2 ring-[#16A6A1]/15'
+                            : 'border-slate-200 hover:border-slate-300'
+                          }`}
+                        onClick={() => setActiveDateIndex(dIdx)}
+                      >
+                        {/* Day Header */}
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-3 mb-3">
+                          <div className="flex items-center gap-2">
+                            <span className="px-2.5 py-1 bg-[#0B3A53] text-white rounded-lg text-xs font-black">
+                              Day 0{day.dayNumber}
+                            </span>
+                            <div>
+                              <span className="text-xs font-bold text-slate-800 block">{day.dateStr}</span>
+                            </div>
+                          </div>
+
+                          {/* Destination selector for this specific date */}
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-bold uppercase text-slate-400">Destination:</span>
+                            <select
+                              value={day.destination}
+                              onChange={(e) => handleChangeDayDestination(dIdx, e.target.value)}
+                              className="bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1 text-xs font-bold text-[#0B3A53] focus:outline-none"
+                            >
+                              {selectedDestinations.map((d) => (
+                                <option key={d} value={d}>
+                                  {d}
+                                </option>
+                              ))}
+                            </select>
                           </div>
                         </div>
 
-                        {/* Destination selector for this specific date */}
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-bold uppercase text-slate-400">Destination:</span>
-                          <select
-                            value={day.destination}
-                            onChange={(e) => handleChangeDayDestination(dIdx, e.target.value)}
-                            className="bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1 text-xs font-bold text-[#0B3A53] focus:outline-none"
-                          >
-                            {selectedDestinations.map((d) => (
-                              <option key={d} value={d}>
-                                {d}
-                              </option>
-                            ))}
-                          </select>
+                        {/* Realism Warning Indicator */}
+                        {isOverloaded && (
+                          <div className="mb-3 p-2.5 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-2 text-xs text-amber-900 font-semibold">
+                            <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                            <span>
+                              Schedule Warning: Total duration ({Math.round(dayMinutes / 60)}h {dayMinutes % 60}m) exceeds 8 hours. Consider moving some activities to another date.
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Activities List inside Day */}
+                        <div className="space-y-2.5 min-h-[70px]">
+                          {day.activities.length === 0 ? (
+                            <div className="p-4 border-2 border-dashed border-slate-200 rounded-xl text-center text-xs text-slate-400">
+                              Drag activities from the right panel here, or click "Add" on any recommendation.
+                            </div>
+                          ) : (
+                            day.activities.map((act, actIdx) => (
+                              <div
+                                key={act.id}
+                                draggable
+                                onDragStart={() => handleDragStartFromDay(act, dIdx)}
+                                className="bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl p-3 flex items-center justify-between gap-3 shadow-2xs cursor-grab active:cursor-grabbing"
+                              >
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                  <GripVertical className="w-4 h-4 text-slate-400 shrink-0" />
+                                  <span className="px-2 py-0.5 bg-white border border-slate-200 text-slate-700 rounded text-[11px] font-extrabold shrink-0">
+                                    {act.time}
+                                  </span>
+                                  <div className="min-w-0">
+                                    <p className="font-bold text-xs text-slate-900 truncate">{act.name}</p>
+                                    <p className="text-[10px] text-slate-500">
+                                      {act.durationMinutes} mins · {act.category}
+                                    </p>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center gap-2 shrink-0">
+                                  <span className="text-xs font-black text-[#0B3A53]">
+                                    {act.cost > 0 ? `$${act.cost}` : 'Free'}
+                                  </span>
+
+                                  {/* Move up/down */}
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleMoveActivityWithinDay(dIdx, actIdx, 'up');
+                                    }}
+                                    disabled={actIdx === 0}
+                                    className="p-1 text-slate-400 hover:text-slate-700 disabled:opacity-30"
+                                    title="Move earlier"
+                                  >
+                                    <MoveUp className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleMoveActivityWithinDay(dIdx, actIdx, 'down');
+                                    }}
+                                    disabled={actIdx === day.activities.length - 1}
+                                    className="p-1 text-slate-400 hover:text-slate-700 disabled:opacity-30"
+                                    title="Move later"
+                                  >
+                                    <MoveDown className="w-3.5 h-3.5" />
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleRemoveActivity(dIdx, act.id);
+                                    }}
+                                    className="p-1 text-slate-400 hover:text-rose-600 rounded"
+                                    title="Remove activity"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+                            ))
+                          )}
                         </div>
                       </div>
 
-                      {/* Realism Warning Indicator */}
-                      {isOverloaded && (
-                        <div className="mb-3 p-2.5 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-2 text-xs text-amber-900 font-semibold">
-                          <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-                          <span>
-                            Schedule Warning: Total duration ({Math.round(dayMinutes / 60)}h {dayMinutes % 60}m) exceeds 8 hours. Consider moving some activities to another date.
-                          </span>
-                        </div>
-                      )}
+                      {/* In-between day transit connector */}
+                      {dIdx < plannedDays.length - 1 && (() => {
+                        const nextDay = plannedDays[dIdx + 1];
+                        const leg = transitLegs.find(
+                          (l) =>
+                            (l.fromDayNumber === day.dayNumber && l.toDayNumber === nextDay.dayNumber) ||
+                            (l.fromDestination.toLowerCase() === day.destination.toLowerCase() &&
+                              l.toDestination.toLowerCase() === nextDay.destination.toLowerCase())
+                        );
 
-                      {/* Activities List inside Day */}
-                      <div className="space-y-2.5 min-h-[70px]">
-                        {day.activities.length === 0 ? (
-                          <div className="p-4 border-2 border-dashed border-slate-200 rounded-xl text-center text-xs text-slate-400">
-                            Drag activities from the right panel here, or click "Add" on any recommendation.
-                          </div>
-                        ) : (
-                          day.activities.map((act, actIdx) => (
+                        const isDiffDest = day.destination.toLowerCase() !== nextDay.destination.toLowerCase();
+
+                        if (leg) {
+                          return (
                             <div
-                              key={act.id}
-                              draggable
-                              onDragStart={() => handleDragStartFromDay(act, dIdx)}
-                              className="bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl p-3 flex items-center justify-between gap-3 shadow-2xs cursor-grab active:cursor-grabbing"
+                              key={`connector-${leg.id}`}
+                              className="bg-gradient-to-r from-teal-50 to-blue-50 border border-teal-200/90 rounded-2xl p-3.5 my-2 flex items-center justify-between gap-3 shadow-xs"
                             >
-                              <div className="flex items-center gap-2.5 min-w-0">
-                                <GripVertical className="w-4 h-4 text-slate-400 shrink-0" />
-                                <span className="px-2 py-0.5 bg-white border border-slate-200 text-slate-700 rounded text-[11px] font-extrabold shrink-0">
-                                  {act.time}
-                                </span>
-                                <div className="min-w-0">
-                                  <p className="font-bold text-xs text-slate-900 truncate">{act.name}</p>
-                                  <p className="text-[10px] text-slate-500">
-                                    {act.durationMinutes} mins · {act.category}
+                              <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-xl bg-[#0B3A53] text-white flex items-center justify-center shrink-0">
+                                  {leg.mode === 'PUBLIC_TRANSPORT' ? (
+                                    leg.publicTransport?.transportType === 'BUS' ? (
+                                      <Bus className="w-4 h-4 text-emerald-300" />
+                                    ) : (
+                                      <Train className="w-4 h-4 text-amber-300" />
+                                    )
+                                  ) : (
+                                    <Car className="w-4 h-4 text-teal-300" />
+                                  )}
+                                </div>
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-[10px] font-black uppercase tracking-wider bg-teal-100 text-[#0B3A53] px-2 py-0.5 rounded-full">
+                                      Transit Link: {leg.mode === 'PUBLIC_TRANSPORT'
+                                        ? leg.publicTransport
+                                          ? `${leg.publicTransport.transportType === 'BUS' ? 'Bus Route ' + (leg.publicTransport.routeNumber || '') : 'Train ' + (leg.publicTransport.trainNumber || '')}`
+                                          : 'Public Transit'
+                                        : `Private ${leg.privateVehicleType || 'Chauffeur'}`}
+                                    </span>
+                                    <span className="text-xs font-extrabold text-slate-800">
+                                      {leg.fromDestination} → {leg.toDestination}
+                                    </span>
+                                  </div>
+                                  <p className="text-[11px] text-slate-500 mt-0.5">
+                                    {leg.mode === 'PUBLIC_TRANSPORT' && leg.publicTransport ? (
+                                      `${leg.publicTransport.departureTime} – ${leg.publicTransport.arrivalTime} (${leg.publicTransport.durationMinutes} mins) · Fare: LKR ${(leg.publicTransport.estimatedFare || 0).toLocaleString()} (~$${leg.estimatedCostUSD})`
+                                    ) : leg.mode === 'PRIVATE' ? (
+                                      `Private Chauffeur (${leg.privateVehicleType || 'AC Sedan'}) · ~$${leg.estimatedCostUSD}`
+                                    ) : (
+                                      `Scheduled Transit · ~$${leg.estimatedCostUSD}`
+                                    )}
                                   </p>
                                 </div>
                               </div>
-
-                              <div className="flex items-center gap-2 shrink-0">
-                                <span className="text-xs font-black text-[#0B3A53]">
-                                  {act.cost > 0 ? `$${act.cost}` : 'Free'}
-                                </span>
-                                
-                                {/* Move up/down */}
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleMoveActivityWithinDay(dIdx, actIdx, 'up');
-                                  }}
-                                  disabled={actIdx === 0}
-                                  className="p-1 text-slate-400 hover:text-slate-700 disabled:opacity-30"
-                                  title="Move earlier"
-                                >
-                                  <MoveUp className="w-3.5 h-3.5" />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleMoveActivityWithinDay(dIdx, actIdx, 'down');
-                                  }}
-                                  disabled={actIdx === day.activities.length - 1}
-                                  className="p-1 text-slate-400 hover:text-slate-700 disabled:opacity-30"
-                                  title="Move later"
-                                >
-                                  <MoveDown className="w-3.5 h-3.5" />
-                                </button>
-
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleRemoveActivity(dIdx, act.id);
-                                  }}
-                                  className="p-1 text-slate-400 hover:text-rose-600 rounded"
-                                  title="Remove activity"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
+                              <button
+                                type="button"
+                                onClick={() => handleEditTransitLeg(leg)}
+                                className="text-xs font-bold text-[#16A6A1] hover:underline shrink-0 cursor-pointer"
+                              >
+                                Change Transit
+                              </button>
                             </div>
-                          ))
-                        )}
-                      </div>
-                    </div>
+                          );
+                        }
+
+                        if (isDiffDest) {
+                          return (
+                            <div
+                              key={`connector-diff-${day.dayNumber}-${nextDay.dayNumber}`}
+                              className="border border-dashed border-teal-300 bg-teal-50/40 hover:bg-teal-50/80 rounded-2xl p-2.5 my-2 flex items-center justify-between transition-all"
+                            >
+                              <div className="flex items-center gap-2 text-xs text-slate-600">
+                                <MoveDown className="w-3.5 h-3.5 text-teal-600" />
+                                <span>Intercity Transit: <strong>{day.destination}</strong> → <strong>{nextDay.destination}</strong></span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const draft: TripTransitLeg = {
+                                    id: `leg-day-${day.dayNumber}-${nextDay.dayNumber}`,
+                                    fromDayNumber: day.dayNumber,
+                                    toDayNumber: nextDay.dayNumber,
+                                    fromDestination: day.destination,
+                                    toDestination: nextDay.destination,
+                                    mode: 'PUBLIC_TRANSPORT',
+                                    publicTransport: null,
+                                    privateVehicleType: 'AC Sedan',
+                                    estimatedCostUSD: 35,
+                                  };
+                                  handleEditTransitLeg(draft);
+                                }}
+                                className="text-xs font-bold text-[#16A6A1] hover:underline cursor-pointer"
+                              >
+                                + Select Bus, Train or Car
+                              </button>
+                            </div>
+                          );
+                        }
+
+                        return null;
+                      })()}
+                    </React.Fragment>
                   );
                 })}
               </div>
@@ -1574,7 +1899,7 @@ export const ManualTripPlannerPage: React.FC = () => {
         {/* ========================================================================= */}
         {step === 6 && (
           <div className="space-y-8 animate-in fade-in duration-200">
-            
+
             {/* Review Header Banner */}
             <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-6 mb-6">
@@ -1658,20 +1983,83 @@ export const ManualTripPlannerPage: React.FC = () => {
                     No accommodation selected. You can self-arrange lodging or click "Edit Stays" to pick a hotel or cabana.
                   </p>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {Object.entries(selectedAccommodations).map(([dest, acc]) => (
-                      <div key={dest} className="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-3">
-                          <img src={acc.image} alt={acc.name} className="w-14 h-14 rounded-xl object-cover" />
-                          <div>
-                            <span className="text-[10px] font-black uppercase text-[#16A6A1] block">{dest} · {acc.type}</span>
-                            <h4 className="font-extrabold text-sm text-slate-900">{acc.name}</h4>
-                            <p className="text-xs text-slate-500">{acc.packageName}</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {Object.entries(selectedAccommodations).map(([dest, acc]) => {
+                      const isBooked = !!bookedStaycations[acc.id];
+                      const booking = bookedStaycations[acc.id];
+
+                      return (
+                        <div
+                          key={dest}
+                          className={`bg-white rounded-2xl border-2 transition-all p-4 flex flex-col justify-between gap-4 ${isBooked
+                              ? 'border-emerald-600 shadow-md ring-2 ring-emerald-500/20'
+                              : 'border-slate-200 shadow-xs hover:border-[#16A6A1]'
+                            }`}
+                        >
+                          <div className="flex items-start gap-3">
+                            <img src={acc.image} alt={acc.name} className="w-20 h-20 rounded-xl object-cover shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="text-[10px] font-black uppercase text-[#16A6A1] tracking-wider truncate">
+                                  {dest} · {acc.type}
+                                </span>
+                                {isBooked && (
+                                  <span className="text-[10px] font-black bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full flex items-center gap-1 shrink-0">
+                                    <Check className="w-3 h-3 text-emerald-600" /> Booked
+                                  </span>
+                                )}
+                              </div>
+                              <h4 className="font-extrabold text-sm text-slate-900 mt-0.5 leading-snug truncate">
+                                {acc.name}
+                              </h4>
+                              <p className="text-xs text-slate-500 truncate mt-0.5">{acc.packageName}</p>
+                              <p className="text-xs font-black text-[#0B3A53] mt-1">${acc.pricePerNight} <span className="text-[10px] font-normal text-slate-500">/ night</span></p>
+                            </div>
+                          </div>
+
+                          <div className="border-t border-slate-100 pt-3 flex items-center justify-between gap-2">
+                            {isBooked ? (
+                              <div className="flex items-center justify-between w-full">
+                                <div className="text-xs">
+                                  <span className="text-slate-400 block text-[10px]">Reservation Code</span>
+                                  <span className="font-mono font-bold text-emerald-800">{booking.confirmationCode}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => setActiveReceiptBooking({ booking, staycation: acc })}
+                                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-black transition-colors cursor-pointer flex items-center gap-1.5 shadow-sm"
+                                    title="View Official Confirmation Receipt"
+                                  >
+                                    <Receipt className="w-3.5 h-3.5" />
+                                    <span>Confirmation Receipt</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setActiveStaycationToBook(acc)}
+                                    className="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                                  >
+                                    Modify
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex items-center justify-between w-full">
+                                <span className="text-xs text-slate-500 font-medium">Ready to reserve?</span>
+                                <button
+                                  type="button"
+                                  onClick={() => setActiveStaycationToBook(acc)}
+                                  className="px-4 py-2 bg-[#16A6A1] hover:bg-[#146C86] text-white rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
+                                >
+                                  <Sparkles className="w-3.5 h-3.5" />
+                                  <span>Book Staycation Now</span>
+                                </button>
+                              </div>
+                            )}
                           </div>
                         </div>
-                        <span className="text-sm font-black text-[#0B3A53]">${acc.pricePerNight}/nt</span>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -1691,7 +2079,73 @@ export const ManualTripPlannerPage: React.FC = () => {
                   </button>
                 </div>
 
-                {transportMode === 'PUBLIC_TRANSPORT' && selectedPublicTransport ? (
+                {transitLegs.length > 0 ? (
+                  <div className="space-y-2.5">
+                    {transitLegs.map((leg, legIdx) => {
+                      const isPublic = leg.mode === 'PUBLIC_TRANSPORT';
+                      return (
+                        <div
+                          key={leg.id || `review-leg-${legIdx}`}
+                          className="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-[#0B3A53] text-white flex items-center justify-center shrink-0">
+                              {isPublic ? (
+                                leg.publicTransport?.transportType === 'BUS' ? (
+                                  <Bus className="w-5 h-5 text-emerald-300" />
+                                ) : (
+                                  <Train className="w-5 h-5 text-amber-300" />
+                                )
+                              ) : (
+                                <Car className="w-5 h-5 text-teal-300" />
+                              )}
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-black uppercase tracking-wider bg-teal-100 text-[#0B3A53] px-2 py-0.5 rounded-full font-bold">
+                                  {isPublic
+                                    ? leg.publicTransport
+                                      ? leg.publicTransport.transportType === 'BUS'
+                                        ? `Public Bus ${leg.publicTransport.routeNumber || ''}`
+                                        : `Train ${leg.publicTransport.trainNumber || ''}`
+                                      : 'Public Transit'
+                                    : `Private ${leg.privateVehicleType || 'Chauffeur'}`}
+                                </span>
+                                <span className="text-xs font-bold text-slate-700">
+                                  Day {leg.fromDayNumber}: {leg.fromDestination} → {leg.toDestination}
+                                </span>
+                              </div>
+                              <p className="text-xs text-slate-600 mt-0.5">
+                                {isPublic && leg.publicTransport ? (
+                                  `${leg.publicTransport.departureTime} – ${leg.publicTransport.arrivalTime} (${leg.publicTransport.durationMinutes} mins) · Fare: $${((leg.publicTransport.estimatedFare || 0) / 300).toFixed(2)} USD`
+                                ) : !isPublic ? (
+                                  `Dedicated chauffeur (${leg.privateVehicleType}) with door-to-door transfer`
+                                ) : (
+                                  'Flexible express transit'
+                                )}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between sm:justify-end gap-3 border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-200">
+                            <span className="text-sm font-black text-[#0B3A53]">
+                              ${leg.estimatedCostUSD}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                handleEditTransitLeg(leg);
+                              }}
+                              className="text-xs font-bold text-[#16A6A1] hover:underline cursor-pointer"
+                            >
+                              Change
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : transportMode === 'PUBLIC_TRANSPORT' && selectedPublicTransport ? (
                   <div className="bg-teal-50/70 border border-teal-200 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex items-start sm:items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-[#0B3A53] text-white flex items-center justify-center shrink-0">
@@ -1714,7 +2168,7 @@ export const ManualTripPlannerPage: React.FC = () => {
                           {selectedPublicTransport.routeName || selectedPublicTransport.trainName} ({selectedPublicTransport.origin} → {selectedPublicTransport.destination})
                         </h4>
                         <p className="text-xs text-slate-600">
-                          {selectedPublicTransport.departureTime} – {selectedPublicTransport.arrivalTime} ({selectedPublicTransport.durationMinutes} mins) · {selectedPublicTransport.trainType || 'Intercity Express Service'} · {selectedPublicTransport.intermediateStops?.length || 0} Intermediate Stops
+                          {selectedPublicTransport.departureTime} – {selectedPublicTransport.arrivalTime} ({selectedPublicTransport.durationMinutes} mins) · {selectedPublicTransport.trainType || 'Intercity Express Service'}
                         </p>
                       </div>
                     </div>
@@ -1727,25 +2181,6 @@ export const ManualTripPlannerPage: React.FC = () => {
                         ~${Math.round(((selectedPublicTransport.estimatedFare || 0) / 300) * (adultsCount + childrenCount > 0 ? adultsCount + childrenCount : 1))} ({adultsCount + childrenCount > 0 ? adultsCount + childrenCount : 1} pax)
                       </span>
                     </div>
-                  </div>
-                ) : transportMode === 'PUBLIC_TRANSPORT' && !selectedPublicTransport ? (
-                  <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-slate-200 text-slate-700 flex items-center justify-center">
-                        <Bus className="w-5 h-5 text-slate-600" />
-                      </div>
-                      <div>
-                        <span className="text-xs font-extrabold text-slate-800 block">Public Transport (Buses & Trains)</span>
-                        <span className="text-[11px] text-slate-500">Flexible public transit chosen. No specific timetable route locked.</span>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setStep(4)}
-                      className="text-xs font-bold text-[#16A6A1] hover:underline cursor-pointer"
-                    >
-                      Select Bus/Train
-                    </button>
                   </div>
                 ) : (
                   <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex items-center justify-between">
@@ -1914,6 +2349,48 @@ export const ManualTripPlannerPage: React.FC = () => {
           </div>
         )}
 
+        {/* STAYCATION RESERVATION MODAL */}
+        <StaycationBookingModal
+          isOpen={activeStaycationToBook !== null}
+          onClose={() => setActiveStaycationToBook(null)}
+          staycation={activeStaycationToBook}
+          tripName={tripName || `${selectedDestinations.join(' & ')} Journey`}
+          startDate={startDate}
+          endDate={endDate}
+          travelersCount={adultsCount + childrenCount > 0 ? adultsCount + childrenCount : 2}
+          onConfirmBooking={(booking) => {
+            if (activeStaycationToBook) {
+              setBookedStaycations((prev) => ({
+                ...prev,
+                [activeStaycationToBook.id]: booking,
+              }));
+              triggerToast(`🎉 Reserved ${booking.provider}! Confirmation Code: ${booking.confirmationCode}`);
+            }
+            setActiveStaycationToBook(null);
+          }}
+        />
+
+        {/* MULTI-DESTINATION & DAY-BY-DAY TRANSIT MODAL */}
+        <TransitLegSelectionModal
+          isOpen={isTransitModalOpen}
+          onClose={() => {
+            setIsTransitModalOpen(false);
+            setActiveLegToEdit(null);
+          }}
+          leg={activeLegToEdit}
+          availableDestinations={selectedDestinations}
+          travelersCount={adultsCount + childrenCount > 0 ? adultsCount + childrenCount : 1}
+          onSaveLeg={handleSaveTransitLeg}
+        />
+
+        {/* STAYCATION CONFIRMATION RECEIPT MODAL */}
+        <BookingConfirmationReceiptModal
+          isOpen={activeReceiptBooking !== null}
+          onClose={() => setActiveReceiptBooking(null)}
+          booking={activeReceiptBooking?.booking || null}
+          staycation={activeReceiptBooking?.staycation}
+          tripName={tripName || `${selectedDestinations.join(' & ')} Journey`}
+        />
       </main>
 
       <Footer />

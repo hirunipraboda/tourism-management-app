@@ -22,7 +22,8 @@ export const AdminLayout: React.FC = () => {
 
   // Authentication & Role Authorization Guard
   const session = adminAuthService.getSession();
-  if (!session.isAuthenticated || session.adminUser?.role !== 'Admin') {
+  const roleUpper = (session.adminUser?.role || '').toUpperCase();
+  if (!session.isAuthenticated || (roleUpper !== 'ADMIN' && roleUpper !== 'ROLE_ADMIN' && roleUpper !== 'ADMINISTRATOR')) {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 

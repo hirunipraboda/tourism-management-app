@@ -4,7 +4,8 @@ public enum UserRole
 {
     Tourist,
     TourismOperator,
-    Admin
+    Admin,
+    User
 }
 
 public enum TripStatus
@@ -12,6 +13,7 @@ public enum TripStatus
     Draft,
     Planned,
     Confirmed,
+    Ongoing,
     Completed,
     Cancelled
 }
@@ -22,6 +24,7 @@ public enum ItineraryStatus
     Generated,
     PendingApproval,
     Approved,
+    Published,
     Rejected,
     RevisionRequired
 }

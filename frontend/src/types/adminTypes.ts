@@ -423,23 +423,75 @@ export interface SystemMonitoringData {
 
 export interface AdminBookingItem {
   id: string;
+  bookingRef?: string;
   userName?: string;
   userEmail?: string;
   customerName?: string;
   customerEmail?: string;
   tourName?: string;
   tourId?: string;
+  tourCategory?: string;
+  tourDuration?: string;
+  tourImage?: string | null;
   serviceName?: string;
   serviceType?: string;
   amount?: number;
-  bookingDate?: string;
-  date?: string;
-  numberOfPersons?: number;
+  totalAmount?: number;
   totalPrice?: number;
+  bookingDate?: string;
+  travelDate?: string;
+  endDate?: string | null;
+  date?: string;
+  pax?: number;
+  numberOfPersons?: number;
+  paymentMethod?: string;
+  cardDetails?: string;
   paymentStatus: string;
+  bookingStatus?: string;
   status: string;
+  travelOption?: string;
+  transportRequired?: boolean;
   createdAt: string;
 }
+
+export interface UnifiedPaymentItem {
+  id: string;
+  bookingRef: string;
+  transactionId: string;
+  type: 'TRAVEL_PACKAGE' | 'AI_CHATBOT';
+  category: string;
+  customerName: string;
+  customerEmail: string;
+  itemTitle: string;
+  packageTier: string;
+  detailsSummary: string;
+  amount: number;
+  totalAmount?: number;
+  paymentMethod: string;
+  maskedCardNumber: string;
+  cardDetails: string;
+  paymentStatus: string;
+  status: string;
+  bookingStatus?: string;
+  travelDate?: string;
+  pax?: number;
+  date: string;
+  createdAt: string;
+}
+
+export interface UnifiedPaymentResponse {
+  payments: UnifiedPaymentItem[];
+  metrics: {
+    totalRevenue: number;
+    packageRevenue: number;
+    chatbotRevenue: number;
+    totalTransactions: number;
+    packageCount: number;
+    chatbotCount: number;
+  };
+}
+
+
 
 export interface AIWorkflowMonitoringItem {
   id: string;

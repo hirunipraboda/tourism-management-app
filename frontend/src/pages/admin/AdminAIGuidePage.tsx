@@ -1,22 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useLocation } from 'react-router-dom';
 import {
-  Bot,
-  CreditCard,
   BarChart3,
   HelpCircle,
-  Camera,
-  MessageSquare,
-  Search,
-  CheckCircle2,
   Clock,
   MapPin,
   TrendingUp,
-  PieChart,
 } from 'lucide-react';
 import { adminService } from '../../services/adminService';
 import {
-  ChatbotPaymentItem,
   AIGuideUsageData,
   AIGuideAnalyticsData,
 } from '../../types/adminTypes';
@@ -27,10 +19,10 @@ export const AdminAIGuidePage: React.FC = () => {
 
   // Determine active tab from URL path or search params
   const getInitialTab = () => {
-    if (location.pathname.endsWith('/purchases')) return 'purchases';
-    if (location.pathname.endsWith('/usage')) return 'usage';
     if (location.pathname.endsWith('/analytics')) return 'analytics';
-    return searchParams.get('tab') || 'purchases';
+    const tabParam = searchParams.get('tab');
+    if (tabParam === 'analytics') return 'analytics';
+    return 'usage';
   };
 
   const [currentTab, setCurrentTab] = useState(getInitialTab());
@@ -48,19 +40,14 @@ export const AdminAIGuidePage: React.FC = () => {
   }, [location.pathname]);
 
   // Data states
-  const [purchases, setPurchases] = useState<ChatbotPaymentItem[]>([]);
   const [usage, setUsage] = useState<AIGuideUsageData | null>(null);
   const [analytics, setAnalytics] = useState<AIGuideAnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
 
   const loadData = async () => {
     setLoading(true);
     try {
-      if (currentTab === 'purchases') {
-        const data = await adminService.fetchChatbotPayments(searchQuery);
-        setPurchases(data);
-      } else if (currentTab === 'usage') {
+      if (currentTab === 'usage') {
         const data = await adminService.fetchAiGuideUsage();
         setUsage(data);
       } else if (currentTab === 'analytics') {
@@ -87,17 +74,14 @@ export const AdminAIGuidePage: React.FC = () => {
             AI Travel Guide (Virtual Guide)
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 font-medium">
-            Monitor chatbot package purchases, multimodal vision query usage, and semantic place & question analytics.
+            Monitor multimodal vision query usage, tourist interactions, and semantic place & question analytics.
           </p>
         </div>
-
-
       </div>
 
-      {/* 3 Main Tabs */}
+      {/* Main Tabs */}
       <div className="flex items-center gap-2 border-b border-slate-200 pb-3 overflow-x-auto">
         {[
-          { id: 'purchases', label: 'Purchase Details', icon: CreditCard },
           { id: 'usage', label: 'Usage Statistics', icon: BarChart3 },
           { id: 'analytics', label: 'Question & Place Analytics', icon: HelpCircle },
         ].map((tab) => {
@@ -120,98 +104,7 @@ export const AdminAIGuidePage: React.FC = () => {
         })}
       </div>
 
-      {/* SUB-VIEW 1: PURCHASE DETAILS */}
-      {currentTab === 'purchases' && (
-        <div className="space-y-6">
-          {/* Search bar */}
-          <div className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="relative w-full md:w-96">
-              <input
-                type="text"
-                placeholder="Search by traveler or package tier..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && loadData()}
-                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-hidden focus:border-[#16A6A1]"
-              />
-              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-            </div>
-
-            <span className="text-xs font-bold text-slate-400">
-              Showing {purchases.length} package purchases
-            </span>
-          </div>
-
-          <div className="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-black uppercase tracking-wider text-slate-400">
-                    <th className="py-4 px-5">Order ID</th>
-                    <th className="py-4 px-5">Traveler</th>
-                    <th className="py-4 px-5">Package Tier</th>
-                    <th className="py-4 px-5">Amount Paid</th>
-                    <th className="py-4 px-5">Payment Method</th>
-                    <th className="py-4 px-5">Masked Card</th>
-                    <th className="py-4 px-5">Date</th>
-                    <th className="py-4 px-5">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 font-medium">
-                  {loading ? (
-                    <tr>
-                      <td colSpan={8} className="py-12 text-center text-slate-400">
-                        Loading purchase records...
-                      </td>
-                    </tr>
-                  ) : purchases.length === 0 ? (
-                    <tr>
-                      <td colSpan={8} className="py-12 text-center text-slate-400">
-                        No chatbot package purchases found.
-                      </td>
-                    </tr>
-                  ) : (
-                    purchases.map((p) => {
-                      const isDone = p.status === 'Completed' || p.status === 'Successful';
-                      return (
-                        <tr key={p.id} className="hover:bg-slate-50/80 transition-colors">
-                          <td className="py-4 px-5 font-mono font-bold text-[#0B3A53]">{p.id}</td>
-                          <td className="py-4 px-5">
-                            <div className="font-extrabold text-slate-800">{p.userName}</div>
-                            <div className="text-[11px] text-slate-400">{p.userEmail}</div>
-                          </td>
-                          <td className="py-4 px-5 font-bold text-[#0B3A53]">{p.packageName}</td>
-                          <td className="py-4 px-5 font-black text-[#146C86]">${p.amount.toFixed(2)}</td>
-                          <td className="py-4 px-5">{p.paymentMethod}</td>
-                          <td className="py-4 px-5 font-mono text-[11px] text-slate-600">
-                            {p.maskedCardNumber || 'N/A'}
-                          </td>
-                          <td className="py-4 px-5 text-slate-500">
-                            {new Date(p.createdAt).toLocaleDateString()}
-                          </td>
-                          <td className="py-4 px-5">
-                            <span
-                              className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${
-                                isDone
-                                  ? 'bg-emerald-100 text-emerald-800'
-                                  : 'bg-amber-100 text-amber-800'
-                              }`}
-                            >
-                              {p.status}
-                            </span>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* SUB-VIEW 2: USAGE STATISTICS */}
+      {/* SUB-VIEW 1: USAGE STATISTICS */}
       {currentTab === 'usage' && (
         <div className="space-y-6">
           {/* Summary KPI Cards */}
@@ -323,7 +216,7 @@ export const AdminAIGuidePage: React.FC = () => {
         </div>
       )}
 
-      {/* SUB-VIEW 3: QUESTION & PLACE ANALYTICS */}
+      {/* SUB-VIEW 2: QUESTION & PLACE ANALYTICS */}
       {currentTab === 'analytics' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Top Question Categories */}

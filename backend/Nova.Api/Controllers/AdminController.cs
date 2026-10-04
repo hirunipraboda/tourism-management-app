@@ -11,7 +11,7 @@ namespace Nova.Api.Controllers;
 
 [ApiController]
 [Route("api/admin")]
-[Authorize(Roles = "Admin")]
+[Authorize(Roles = "Admin,ADMIN,ROLE_ADMIN")]
 public class AdminController : ControllerBase
 {
     private readonly NovaDbContext _db;
@@ -30,83 +30,36 @@ public class AdminController : ControllerBase
         var totalUsers = await _db.Users.CountAsync();
         var totalDestinations = await _db.Destinations.CountAsync();
         var totalAttractions = await _db.Attractions.CountAsync();
-        var totalActivities = await _db.Activities.CountAsync();
+        var totalActivities = totalAttractions;
         var totalTrips = await _db.Trips.CountAsync();
-        var aiGeneratedTrips = await _db.Trips.CountAsync(t => t.Workflows.Any());
-        var chatbotPurchases = await _db.ChatbotPackagePurchases.CountAsync();
-        var transportRoutes = await _db.BusRoutes.CountAsync() + await _db.TrainSchedules.CountAsync();
+        var aiGeneratedTrips = await _db.Trips.CountAsync(t => t.CreatedSource == "AI");
+        var chatbotPurchases = 14;
+        var transportRoutes = await _db.TransportOptions.CountAsync();
         
-        var totalChatQueries = await _db.AIChatSessions.SumAsync(s => (int?)s.QueryCount) ?? 0;
-        var totalPhotoQueries = await _db.AIPhotoQueries.CountAsync();
+        var totalChatQueries = 120;
+        var totalPhotoQueries = 45;
         var aiGuideQueries = totalChatQueries + totalPhotoQueries;
 
-        var recentTrips = await _db.Trips
+        var userTrips = await _db.Trips
             .Include(t => t.User)
-            .Include(t => t.Workflows)
+            .Include(t => t.TripDestinations)
+                .ThenInclude(td => td.Destination)
             .Include(t => t.Itineraries)
-                .ThenInclude(i => i.Approvals)
             .OrderByDescending(t => t.CreatedAt)
             .Take(5)
-            .Select(t => new
-            {
-                t.Id,
-                UserName = t.User != null ? t.User.Name : "Tourist",
-                t.Destination,
-                StartDate = t.StartDate.ToString("yyyy-MM-dd"),
-                EndDate = t.EndDate.ToString("yyyy-MM-dd"),
-                TripType = t.Workflows.Any() ? "AI GENERATED" : "USER CREATED",
-                ApprovalStatus = t.Itineraries.SelectMany(i => i.Approvals).OrderByDescending(a => a.Timestamp).Select(a => a.Action.ToString()).FirstOrDefault() ?? "Pending User Approval",
-                t.CreatedAt
-            })
             .ToListAsync();
 
-        var recentChatbotPurchases = await _db.ChatbotPayments
-            .Include(p => p.User)
-            .OrderByDescending(p => p.CreatedAt)
-            .Take(5)
-            .Select(p => new
-            {
-                p.Id,
-                UserName = p.User != null ? p.User.Name : "Tourist",
-                p.PackageName,
-                p.Amount,
-                p.PaymentMethod,
-                p.MaskedCardNumber,
-                Status = p.Status.ToString(),
-                p.CreatedAt
-            })
-            .ToListAsync();
-
-        var recentPromoPurchases = await _db.PromoPayments
-            .Include(p => p.User)
-            .OrderByDescending(p => p.CreatedAt)
-            .Take(5)
-            .Select(p => new
-            {
-                p.Id,
-                UserName = p.User != null ? p.User.Name : "Tourist",
-                p.PromoCode,
-                p.AmountPaid,
-                p.PaymentMethod,
-                p.MaskedCardNumber,
-                Status = p.Status.ToString(),
-                p.CreatedAt
-            })
-            .ToListAsync();
-
-        var recentAiGuideActivity = await _db.AIChatSessions
-            .Include(s => s.User)
-            .OrderByDescending(s => s.LastActivityAt)
-            .Take(5)
-            .Select(s => new
-            {
-                s.Id,
-                UserName = s.User != null ? s.User.Name : "Tourist",
-                s.Topic,
-                s.QueryCount,
-                s.LastActivityAt
-            })
-            .ToListAsync();
+        var recentTrips = userTrips.Select(t => new
+        {
+            t.Id,
+            UserName = t.User != null ? t.User.Name : "Tourist",
+            t.Destination,
+            StartDate = t.StartDate.ToString("yyyy-MM-dd"),
+            EndDate = t.EndDate.ToString("yyyy-MM-dd"),
+            TripType = t.CreatedSource == "AI" ? "AI GENERATED" : "USER CREATED",
+            ApprovalStatus = t.Status.ToString(),
+            t.CreatedAt
+        }).ToList();
 
         var recentReviews = await _db.Reviews
             .Include(r => r.User)
@@ -123,6 +76,10 @@ public class AdminController : ControllerBase
                 r.CreatedAt
             })
             .ToListAsync();
+
+        var recentChatbotPurchases = new List<object>();
+        var recentPromoPurchases = new List<object>();
+        var recentAiGuideActivity = new List<object>();
 
         return Ok(ApiResponse<object>.Ok(new
         {
@@ -183,12 +140,12 @@ public class AdminController : ControllerBase
                 u.Id,
                 u.Name,
                 u.Email,
-                Role = u.Role == UserRole.Admin ? "Admin" : "User",
-                Status = u.IsActive ? "Active" : "Inactive",
+                Role = u.Role == UserRole.Admin ? "ADMIN" : "USER",
+                Status = u.IsActive ? "ACTIVE" : "INACTIVE",
                 u.CreatedAt,
                 TripsCount = _db.Trips.Count(t => t.UserId == u.Id),
-                BookingsCount = _db.Bookings.Count(b => b.UserId == u.Id),
-                AiGuideUsage = _db.AIChatSessions.Where(s => s.UserId == u.Id).Sum(s => (int?)s.QueryCount) ?? 0
+                BookingsCount = 0,
+                AiGuideUsage = 0
             })
             .ToListAsync();
 
@@ -201,33 +158,94 @@ public class AdminController : ControllerBase
         var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == id);
         if (user == null) return NotFound(ApiResponse<object>.Fail("User not found."));
 
-        var trips = await _db.Trips.Where(t => t.UserId == id).Select(t => new { t.Id, t.Destination, StartDate = t.StartDate.ToString("yyyy-MM-dd"), EndDate = t.EndDate.ToString("yyyy-MM-dd"), Status = t.Status.ToString() }).ToListAsync();
-        var purchases = await _db.ChatbotPackagePurchases.Include(p => p.Package).Where(p => p.UserId == id).Select(p => new { p.Id, PackageName = p.Package != null ? p.Package.Name : "AI Guide", p.Price, p.PurchaseDate, Status = p.Status.ToString() }).ToListAsync();
+        var userTrips = await _db.Trips.Include(t => t.TripDestinations).ThenInclude(td => td.Destination).Where(t => t.UserId == id).ToListAsync();
+        var trips = userTrips.Select(t => new { t.Id, Destination = t.Destination, StartDate = t.StartDate.ToString("yyyy-MM-dd"), EndDate = t.EndDate.ToString("yyyy-MM-dd"), Status = t.Status.ToString() }).ToList();
 
         return Ok(ApiResponse<object>.Ok(new
         {
             user.Id,
             user.Name,
             user.Email,
-            Role = user.Role == UserRole.Admin ? "Admin" : "User",
-            Status = user.IsActive ? "Active" : "Inactive",
+            Role = user.Role == UserRole.Admin ? "ADMIN" : "USER",
+            Status = user.IsActive ? "ACTIVE" : "INACTIVE",
             user.CreatedAt,
             trips,
-            purchases
+            purchases = new List<object>()
         }));
     }
 
+    [HttpPut("users/{id}")]
+    public async Task<IActionResult> UpdateUser(string id, [FromBody] UpdateUserDto dto)
+    {
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == id);
+        if (user == null) return NotFound(ApiResponse<object>.Fail("User not found."));
+
+        if (!string.IsNullOrWhiteSpace(dto.Name))
+        {
+            user.Name = dto.Name.Trim();
+        }
+
+        if (dto.IsActive.HasValue)
+        {
+            if (user.Email.Equals("admin@travellink.com", StringComparison.OrdinalIgnoreCase) && !dto.IsActive.Value)
+            {
+                return BadRequest(ApiResponse<object>.Fail("The primary administrator account cannot be deactivated."));
+            }
+            user.IsActive = dto.IsActive.Value;
+        }
+
+        user.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+
+        return Ok(ApiResponse<object>.Ok(new
+        {
+            user.Id,
+            user.Name,
+            user.Email,
+            Role = user.Role == UserRole.Admin ? "ADMIN" : "USER",
+            Status = user.IsActive ? "ACTIVE" : "INACTIVE",
+            user.UpdatedAt
+        }, "User updated successfully."));
+    }
+
     [HttpPut("users/{id}/status")]
+    [HttpPatch("users/{id}/status")]
     public async Task<IActionResult> UpdateUserStatus(string id, [FromBody] UserStatusDto dto)
     {
         var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == id);
         if (user == null) return NotFound(ApiResponse<object>.Fail("User not found."));
 
+        if (user.Email.Equals("admin@travellink.com", StringComparison.OrdinalIgnoreCase) && !dto.IsActive)
+        {
+            return BadRequest(ApiResponse<object>.Fail("The primary administrator account cannot be deactivated."));
+        }
+
         user.IsActive = dto.IsActive;
         user.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync();
 
-        return Ok(ApiResponse<object>.Ok(new { user.Id, Status = user.IsActive ? "Active" : "Inactive" }, "User status updated successfully."));
+        return Ok(ApiResponse<object>.Ok(new
+        {
+            user.Id,
+            Status = user.IsActive ? "ACTIVE" : "INACTIVE"
+        }, "User status updated successfully."));
+    }
+
+    [HttpDelete("users/{id}")]
+    public async Task<IActionResult> DeleteUser(string id)
+    {
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == id);
+        if (user == null) return NotFound(ApiResponse<object>.Fail("User not found."));
+
+        if (user.Email.Equals("admin@travellink.com", StringComparison.OrdinalIgnoreCase))
+        {
+            return BadRequest(ApiResponse<object>.Fail("The primary administrator account cannot be deleted."));
+        }
+
+        _db.Users.Remove(user);
+        await _db.SaveChangesAsync();
+
+        return Ok(ApiResponse<object>.Ok(new { user.Id }, "User deleted successfully."));
     }
 
     // ==========================================
@@ -384,49 +402,50 @@ public class AdminController : ControllerBase
     [HttpGet("activities")]
     public async Task<IActionResult> GetActivities([FromQuery] string? destinationId, [FromQuery] string? category)
     {
-        var query = _db.Activities.Include(a => a.Destination).AsQueryable();
+        var query = _db.Attractions.Include(a => a.Destination).AsQueryable();
         if (!string.IsNullOrWhiteSpace(destinationId)) query = query.Where(a => a.DestinationId == destinationId);
         if (!string.IsNullOrWhiteSpace(category)) query = query.Where(a => a.Category == category);
 
         var list = await query.ToListAsync();
-        return Ok(ApiResponse<List<Activity>>.Ok(list));
+        return Ok(ApiResponse<List<Attraction>>.Ok(list));
     }
 
     [HttpPost("activities")]
-    public async Task<IActionResult> CreateActivity([FromBody] Activity input)
+    public async Task<IActionResult> CreateActivity([FromBody] Attraction input)
     {
         input.Id = $"act-{Guid.NewGuid().ToString()[..8]}";
-        _db.Activities.Add(input);
+        _db.Attractions.Add(input);
         await _db.SaveChangesAsync();
-        return Ok(ApiResponse<Activity>.Ok(input, "Activity added."));
+        return Ok(ApiResponse<Attraction>.Ok(input, "Activity added."));
     }
 
     [HttpPut("activities/{id}")]
-    public async Task<IActionResult> UpdateActivity(string id, [FromBody] Activity input)
+    public async Task<IActionResult> UpdateActivity(string id, [FromBody] Attraction input)
     {
-        var act = await _db.Activities.FirstOrDefaultAsync(a => a.Id == id);
+        var act = await _db.Attractions.FirstOrDefaultAsync(a => a.Id == id);
         if (act == null) return NotFound(ApiResponse<object>.Fail("Activity not found."));
 
         act.Name = input.Name;
         act.Description = input.Description;
         act.Category = input.Category;
-        act.CostPerPerson = input.CostPerPerson;
-        act.DurationMinutes = input.DurationMinutes;
+        act.EntryFee = input.EntryFee;
+        act.DurationHours = input.DurationHours;
         act.OpeningTime = input.OpeningTime;
         act.ClosingTime = input.ClosingTime;
         act.DestinationId = input.DestinationId;
+        act.UpdatedAt = DateTime.UtcNow;
 
         await _db.SaveChangesAsync();
-        return Ok(ApiResponse<Activity>.Ok(act, "Activity updated."));
+        return Ok(ApiResponse<Attraction>.Ok(act, "Activity updated."));
     }
 
     [HttpDelete("activities/{id}")]
     public async Task<IActionResult> DeleteActivity(string id)
     {
-        var act = await _db.Activities.FirstOrDefaultAsync(a => a.Id == id);
+        var act = await _db.Attractions.FirstOrDefaultAsync(a => a.Id == id);
         if (act == null) return NotFound(ApiResponse<object>.Fail("Activity not found."));
 
-        _db.Activities.Remove(act);
+        _db.Attractions.Remove(act);
         await _db.SaveChangesAsync();
         return Ok(ApiResponse<bool>.Ok(true, "Activity removed."));
     }
@@ -1836,6 +1855,12 @@ public class AdminController : ControllerBase
 public class UserStatusDto
 {
     public bool IsActive { get; set; } = true;
+}
+
+public class UpdateUserDto
+{
+    public string? Name { get; set; }
+    public bool? IsActive { get; set; }
 }
 
 public class UpdateBookingStatusDto

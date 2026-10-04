@@ -104,3 +104,10 @@ public class ApprovalResponse
     public string Comments { get; set; } = string.Empty;
     public DateTime Timestamp { get; set; }
 }
+
+public class UpdateItineraryStatusRequest
+{
+    [Required]
+    public string Status { get; set; } = "Approved";
+}
+

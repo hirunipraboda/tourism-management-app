@@ -18,6 +18,7 @@ import {
   CheckCircle2,
   Clock,
   RotateCcw,
+  RefreshCw,
 } from 'lucide-react';
 import { adminService } from '../../services/adminService';
 import { AdminDashboardData } from '../../types/adminTypes';
@@ -26,24 +27,34 @@ export const AdminDashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const [data, setData] = useState<AdminDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState('');
 
-  const loadDashboard = async () => {
-    setLoading(true);
+  const loadDashboard = async (silent = false) => {
+    if (!silent) setLoading(true);
+    else setIsRefreshing(true);
     setError('');
     try {
       const result = await adminService.fetchDashboard();
       setData(result);
     } catch (err: any) {
       console.error('Failed to load dashboard data', err);
-      setError('Failed to fetch real-time dashboard statistics from backend.');
+      if (!silent) {
+        setError('Failed to fetch real-time dashboard statistics from backend.');
+      }
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
   };
 
   useEffect(() => {
     loadDashboard();
+    // Real-time background sync every 8 seconds to automatically reflect new user database activities
+    const interval = setInterval(() => {
+      loadDashboard(true);
+    }, 8000);
+    return () => clearInterval(interval);
   }, []);
 
   const kpis = data?.kpis || {
@@ -75,7 +86,21 @@ export const AdminDashboardPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-3 z-10 shrink-0">
+        <div className="flex flex-wrap items-center gap-3 z-10 shrink-0">
+          <div className="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-emerald-500/20 text-emerald-300 text-xs font-bold border border-emerald-400/30">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+            <span>Live DB Sync</span>
+          </div>
+
+          <button
+            onClick={() => loadDashboard(false)}
+            disabled={loading || isRefreshing}
+            className="bg-white/10 hover:bg-white/20 text-white font-extrabold text-xs px-4 py-3.5 rounded-2xl transition-all cursor-pointer flex items-center gap-2 border border-white/10"
+            title="Refresh database records"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 text-teal-300 ${loading || isRefreshing ? 'animate-spin' : ''}`} />
+            <span>Refresh</span>
+          </button>
 
           <button
             onClick={() => navigate('/admin/trips')}
@@ -87,13 +112,14 @@ export const AdminDashboardPage: React.FC = () => {
         </div>
       </div>
 
+
       {error && (
         <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-semibold flex items-center justify-between">
           <div className="flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 text-amber-600" />
             <span>{error}</span>
           </div>
-          <button onClick={loadDashboard} className="underline font-bold cursor-pointer">
+          <button onClick={() => loadDashboard(false)} className="underline font-bold cursor-pointer">
             Retry
           </button>
         </div>
@@ -115,7 +141,7 @@ export const AdminDashboardPage: React.FC = () => {
             </div>
           </div>
           <div className="text-2xl sm:text-3xl font-black text-[#0B3A53] font-heading">
-            {kpis.totalUsers}
+            {kpis.totalUsers ?? 0}
           </div>
           <p className="text-[11px] text-slate-400 font-medium">Registered tourists & staff</p>
         </div>
@@ -134,7 +160,7 @@ export const AdminDashboardPage: React.FC = () => {
             </div>
           </div>
           <div className="text-2xl sm:text-3xl font-black text-[#0B3A53] font-heading">
-            {kpis.totalDestinations}
+            {kpis.totalDestinations ?? 0}
           </div>
           <p className="text-[11px] text-slate-400 font-medium">Active Sri Lanka tourism hubs</p>
         </div>
@@ -153,7 +179,7 @@ export const AdminDashboardPage: React.FC = () => {
             </div>
           </div>
           <div className="text-2xl sm:text-3xl font-black text-[#0B3A53] font-heading">
-            {kpis.totalAttractions}
+            {kpis.totalAttractions ?? 0}
           </div>
           <p className="text-[11px] text-slate-400 font-medium">Landmarks, forts, & nature sites</p>
         </div>
@@ -172,7 +198,7 @@ export const AdminDashboardPage: React.FC = () => {
             </div>
           </div>
           <div className="text-2xl sm:text-3xl font-black text-[#0B3A53] font-heading">
-            {kpis.totalActivities}
+            {kpis.totalActivities ?? 0}
           </div>
           <p className="text-[11px] text-slate-400 font-medium">Surfing, safaris, tea tasting, hikes</p>
         </div>
@@ -191,7 +217,7 @@ export const AdminDashboardPage: React.FC = () => {
             </div>
           </div>
           <div className="text-2xl sm:text-3xl font-black text-[#0B3A53] font-heading">
-            {kpis.totalTrips}
+            {kpis.totalTrips ?? 0}
           </div>
           <p className="text-[11px] text-slate-400 font-medium">All traveler formulated itineraries</p>
         </div>
@@ -210,7 +236,7 @@ export const AdminDashboardPage: React.FC = () => {
             </div>
           </div>
           <div className="text-2xl sm:text-3xl font-black text-indigo-700 font-heading">
-            {kpis.aiGeneratedTrips}
+            {kpis.aiGeneratedTrips ?? 0}
           </div>
           <p className="text-[11px] text-slate-400 font-medium">Formulated by 4-agent pipeline</p>
         </div>
@@ -229,7 +255,7 @@ export const AdminDashboardPage: React.FC = () => {
             </div>
           </div>
           <div className="text-2xl sm:text-3xl font-black text-[#0B3A53] font-heading">
-            {kpis.chatbotPurchases}
+            {kpis.chatbotPurchases ?? 0}
           </div>
           <p className="text-[11px] text-slate-400 font-medium">Virtual guide subscription tiers</p>
         </div>
@@ -267,7 +293,7 @@ export const AdminDashboardPage: React.FC = () => {
             </div>
           </div>
           <div className="text-2xl sm:text-3xl font-black text-[#0B3A53] font-heading">
-            {kpis.aiGuideQueries}
+            {kpis.aiGuideQueries ?? 0}
           </div>
           <p className="text-[11px] text-slate-400 font-medium">Traveler questions & landmark scans</p>
         </div>

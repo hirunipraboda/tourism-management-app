@@ -1,0 +1,28 @@
+<svg width="220" height="60" viewBox="0 0 220 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Yellow App Icon Square -->
+  <rect x="2" y="2" width="56" height="56" rx="16" fill="url(#pickme_gold_gradient)" />
+  
+  <!-- Hailing Figure (Black Silhouette) -->
+  <!-- Head -->
+  <circle cx="33" cy="17" r="6.5" fill="#111111" />
+  
+  <!-- Raised Waving Arm -->
+  <path d="M 17 13 C 14 10 12 17 17 23 C 22 28 26 33 29 37 C 32 32 29 24 22 17 Z" fill="#111111" />
+  
+  <!-- Body & Torso & Right Arm -->
+  <path d="M 29 37 C 26 40 28 55 29 55 L 39 55 C 39 55 41 40 40 37 C 47 42 53 47 54 45 C 55 44 50 36 43 32 C 38 29 33 32 29 37 Z" fill="#111111" />
+
+  <!-- PickMe Text -->
+  <text x="68" y="42" font-family="'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif" font-weight="900" font-size="32" letter-spacing="-0.5">
+    <tspan fill="#FFFFFF">Pick</tspan>
+    <tspan fill="#FFC72C">Me</tspan>
+  </text>
+
+  <!-- Gradient definition -->
+  <defs>
+    <linearGradient id="pickme_gold_gradient" x1="2" y1="2" x2="58" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFD600" />
+      <stop offset="100%" stop-color="#FFA800" />
+    </linearGradient>
+  </defs>
+</svg>

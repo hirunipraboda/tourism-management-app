@@ -8,6 +8,7 @@ import anuradhapuraImg from '../assets/destinations/Anuradhapura.jpg';
 import riverstonImg from '../assets/destinations/riverston.jpg';
 import kandyImg from '../assets/destinations/Kandy.jpg';
 import yalaImg from '../assets/destinations/Yala.jpg';
+import { adminService } from '../services/adminService';
 
 export interface AttractionItem {
   id: string;
@@ -96,6 +97,12 @@ export interface DestinationDetailRecord {
     difficulty: string;
     dailyBudget: string;
   };
+  openingHours?: string;
+  entryFeeLocal?: string;
+  entryFeeForeign?: string;
+  topAttractionsList?: string[];
+  province?: string;
+  accessibility?: string;
   attractions: AttractionItem[];
   weather: {
     currentTemp: number;
@@ -449,9 +456,71 @@ export const DESTINATION_DETAILS_DATABASE: Record<string, DestinationDetailRecor
   },
 };
 
-// Fallback dynamic generator for any missing destination ID
+// Fallback dynamic generator for any destination ID (including admin-added destinations)
 export function getDestinationDetails(id: string): DestinationDetailRecord {
   const normalizedId = id.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+  // 1. Check if an admin-created destination matches this ID or name
+  try {
+    const adminDest = adminService.getDestinations().find(
+      (d) =>
+        d.id === id ||
+        d.id.toLowerCase().replace(/[^a-z0-9]/g, '') === normalizedId ||
+        d.name.toLowerCase().replace(/[^a-z0-9]/g, '') === normalizedId
+    );
+
+    if (adminDest) {
+      const base = DESTINATION_DETAILS_DATABASE['ella'];
+      const dynamicAttractions: AttractionItem[] = (adminDest.topAttractions && adminDest.topAttractions.length > 0)
+        ? adminDest.topAttractions.map((attr, idx) => ({
+            id: `attr-${idx + 1}`,
+            name: attr,
+            shortDesc: `Top recommended highlight in ${adminDest.name}.`,
+            category: adminDest.category,
+            rating: 4.9,
+            duration: '2 - 3 Hours',
+            image: adminDest.coverImage,
+            lat: adminDest.lat || 7.2906,
+            lng: adminDest.lng || 80.6337,
+            openingHours: adminDest.openingHours || '08:00 AM – 06:00 PM Daily',
+            entryFee: {
+              local: adminDest.entryFeeLocal || 'Free Entry',
+              foreign: adminDest.entryFeeForeign || '$25 USD',
+            },
+            details: `Explore ${attr}, one of the primary points of interest in ${adminDest.name}. Highly rated for visitors seeking rich cultural, heritage, and scenic travel experiences.`,
+          }))
+        : base.attractions;
+
+      return {
+        ...base,
+        id: adminDest.id,
+        name: adminDest.name,
+        shortName: adminDest.name,
+        region: adminDest.province || adminDest.location,
+        heroImage: adminDest.coverImage,
+        gallery: [adminDest.coverImage, ...(base.gallery || [])],
+        tagline: `${adminDest.category} destination in ${adminDest.province || 'Sri Lanka'} · ${adminDest.location || ''}`,
+        description: adminDest.description || `Discover ${adminDest.name}, an extraordinary destination in Sri Lanka's ${adminDest.province || 'island paradise'}.`,
+        rating: 4.91,
+        reviewCount: 420,
+        category: adminDest.category,
+        quickInfo: {
+          bestTime: adminDest.bestTimeToVisit || 'Year-round',
+          avgTemp: '24°C - 29°C',
+          recommendedStay: String(adminDest.recommendedStayDays || '2 – 3 Days'),
+          difficulty: 'Easy',
+          dailyBudget: adminDest.avgBudgetPerDay || '$60 – $95 / day',
+        },
+        openingHours: adminDest.openingHours || '06:00 AM – 06:00 PM Daily',
+        entryFeeLocal: adminDest.entryFeeLocal || 'Free Entry',
+        entryFeeForeign: adminDest.entryFeeForeign || '$25 / LKR 7,500',
+        topAttractionsList: adminDest.topAttractions || [],
+        province: adminDest.province || 'Sri Lanka',
+        accessibility: adminDest.accessibility || 'Highway Connected',
+        attractions: dynamicAttractions,
+      };
+    }
+  } catch {}
 
   if (normalizedId.includes('ella') || DESTINATION_DETAILS_DATABASE[normalizedId]) {
     return DESTINATION_DETAILS_DATABASE[normalizedId] || DESTINATION_DETAILS_DATABASE['ella'];

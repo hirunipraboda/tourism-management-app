@@ -11,8 +11,8 @@ public class NovaDbContext : DbContext
 
     public DbSet<User> Users => Set<User>();
     public DbSet<Destination> Destinations => Set<Destination>();
-    public DbSet<Activity> Activities => Set<Activity>();
     public DbSet<Trip> Trips => Set<Trip>();
+    public DbSet<TripDestination> TripDestinations => Set<TripDestination>();
     public DbSet<Itinerary> Itineraries => Set<Itinerary>();
     public DbSet<ItineraryDay> ItineraryDays => Set<ItineraryDay>();
     public DbSet<ItineraryItem> ItineraryItems => Set<ItineraryItem>();
@@ -20,6 +20,7 @@ public class NovaDbContext : DbContext
     public DbSet<WorkflowAuditLog> AuditLogs => Set<WorkflowAuditLog>();
     public DbSet<ItineraryApproval> Approvals => Set<ItineraryApproval>();
     public DbSet<TransportOption> TransportOptions => Set<TransportOption>();
+    public DbSet<TransportPartner> TransportPartners => Set<TransportPartner>();
 
     // Admin & Extended Entities
     public DbSet<Booking> Bookings => Set<Booking>();
@@ -36,6 +37,16 @@ public class NovaDbContext : DbContext
     public DbSet<ChatbotPayment> ChatbotPayments => Set<ChatbotPayment>();
     public DbSet<PromoPayment> PromoPayments => Set<PromoPayment>();
     public DbSet<SystemActivity> SystemActivities => Set<SystemActivity>();
+
+    // Guide & Tour Operations Entities
+    public DbSet<Guide> Guides => Set<Guide>();
+    public DbSet<TourPackage> TourPackages => Set<TourPackage>();
+    public DbSet<TourOperation> TourOperations => Set<TourOperation>();
+    public DbSet<GuideAvailability> GuideAvailabilities => Set<GuideAvailability>();
+
+    // Reviews & Recommendations Extended Entities
+    public DbSet<ReviewHelpfulVote> ReviewHelpfulVotes => Set<ReviewHelpfulVote>();
+    public DbSet<RecommendationSettings> RecommendationSettings => Set<RecommendationSettings>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -158,6 +169,12 @@ public class NovaDbContext : DbContext
             .HasForeignKey(to => to.TripId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        modelBuilder.Entity<Trip>()
+            .HasMany(t => t.Bookings)
+            .WithOne(b => b.Trip)
+            .HasForeignKey(b => b.TripId)
+            .OnDelete(DeleteBehavior.SetNull);
+
         modelBuilder.Entity<Itinerary>()
             .HasMany(i => i.Days)
             .WithOne(d => d.Itinerary)
@@ -170,16 +187,75 @@ public class NovaDbContext : DbContext
             .HasForeignKey(item => item.ItineraryDayId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        modelBuilder.Entity<ItineraryItem>()
-            .HasOne(item => item.SelectedTransport)
-            .WithOne(t => t.ItineraryItem)
-            .HasForeignKey<TransportOption>(t => t.ItineraryItemId)
-            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<TripDestination>()
+            .HasKey(td => new { td.TripId, td.DestinationId });
 
         modelBuilder.Entity<ItineraryGenerationWorkflow>()
             .HasMany(w => w.AuditLogs)
             .WithOne(a => a.Workflow)
             .HasForeignKey(a => a.WorkflowId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // ── Guide & Tour Operations Relationships ──────────────────────────────
+
+        modelBuilder.Entity<GuideAvailability>()
+            .HasOne(ga => ga.Guide)
+            .WithMany(g => g.Availabilities)
+            .HasForeignKey(ga => ga.GuideId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<TourOperation>()
+            .HasOne(to => to.Guide)
+            .WithMany(g => g.TourOperations)
+            .HasForeignKey(to => to.GuideId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<TourOperation>()
+            .HasOne(to => to.TourPackage)
+            .WithMany(tp => tp.TourOperations)
+            .HasForeignKey(to => to.TourPackageId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<TourPackage>()
+            .HasOne(tp => tp.Guide)
+            .WithMany(g => g.TourPackages)
+            .HasForeignKey(tp => tp.GuideId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Guide>()
+            .Property(g => g.VerificationStatus)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<TourOperation>()
+            .Property(to => to.Status)
+            .HasConversion<string>();
+
+        // ── Reviews & Recommendations Relationships ────────────────────────────
+
+        modelBuilder.Entity<ReviewHelpfulVote>()
+            .HasKey(v => new { v.ReviewId, v.TouristId });
+
+        modelBuilder.Entity<ReviewHelpfulVote>()
+            .HasOne(v => v.Review)
+            .WithMany()
+            .HasForeignKey(v => v.ReviewId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Seed default RecommendationSettings row
+        modelBuilder.Entity<RecommendationSettings>().HasData(
+            new RecommendationSettings
+            {
+                Id = 1,
+                InterestWeight = 30m,
+                RatingWeight = 25m,
+                BudgetWeight = 15m,
+                DistanceWeight = 15m,
+                PopularityWeight = 10m,
+                HistoryWeight = 5m,
+                MinReviewCountToRank = 0,
+                UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                UpdatedBy = "System"
+            }
+        );
     }
 }

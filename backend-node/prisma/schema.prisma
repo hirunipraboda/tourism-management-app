@@ -83,20 +83,22 @@ model User {
   id           String     @id @default(uuid())
   name         String
   email        String     @unique
-  password     String
+  password     String     @map("password_hash")
   role         Role       @default(USER)
-  profileImage String?
+  profileImage String?    @map("profile_image")
   phone        String?
   bio          String?
   location     String?
   department   String?
   status       UserStatus @default(ACTIVE)
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
 
-  trips    Trip[]
-  bookings Booking[]
-  reviews  Review[]
+  trips            Trip[]
+  bookings         Booking[]
+  reviews          Review[]
+  chatSessions     ChatSession[]
+  chatbotPackages  UserChatbotPackage[]
 
   @@map("users")
 }
@@ -313,4 +315,71 @@ model TransportPartner {
   updatedAt           DateTime @updatedAt
 
   @@map("transport_partners")
+}
+
+enum ChatRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+model ChatSession {
+  id        String        @id @default(uuid())
+  userId    String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String        @default("New Conversation")
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
+
+  messages  ChatMessage[]
+
+  @@map("chat_sessions")
+}
+
+model ChatMessage {
+  id          String      @id @default(uuid())
+  sessionId   String
+  session     ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  userId      String
+  role        ChatRole    @default(USER)
+  content     String      @db.Text
+  imageBase64 String?     @db.Text
+  imageMime   String?
+  createdAt   DateTime    @default(now()) @map("created_at")
+
+  @@map("chat_messages")
+}
+
+model ChatbotPackage {
+  id                   String               @id @default(uuid())
+  name                 String
+  description          String               @db.Text
+  price                Float                @default(0.0)
+  questionLimit        Int                  @default(20)
+  durationDays         Int                  @default(30)
+  status               String               @default("Active") // "Active" | "Inactive"
+  includesPhotoQueries Boolean              @default(true)
+  createdAt            DateTime             @default(now()) @map("created_at")
+  updatedAt            DateTime             @updatedAt @map("updated_at")
+
+  purchases            UserChatbotPackage[]
+
+  @@map("chatbot_packages")
+}
+
+model UserChatbotPackage {
+  id               String         @id @default(uuid())
+  userId           String
+  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  packageId        String
+  package          ChatbotPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  remainingQueries Int
+  totalQueries     Int
+  price            Float          @default(0.0)
+  status           String         @default("Active") // "Active" | "Expired" | "Exhausted"
+  expiresAt        DateTime?
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
+
+  @@map("user_chatbot_packages")
 }

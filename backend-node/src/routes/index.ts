@@ -10,21 +10,32 @@ import bookingRoutes from './bookingRoutes';
 import reviewRoutes from './reviewRoutes';
 import adminRoutes from './adminRoutes';
 import aiRoutes from './aiRoutes';
+import chatRoutes from './chatRoutes';
+import paymentRoutes from './paymentRoutes';
 import tripPlannerRoutes from '../modules/trip-planner/trip-planner.routes';
+import { getPublicStats } from '../controllers/adminController';
 
 const router = Router();
+
+router.get('/public-stats', getPublicStats);
+router.get('/stats', getPublicStats);
 
 router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
 router.use('/destinations', destinationRoutes);
 router.use('/attractions', attractionRoutes);
 router.use('/tours', tourRoutes);
+router.use('/v1/tour-packages', tourRoutes);
 router.use('/transport', transportRoutes);
 router.use('/trips', tripRoutes);
 router.use('/bookings', bookingRoutes);
 router.use('/reviews', reviewRoutes);
+router.use('/payments', paymentRoutes);
 router.use('/admin', adminRoutes);
 router.use('/ai', aiRoutes);
+router.use('/chat', chatRoutes);
 router.use('/trip-planner', tripPlannerRoutes);
+
+
 
 export default router;

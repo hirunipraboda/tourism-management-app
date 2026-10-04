@@ -1,4 +1,62 @@
+/**
+ * NOVA Guide Service — Real backend API integration & AI Travel Assistant.
+ *
+ * Supports:
+ * 1. Dedicated full-page AI Travel Guide bot (/ai-guide or NOVAGuideChat)
+ *    with persistent sessions, Gemini multimodal AI, user isolation, trip context.
+ * 2. Floating quick-widget (NOVAGuideFloatingWidget) with seamless API fallback.
+ */
+
 import { TRAVEL_PACKAGES, TravelPackage } from '../mock/tourAndGuideData';
+
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
+function getAuthHeaders(): Record<string, string> {
+  const token = localStorage.getItem('nova_auth_token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+export interface ChatSessionSummary {
+  id: string;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+  messages: Array<{ content: string; role: string; createdAt: string }>;
+}
+
+export interface ChatMessage {
+  id: string;
+  role: 'USER' | 'ASSISTANT' | 'SYSTEM';
+  content: string;
+  imageBase64?: string;
+  imageMime?: string;
+  createdAt: string;
+  /** Local-only field for UI rendering */
+  imagePreview?: string;
+}
+
+export interface SendMessageResult {
+  reply: string;
+  messageId: string;
+  sessionId: string;
+  timestamp: string;
+  remainingQueries?: number;
+}
+
+export interface UserPackageStatus {
+  hasActivePackage: boolean;
+  packageName: string;
+  remainingQueries: number;
+  totalQueries: number;
+  expiresAt?: string;
+  includesPhotoQueries: boolean;
+  stats: {
+    totalQueriesUsed: number;
+    photoQueriesUsed: number;
+  };
+}
 
 export interface NOVAGuideMessage {
   id: string;
@@ -6,138 +64,164 @@ export interface NOVAGuideMessage {
   text: string;
   timestamp: string;
   imagePreview?: string;
-  imageCaption?: string;
   suggestions?: string[];
   recommendedPackage?: TravelPackage;
 }
 
-export class NOVAGuideService {
-  /**
-   * Process a message sent by the user (with optional image file/URL)
-   */
-  public async processUserQuery(
-    text: string,
-    imageFileOrUrl?: File | string
-  ): Promise<NOVAGuideMessage> {
-    // Simulate AI processing delay
-    await new Promise((resolve) => setTimeout(resolve, 800));
+// ─── Session Management ───────────────────────────────────────────────────────
 
+export async function createChatSession(title?: string): Promise<ChatSessionSummary> {
+  const res = await fetch(`${BASE_URL}/chat/sessions`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+    body: JSON.stringify({ title: title || 'New Conversation' }),
+  });
+  const json = await res.json();
+  if (!res.ok || !json.success) {
+    throw new Error(json.message || 'Failed to create chat session.');
+  }
+  return json.data;
+}
+
+export async function listChatSessions(): Promise<ChatSessionSummary[]> {
+  const res = await fetch(`${BASE_URL}/chat/sessions`, {
+    headers: getAuthHeaders(),
+  });
+  const json = await res.json();
+  if (!res.ok || !json.success) {
+    throw new Error(json.message || 'Failed to load chat sessions.');
+  }
+  return json.data;
+}
+
+export async function getChatSession(sessionId: string): Promise<{ id: string; title: string; messages: ChatMessage[] }> {
+  const res = await fetch(`${BASE_URL}/chat/sessions/${sessionId}`, {
+    headers: getAuthHeaders(),
+  });
+  const json = await res.json();
+  if (!res.ok || !json.success) {
+    throw new Error(json.message || 'Session not found.');
+  }
+  return json.data;
+}
+
+export async function deleteChatSession(sessionId: string): Promise<void> {
+  const res = await fetch(`${BASE_URL}/chat/sessions/${sessionId}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(),
+  });
+  const json = await res.json();
+  if (!res.ok || !json.success) {
+    throw new Error(json.message || 'Failed to delete session.');
+  }
+}
+
+export async function fetchUserPackageStatus(): Promise<UserPackageStatus> {
+  const res = await fetch(`${BASE_URL}/chat/package-status`, {
+    headers: getAuthHeaders(),
+  });
+  const json = await res.json();
+  if (!res.ok || !json.success) {
+    throw new Error(json.message || 'Failed to fetch package status.');
+  }
+  return json.data;
+}
+
+// ─── Messaging ────────────────────────────────────────────────────────────────
+
+export async function sendChatMessage(
+  sessionId: string,
+  message: string,
+  imageFile?: File | null
+): Promise<SendMessageResult> {
+  const formData = new FormData();
+
+  if (message.trim()) {
+    formData.append('message', message.trim());
+  }
+
+  if (imageFile) {
+    formData.append('image', imageFile);
+  }
+
+  const res = await fetch(`${BASE_URL}/chat/sessions/${sessionId}/messages`, {
+    method: 'POST',
+    headers: getAuthHeaders(), // No Content-Type — let browser set multipart boundary
+    body: formData,
+  });
+
+  const json = await res.json();
+
+  if (!res.ok || !json.success) {
+    throw new Error(json.message || 'Failed to send message.');
+  }
+
+  return json.data;
+}
+
+// ─── Floating Widget Helper Class ─────────────────────────────────────────────
+
+class NOVAGuideService {
+  private floatingSessionId: string | null = null;
+
+  async processUserQuery(text: string, imageOrFile?: File | string): Promise<NOVAGuideMessage> {
+    const token = localStorage.getItem('nova_auth_token');
+
+    // If authenticated, try calling the real backend AI endpoint!
+    if (token) {
+      try {
+        if (!this.floatingSessionId) {
+          const session = await createChatSession(text.slice(0, 30) || 'Quick Guide Chat');
+          this.floatingSessionId = session.id;
+        }
+
+        let file: File | null = null;
+        if (imageOrFile instanceof File) {
+          file = imageOrFile;
+        }
+
+        const result = await sendChatMessage(this.floatingSessionId, text, file);
+
+        return {
+          id: `msg-bot-${Date.now()}`,
+          sender: 'bot',
+          text: result.reply,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          suggestions: [
+            'How to get there by train or bus?',
+            'What should I pack for this trip?',
+            'Recommend nearby activities and food',
+          ],
+        };
+      } catch (err: any) {
+        console.warn('Backend chat API error in floating widget, falling back:', err);
+        // Reset cached session if invalid
+        this.floatingSessionId = null;
+      }
+    }
+
+    // Fallback/offline/unauthenticated smart guide response
     const textLower = text.toLowerCase();
     let replyText = '';
     let suggestions: string[] = [];
-    let recommendedPackage: TravelPackage | undefined = undefined;
+    let recommendedPackage: TravelPackage | undefined;
 
-    // 1. IMAGE-BASED ANALYSIS
-    if (imageFileOrUrl) {
-      let fileName = '';
-      if (typeof imageFileOrUrl === 'string') {
-        fileName = imageFileOrUrl.toLowerCase();
-      } else {
-        fileName = imageFileOrUrl.name.toLowerCase();
-      }
-
-      if (fileName.includes('sigiriya') || fileName.includes('rock') || textLower.includes('sigiriya')) {
-        replyText = `**This looks like Sigiriya Rock Fortress in Sri Lanka.** 🇱🇰\n\nIt is an ancient 5th-century palace complex carved into a 200-meter sheer granite monolith surrounded by royal water gardens, world-famous frescoes, and the giant Lion Paws gate.`;
-        suggestions = [
-          'Learn about the history',
-          'Things to see',
-          'Entry information',
-          'Best time to visit',
-          'Nearby attractions',
-          'Plan my day'
-        ];
-      } else if (fileName.includes('food') || fileName.includes('curry') || fileName.includes('rice') || fileName.includes('kottu') || textLower.includes('food')) {
-        replyText = `**This is an authentic Sri Lankan Rice & Curry Feast!** 🍛\n\nIt features aromatic red/white rice surrounded by dhal curry in coconut milk, spiced pol sambol, gotukola salad, beet curry, and crispy papadam.`;
-        suggestions = [
-          'Is Sri Lankan food spicy?',
-          'What are the best curries to try?',
-          'How is Kottu Roti made?',
-          'Where to find authentic local food?'
-        ];
-      } else if (fileName.includes('galle') || fileName.includes('fort') || fileName.includes('lighthouse')) {
-        replyText = `**This is the Galle Dutch Fort & Lighthouse.** 🏛️\n\nA 130-acre UNESCO World Heritage coastal citadel built by Portuguese and Dutch colonizers in 1588, featuring ocean ramparts and cobblestone alleyways.`;
-        suggestions = [
-          'Best spot for sunset',
-          'Top things to do in Galle Fort',
-          'Cafes & restaurants inside fort'
-        ];
-      } else if (fileName.includes('ella') || fileName.includes('nine') || fileName.includes('bridge')) {
-        replyText = `**This is the Nine Arch Bridge (Bridge in the Sky) in Demodara/Ella.** 🌉\n\nA 91-meter colonial railway viaduct built completely out of solid stone blocks and cement mortar without a single piece of steel.`;
-        suggestions = [
-          'Train passing schedule',
-          'How to hike from Ella town',
-          'Best photography spots'
-        ];
-      } else {
-        replyText = `**I have analyzed your image!** 📸\n\nThis looks like a prominent attraction in Sri Lanka. It features rich cultural heritage and scenic surroundings. Would you like me to identify its location, entry ticket costs, or nearby travel packages?`;
-        suggestions = [
-          'Learn about the history',
-          'Entry & ticket info',
-          'Best time to visit',
-          'Show matching travel packages'
-        ];
-      }
-    } 
-    // 2. TRANSPORT & PUBLIC MOBILITY QUERIES
-    else if (
-      textLower.includes('ride') ||
-      textLower.includes('transport') ||
-      textLower.includes('taxi') ||
-      textLower.includes('cab') ||
-      textLower.includes('bus') ||
-      textLower.includes('train') ||
-      textLower.includes('colombo to galle') ||
-      textLower.includes('get to sigiriya') ||
-      textLower.includes('around kandy') ||
-      textLower.includes('airport') ||
-      textLower.includes('easiest way to get') ||
-      textLower.includes('best transport option') ||
-      textLower.includes('get around')
-    ) {
-      replyText = `For convenient island travel across Sri Lanka, you can utilize the scenic Sri Lanka Railways network (like the world-famous Kandy to Ella train), public express highway buses, or book private licensed chauffeur vehicles for flexible multi-day exploration.`;
-      suggestions = [
-        'How to book train tickets?',
-        '🗺 Plan a 1-day itinerary',
-        '📍 Recommended places to visit'
-      ];
-    }
-    // 3. BUDGET & DURATION QUERIES
-    else if (textLower.includes('budget') || textLower.includes('days') || textLower.includes('$') || textLower.includes('cost')) {
-      replyText = `**I found a travel package that matches your trip criteria!** 🎒\n\nBased on your budget and duration preference, our **Sri Lanka Highlights** package covers Colombo, Kandy, Ella, and Galle with full transport and boutique stays.`;
-      recommendedPackage = TRAVEL_PACKAGES[0]; // Sri Lanka Highlights
-      suggestions = [
-        'Tell me more about this package',
-        'Can I customize this itinerary?',
-        'How to book this package?'
-      ];
-    } else if (textLower.includes('history') || textLower.includes('culture') || textLower.includes('tell me about')) {
-      replyText = `Sri Lanka boasts over **2,500 years of recorded royal history**, home to 8 UNESCO World Heritage Sites including ancient kingdom capitals Anuradhapura, Polonnaruwa, and Sigiriya, as well as the sacred Temple of the Tooth Relic in Kandy.`;
-      suggestions = [
-        'What are the top UNESCO sites?',
-        'What should I wear at sacred temples?',
-        'Tell me about Kandyan culture'
-      ];
-    } else if (textLower.includes('plan my day') || textLower.includes('itinerary') || textLower.includes('day')) {
-      replyText = `🌅 **Here is a recommended 1-Day Cultural Itinerary:**\n\n- **07:30 AM:** Early morning climb of Sigiriya Lion Rock Fortress before peak heat.\n- **12:30 PM:** Authentic Sri Lankan Rice & Curry lunch at a local village farm.\n- **03:30 PM:** Afternoon Jeep Safari at Minneriya National Park to observe wild elephants.\n- **07:00 PM:** Evening relaxation & herbal tea session.`;
-      suggestions = [
-        'How to travel between locations?',
-        'What is the best month to visit?',
-        'Show travel packages'
-      ];
-    } else if (textLower.includes('visit') || textLower.includes('recommend') || textLower.includes('attractions')) {
-      replyText = `📍 **Top Recommended Destinations in Sri Lanka:**\n\n1. **Sigiriya & Cultural Triangle** — Ancient monoliths & rock temples.\n2. **Ella & Hill Country** — Misty tea fields, Nine Arch Bridge, and mountain treks.\n3. **Galle & Southern Coast** — Colonial ocean fort, palm beaches, and whale watching.\n4. **Yala National Park** — Highest density of leopards in Asia.`;
-      suggestions = [
-        'Show packages in Ella',
-        'Show packages in Galle',
-        'How do I travel around?'
-      ];
+    if (imageOrFile) {
+      replyText = `📸 **Image Analyzed!**\n\nThis appears to be a notable Sri Lankan destination. For live multimodal identification powered by our Gemini Travel AI, please ensure you are signed in.`;
+      suggestions = ['How to visit Sigiriya', 'Train to Kandy and Ella', 'Plan a 3-day itinerary'];
+    } else if (textLower.includes('budget') || textLower.includes('days') || textLower.includes('$') || textLower.includes('cost')) {
+      replyText = `🎒 **Budget Recommendations:**\n\nBased on your travel preferences, we recommend exploring our curated packages that include boutique stays and licensed guides across Colombo, Kandy, Ella, and Galle.`;
+      recommendedPackage = TRAVEL_PACKAGES[0];
+      suggestions = ['Tell me more about this package', 'Can I customize this itinerary?'];
+    } else if (textLower.includes('transport') || textLower.includes('train') || textLower.includes('bus')) {
+      replyText = `🚆 **Sri Lanka Transportation:**\n\nThe iconic Main Line train runs from Colombo Fort to Kandy, Nanu Oya (Nuwara Eliya), and Ella with daily scenic observation carriages. Express AC buses operate via Southern and Central expressways.`;
+      suggestions = ['Book Kandy to Ella train', 'Private chauffeur tours', 'Plan my day'];
     } else {
-      replyText = `Hello! I'm **NOVA Guide**, your AI travel companion. 🤖✨\n\nI can answer questions about Sri Lanka's destinations, identify uploaded photos of landmarks or food, generate day itineraries, suggest travel packages within your budget, and help you navigate local culture. What would you like to discover today?`;
+      replyText = `Hello! I'm **NOVA Guide**, your AI Travel Companion. 🤖🌴\n\nI can help you explore Sri Lanka's top attractions, historical landmarks, transport options, and itineraries. Sign in to chat directly with our full multimodal AI travel guide!`;
       suggestions = [
-        '📸 Identify an uploaded image',
-        '🚗 What\'s the easiest way to get from Colombo to Galle?',
-        '🗺 Plan a 1-day itinerary',
-        '📍 Recommended places to visit'
+        'What are the best places in Ella?',
+        'How can I travel from Colombo to Kandy?',
+        'What can I do in Galle for two days?',
       ];
     }
 
@@ -147,7 +231,7 @@ export class NOVAGuideService {
       text: replyText,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       suggestions,
-      recommendedPackage
+      recommendedPackage,
     };
   }
 }

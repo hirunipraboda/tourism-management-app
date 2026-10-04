@@ -22,6 +22,13 @@ export interface Destination {
     temp: number;
     condition: 'Sunny' | 'Cloudy' | 'Rainy' | 'Clear';
   };
+  bestTimeToVisit?: string;
+  recommendedStayDays?: string | number;
+  avgBudgetPerDay?: string;
+  openingHours?: string;
+  entryFeeLocal?: string;
+  entryFeeForeign?: string;
+  topAttractions?: string[];
 }
 
 export interface Attraction {
@@ -99,3 +106,44 @@ export interface Booking {
   paymentStatus: 'Paid' | 'Pending' | 'Refunded';
   bookingStatus: 'Confirmed' | 'Pending' | 'Cancelled' | 'Completed';
 }
+
+export interface Guide {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  languages?: string[];
+  specialties?: string[];
+  rating: number;
+  toursCompleted: number;
+  status: 'Available' | 'Assigned' | 'On Leave';
+  verificationStatus?: 'Pending' | 'Verified' | 'Rejected';
+  avatarUrl?: string;
+  bio?: string;
+  yearsExperience?: number;
+}
+
+export interface GuideAvailability {
+  availabilityId: number;
+  guideId: number;
+  guideName: string;
+  availableDate: string;
+  startTime: string;
+  endTime: string;
+  isBooked: boolean;
+}
+
+export interface TourOperation {
+  tourOperationId: number;
+  tourPackageId: number;
+  packageName: string;
+  guideId: number;
+  guideName: string;
+  scheduledDate: string;
+  numberOfTourists: number;
+  totalCost: number;
+  status: string;
+  notes: string;
+  createdAt: string;
+}
+

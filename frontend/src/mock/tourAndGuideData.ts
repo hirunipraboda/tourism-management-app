@@ -42,6 +42,7 @@ export interface TravelPackage {
     capacity: string;
     features: string;
   };
+  status?: 'Active' | 'Inactive';
 }
 
 export interface GuidePackage {

@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Eye, EyeOff, ArrowRight, CheckCircle2, ShieldCheck, Loader2, Check, X } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { authService } from '../services/authService';
 import websiteLogo from '../assets/website-logo.png';
 
 // High-resolution local Sri Lanka landmark asset
@@ -9,13 +10,29 @@ import sigiriyaImg from '../assets/destinations/sigiriya.jpg';
 
 export const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
-  const { register } = useAuth();
+  const { login, register } = useAuth();
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [agreeTerms, setAgreeTerms] = useState(false);
+
+  // Guard against browser autofilling saved credentials onto initial load
+  const [isReadOnly, setIsReadOnly] = useState(true);
+
+  useEffect(() => {
+    setFullName('');
+    setEmail('');
+    setPassword('');
+    setConfirmPassword('');
+
+    const timer = setTimeout(() => {
+      setIsReadOnly(false);
+    }, 150);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   const [showPassword, setShowPassword] = useState(false);
   const [isPasswordFocused, setIsPasswordFocused] = useState(false);
@@ -76,8 +93,8 @@ export const RegisterPage: React.FC = () => {
     if (!password) {
       setPasswordError('This field is required.');
       isValid = false;
-    } else if (!hasMinLength || !hasUppercase || !hasNumber) {
-      setPasswordError('Please choose a stronger password.');
+    } else if (password.length < 6) {
+      setPasswordError('Password must be at least 6 characters.');
       isValid = false;
     }
 
@@ -97,19 +114,35 @@ export const RegisterPage: React.FC = () => {
     return isValid;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!validateForm()) return;
 
     setIsLoading(true);
+    setError(null);
 
-    // Simulate account registration
-    setTimeout(() => {
-      register(fullName, email);
+    try {
+      const result = await authService.register({
+        name: fullName.trim(),
+        email: email.trim(),
+        password,
+        confirmPassword,
+      });
+
+      if (!result.success || !result.user) {
+        setIsLoading(false);
+        setError(result.message || 'Registration failed. Please check your details and try again.');
+        return;
+      }
+
+      login(result.user, result.token);
       setIsLoading(false);
       setSuccess(true);
-    }, 1000);
+    } catch (err: any) {
+      setIsLoading(false);
+      setError('An unexpected error occurred during registration. Please try again.');
+    }
   };
 
   return (
@@ -196,7 +229,10 @@ export const RegisterPage: React.FC = () => {
               </div>
 
               <button
-                onClick={() => navigate('/')}
+                onClick={() => {
+                  sessionStorage.setItem('nova_splash_seen', 'true');
+                  navigate('/');
+                }}
                 className="w-full h-12 rounded-full bg-[#0B3A53] hover:bg-[#072537] text-white font-extrabold text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2"
               >
                 <span>Start Exploring</span>
@@ -204,7 +240,23 @@ export const RegisterPage: React.FC = () => {
               </button>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
+              {/* Invisible decoy inputs to capture and prevent browser auto-fill of saved credentials on initial load */}
+              <div
+                style={{
+                  position: 'absolute',
+                  opacity: 0,
+                  height: 0,
+                  width: 0,
+                  overflow: 'hidden',
+                  zIndex: -1,
+                  pointerEvents: 'none',
+                }}
+                aria-hidden="true"
+              >
+                <input type="text" name="fake_email_prevent_autofill" tabIndex={-1} autoComplete="off" />
+                <input type="password" name="fake_password_prevent_autofill" tabIndex={-1} autoComplete="off" />
+              </div>
               
               {/* GLOBAL ERROR BANNER */}
               {error && (
@@ -220,6 +272,11 @@ export const RegisterPage: React.FC = () => {
                 </label>
                 <input
                   type="text"
+                  name="user_full_name"
+                  id="register-full-name"
+                  autoComplete="off"
+                  readOnly={isReadOnly}
+                  onFocus={() => setIsReadOnly(false)}
                   value={fullName}
                   onChange={(e) => {
                     setFullName(e.target.value);
@@ -245,6 +302,16 @@ export const RegisterPage: React.FC = () => {
                 </label>
                 <input
                   type="email"
+                  name="register_email_address"
+                  id="register-email"
+                  autoComplete="new-password"
+                  autoCorrect="off"
+                  autoCapitalize="none"
+                  spellCheck="false"
+                  data-lpignore="true"
+                  data-form-type="other"
+                  readOnly={isReadOnly}
+                  onFocus={() => setIsReadOnly(false)}
                   value={email}
                   onChange={(e) => {
                     setEmail(e.target.value);
@@ -271,8 +338,17 @@ export const RegisterPage: React.FC = () => {
                 <div className="relative">
                   <input
                     type={showPassword ? 'text' : 'password'}
+                    name="register_new_password"
+                    id="register-password"
+                    autoComplete="new-password"
+                    data-lpignore="true"
+                    data-form-type="other"
+                    readOnly={isReadOnly}
+                    onFocus={() => {
+                      setIsReadOnly(false);
+                      setIsPasswordFocused(true);
+                    }}
                     value={password}
-                    onFocus={() => setIsPasswordFocused(true)}
                     onChange={(e) => {
                       setPassword(e.target.value);
                       if (passwordError) setPasswordError('');
@@ -337,6 +413,13 @@ export const RegisterPage: React.FC = () => {
                 </label>
                 <input
                   type="password"
+                  name="register_confirm_new_password"
+                  id="register-confirm-password"
+                  autoComplete="new-password"
+                  data-lpignore="true"
+                  data-form-type="other"
+                  readOnly={isReadOnly}
+                  onFocus={() => setIsReadOnly(false)}
                   value={confirmPassword}
                   onChange={(e) => {
                     setConfirmPassword(e.target.value);
@@ -416,9 +499,22 @@ export const RegisterPage: React.FC = () => {
               <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
-                  onClick={() => {
-                    register('Alex Morgan', 'traveler.google@gmail.com');
-                    navigate('/');
+                  onClick={async () => {
+                    setIsLoading(true);
+                    setError(null);
+                    const res = await authService.socialLogin({
+                      name: 'Alex Morgan',
+                      email: 'traveler.google@gmail.com',
+                      provider: 'google',
+                    });
+                    setIsLoading(false);
+                    if (res.success && res.user) {
+                      login(res.user, res.token);
+                      sessionStorage.setItem('nova_splash_seen', 'true');
+                      navigate('/');
+                    } else {
+                      setError(res.message || 'Google sign-in failed');
+                    }
                   }}
                   className="h-11 px-4 rounded-2xl bg-white border border-slate-200/90 text-slate-700 hover:border-slate-300 hover:bg-slate-50 font-bold text-xs flex items-center justify-center gap-2.5 transition-all shadow-2xs cursor-pointer"
                 >
@@ -433,9 +529,22 @@ export const RegisterPage: React.FC = () => {
 
                 <button
                   type="button"
-                  onClick={() => {
-                    register('Alex Morgan', 'traveler.apple@icloud.com');
-                    navigate('/');
+                  onClick={async () => {
+                    setIsLoading(true);
+                    setError(null);
+                    const res = await authService.socialLogin({
+                      name: 'Alex Morgan',
+                      email: 'traveler.apple@icloud.com',
+                      provider: 'apple',
+                    });
+                    setIsLoading(false);
+                    if (res.success && res.user) {
+                      login(res.user, res.token);
+                      sessionStorage.setItem('nova_splash_seen', 'true');
+                      navigate('/');
+                    } else {
+                      setError(res.message || 'Apple sign-in failed');
+                    }
                   }}
                   className="h-11 px-4 rounded-2xl bg-white border border-slate-200/90 text-slate-700 hover:border-slate-300 hover:bg-slate-50 font-bold text-xs flex items-center justify-center gap-2.5 transition-all shadow-2xs cursor-pointer"
                 >

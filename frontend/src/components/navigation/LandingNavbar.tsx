@@ -21,6 +21,7 @@ export const LandingNavbar: React.FC = () => {
     if (path.startsWith('/destinations')) return 'destinations';
     if (path.startsWith('/trips') || path.startsWith('/plan-trip') || path.startsWith('/manual-planner')) return 'trips';
     if (path.startsWith('/tours')) return 'tours';
+    if (path.startsWith('/ai-guide')) return 'guide';
     if (path.startsWith('/ai-workflows') || path.startsWith('/planner')) return 'ai';
     if (path.startsWith('/recommendations') || path.startsWith('/reviews') || path.startsWith('/operator')) return 'reviews';
     return 'explore';

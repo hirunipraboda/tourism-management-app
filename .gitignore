@@ -36,3 +36,7 @@ ai-agents/notebooks/tools/
 ai-agents/notebooks/agents/
 ai-agents/notebooks/data/
 
+# Temporary Screenshots & Scratch
+mobile/*.png
+scratch/
+

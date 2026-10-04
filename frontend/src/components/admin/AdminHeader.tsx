@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import {
   Menu,
@@ -17,6 +17,7 @@ import {
   Phone,
   Shield,
   Globe,
+  Camera,
 } from 'lucide-react';
 import { adminAuthService } from '../../services/adminAuthService';
 import { useAuth } from '../../hooks/useAuth';
@@ -50,6 +51,33 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onToggleMobileSidebar,
   const [profileSuccess, setProfileSuccess] = useState('');
   const [profileError, setProfileError] = useState('');
 
+  // Avatar upload state
+  const defaultAvatar = session.adminUser?.avatar ||
+    'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80';
+  const savedAvatar = localStorage.getItem('travellink_admin_avatar') || defaultAvatar;
+  const [avatarUrl, setAvatarUrl] = useState<string>(savedAvatar);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setProfileError('Please select a valid image file.');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setProfileError('Image must be smaller than 5 MB.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const result = ev.target?.result as string;
+      setAvatarUrl(result);
+      setProfileError('');
+    };
+    reader.readAsDataURL(file);
+  };
+
   // Settings Form State
   const [bookingAlerts, setBookingAlerts] = useState(true);
   const [approvalAlerts, setApprovalAlerts] = useState(true);
@@ -70,7 +98,9 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onToggleMobileSidebar,
       if (current.adminUser) {
         current.adminUser.name = profileName;
         current.adminUser.email = profileEmail;
+        current.adminUser.avatar = avatarUrl;
         localStorage.setItem('travellink_admin_session', JSON.stringify(current));
+        localStorage.setItem('travellink_admin_avatar', avatarUrl);
       }
     } catch (err) {
       console.error(err);
@@ -247,7 +277,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onToggleMobileSidebar,
             className="flex items-center gap-2.5 p-1.5 pr-3 rounded-full hover:bg-slate-100 transition-colors cursor-pointer border border-slate-200/60"
           >
             <img
-              src={session.adminUser?.avatar}
+              src={avatarUrl}
               alt="Admin Profile"
               className="w-8 h-8 rounded-full object-cover border border-slate-300"
             />
@@ -346,14 +376,44 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onToggleMobileSidebar,
                 </div>
               )}
 
-              {/* User Overview Card */}
+              {/* User Overview Card — with avatar upload */}
               <div className="flex items-center gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-200">
-                <img
-                  src={session.adminUser?.avatar || 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80'}
-                  alt="Profile Avatar"
-                  className="w-16 h-16 rounded-2xl object-cover border-2 border-white shadow-xs"
-                />
-                <div className="space-y-1 min-w-0">
+                {/* Clickable avatar upload zone */}
+                <div className="relative shrink-0 group">
+                  <img
+                    src={avatarUrl}
+                    alt="Profile Avatar"
+                    className="w-16 h-16 rounded-2xl object-cover border-2 border-white shadow-xs"
+                  />
+                  {/* Camera overlay badge */}
+                  <button
+                    type="button"
+                    onClick={() => avatarInputRef.current?.click()}
+                    className="absolute inset-0 rounded-2xl bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
+                    title="Change profile photo"
+                  >
+                    <Camera className="w-5 h-5 text-white" />
+                  </button>
+                  {/* Small camera badge (always visible) */}
+                  <button
+                    type="button"
+                    onClick={() => avatarInputRef.current?.click()}
+                    className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-[#0B3A53] border-2 border-white flex items-center justify-center cursor-pointer hover:bg-[#16A6A1] transition-colors"
+                    title="Upload photo"
+                  >
+                    <Camera className="w-2.5 h-2.5 text-white" />
+                  </button>
+                  {/* Hidden file input */}
+                  <input
+                    ref={avatarInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleAvatarChange}
+                  />
+                </div>
+
+                <div className="space-y-1 min-w-0 flex-1">
                   <div className="font-black text-[#0B3A53] text-sm truncate">{profileName}</div>
                   <div className="text-slate-500 font-medium truncate">{profileEmail}</div>
                   <div className="flex flex-wrap items-center gap-2 pt-0.5">
@@ -362,6 +422,14 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onToggleMobileSidebar,
                     </span>
                     <span className="text-[10px] font-bold text-slate-400">ID: {session.adminUser?.id || 'admin-01'}</span>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => avatarInputRef.current?.click()}
+                    className="inline-flex items-center gap-1 text-[10px] font-bold text-[#16A6A1] hover:underline cursor-pointer mt-0.5"
+                  >
+                    <Camera className="w-3 h-3" />
+                    Change photo
+                  </button>
                 </div>
               </div>
 

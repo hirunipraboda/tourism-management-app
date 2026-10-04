@@ -18,14 +18,16 @@ export interface TripActivityDetail {
   title: string;
   location: string;
   description: string;
-  status: 'Confirmed' | 'Planned' | 'Optional';
+  status: 'Confirmed' | 'Planned' | 'Optional' | 'Completed' | 'In Progress' | 'Upcoming' | 'Today';
   type: 'Sightseeing' | 'Dining' | 'Transit' | 'Stay' | 'Activity';
+  activityStatus?: 'Completed' | 'In Progress' | 'Upcoming' | 'Today';
 }
 
 export interface TripDayItinerary {
   day: number;
   date: string;
   title: string;
+  status?: 'Completed' | 'Today' | 'Upcoming';
   activities: TripActivityDetail[];
 }
 
@@ -38,6 +40,21 @@ export interface TripBookingDetail {
   confirmationCode: string;
   amount: string;
   status: 'Confirmed' | 'Pending';
+  destination?: string;
+  guestName?: string;
+  guestEmail?: string;
+  guestPhone?: string;
+  packageName?: string;
+  nights?: number;
+  rooms?: number;
+  checkInDate?: string;
+  checkOutDate?: string;
+  bookedAt?: string;
+  paymentMethod?: string;
+  taxesAndService?: string;
+  subtotal?: string;
+  includedFacilities?: string[];
+  specialRequests?: string;
 }
 
 export interface UserTrip {
@@ -45,11 +62,14 @@ export interface UserTrip {
   name: string;
   destination: string;
   destinationId: string;
+  startDate?: string;
+  endDate?: string;
   dates: string;
   duration: string;
   travelers: number;
   travelerNames?: string[];
-  status: 'Upcoming' | 'Planning' | 'Ongoing' | 'Completed';
+  status: 'Upcoming' | 'Planning' | 'Ongoing' | 'Completed' | 'Cancelled';
+  timelineLabel?: string;
   imageUrl: string;
   budget?: string;
   spentBudget?: string;
@@ -70,8 +90,10 @@ export const MOCK_USER_TRIPS: UserTrip[] = [
     name: 'Kandy Escape',
     destination: 'Kandy, Sri Lanka',
     destinationId: 'kandy',
-    dates: '12 – 15 September 2026',
-    duration: '3 Days',
+    startDate: '2026-09-28',
+    endDate: '2026-10-02',
+    dates: '28 Sep – 02 Oct 2026',
+    duration: '5 Days',
     travelers: 2,
     travelerNames: ['Sanath Wickramasinghe', 'Anula Wickramasinghe'],
     status: 'Ongoing',
@@ -87,13 +109,13 @@ export const MOCK_USER_TRIPS: UserTrip[] = [
       bookings: true,
     },
     interests: ['Culture', 'Temple Relics', 'Highland Gardens', 'Tea Tasting'],
-    notes: 'Stay at Earl’s Regency Hotel. Scenic train tickets reserved for 12th morning departure from Fort Station.',
+    notes: 'Stay at Earl’s Regency Hotel. Scenic train tickets reserved for morning departure from Fort Station.',
     weatherForecast: '24°C · Mostly Sunny with mild evening highland breeze',
     aiNotes: 'Pro tip: Dress modestly covering shoulders and knees for the Temple of the Tooth Relic visit. Late afternoon rains are common in the hill country.',
     dailyItinerary: [
       {
         day: 1,
-        date: 'Sep 12, 2026',
+        date: '2026-09-28',
         title: 'Scenic Train Ride & Sacred Temple Exploration',
         activities: [
           {
@@ -132,7 +154,7 @@ export const MOCK_USER_TRIPS: UserTrip[] = [
       },
       {
         day: 2,
-        date: 'Sep 13, 2026',
+        date: '2026-09-29',
         title: 'Royal Botanical Gardens & Ceylon Tea Estate',
         activities: [
           {
@@ -163,7 +185,7 @@ export const MOCK_USER_TRIPS: UserTrip[] = [
       },
       {
         day: 3,
-        date: 'Sep 14, 2026',
+        date: '2026-09-30',
         title: 'Udawatta Kele Forest & Artisan Craft Shopping',
         activities: [
           {
@@ -184,17 +206,70 @@ export const MOCK_USER_TRIPS: UserTrip[] = [
           },
         ],
       },
+      {
+        day: 4,
+        date: '2026-10-01',
+        title: 'Knuckles Mountain Foothills & Spice Grove',
+        activities: [
+          {
+            time: '09:00 AM',
+            title: 'Matale Organic Spice Garden Guided Tour',
+            location: 'Matale',
+            description: 'Discover cardamom, vanilla, and clove cultivation with herbal massage demonstration.',
+            status: 'Planned',
+            type: 'Activity',
+          },
+        ],
+      },
+      {
+        day: 5,
+        date: '2026-10-02',
+        title: 'Highland Leisure & Return Scenic Transit',
+        activities: [
+          {
+            time: '10:00 AM',
+            title: 'Hotel Check-out & Scenic Lake Stroll',
+            location: 'Kandy Lake Round',
+            description: 'Final morning coffee overlooking clouds lifting off the lake.',
+            status: 'Planned',
+            type: 'Activity',
+          },
+          {
+            time: '02:30 PM',
+            title: 'Return Intercity Express to Colombo Fort',
+            location: 'Kandy Railway Station',
+            description: 'Afternoon express transit descending from highlands.',
+            status: 'Confirmed',
+            type: 'Transit',
+          },
+        ],
+      },
     ],
     bookingsList: [
       {
         id: 'bk-1',
         type: 'Hotel',
         provider: "Earl's Regency Hotel Kandy",
-        details: '2 Nights · Deluxe River View Room with Breakfast',
-        dates: '12 Sep – 14 Sep 2026',
+        details: '4 Nights · Deluxe River View Room with Breakfast',
+        dates: '28 Sep – 02 Oct 2026',
         confirmationCode: 'KND-88219',
-        amount: '$140',
+        amount: '$280',
         status: 'Confirmed',
+        destination: 'Kandy',
+        packageName: 'Deluxe River View Retreat',
+        guestName: 'Hiruni Praboda',
+        guestEmail: 'hiruni.praboda@gmail.com',
+        guestPhone: '+94 77 123 4567',
+        nights: 4,
+        rooms: 1,
+        checkInDate: '2026-09-28',
+        checkOutDate: '2026-10-02',
+        bookedAt: 'Sep 10, 2026 · 14:32',
+        paymentMethod: 'Credit / Debit Card (Online Verified)',
+        taxesAndService: '$14',
+        subtotal: '$126',
+        includedFacilities: ['Swimming Pool & Cabana Access', 'Daily Gourmet Breakfast', 'Free High-speed Wi-Fi', 'Balcony River View'],
+        specialRequests: 'Quiet high-floor room overlooking Mahaweli river',
       },
       {
         id: 'bk-2',
@@ -229,6 +304,8 @@ export const MOCK_USER_TRIPS: UserTrip[] = [
     name: 'Hill Country Escape',
     destination: 'Ella, Sri Lanka',
     destinationId: 'ella',
+    startDate: '2026-10-24',
+    endDate: '2026-10-28',
     dates: '24 – 28 October 2026',
     duration: '4 Days',
     travelers: 2,
@@ -250,7 +327,7 @@ export const MOCK_USER_TRIPS: UserTrip[] = [
     dailyItinerary: [
       {
         day: 1,
-        date: 'Oct 24, 2026',
+        date: '2026-10-24',
         title: 'Nine Arches Sunrise & Mountain Check-in',
         activities: [
           {
@@ -290,11 +367,13 @@ export const MOCK_USER_TRIPS: UserTrip[] = [
     name: 'Southern Coast Explorer',
     destination: 'Galle & Mirissa, Sri Lanka',
     destinationId: 'mirissa',
+    startDate: '2026-11-10',
+    endDate: '2026-11-15',
     dates: '10 – 15 November 2026',
     duration: '5 Days',
     travelers: 3,
     travelerNames: ['Sanath Wickramasinghe', 'Nipuni Fernando', 'Kavinda Silva'],
-    status: 'Planning',
+    status: 'Upcoming',
     imageUrl: galleImg,
     budget: '$400',
     spentBudget: '$50',
@@ -313,6 +392,8 @@ export const MOCK_USER_TRIPS: UserTrip[] = [
     name: 'Cultural Triangle Journey',
     destination: 'Sigiriya & Anuradhapura, Sri Lanka',
     destinationId: 'sigiriya',
+    startDate: '2026-05-15',
+    endDate: '2026-05-18',
     dates: '15 – 18 May 2026',
     duration: '3 Days',
     travelers: 2,
@@ -335,10 +416,12 @@ export const MOCK_USER_TRIPS: UserTrip[] = [
     name: 'Highland Mist Retreat',
     destination: 'Horton Plains, Sri Lanka',
     destinationId: 'horton_plains',
+    startDate: '2026-12-01',
+    endDate: '2026-12-03',
     dates: '01 – 03 December 2026',
     duration: '3 Days',
     travelers: 2,
-    status: 'Planning',
+    status: 'Upcoming',
     imageUrl: hortonPlainsImg,
     budget: '$220',
   },
@@ -347,6 +430,8 @@ export const MOCK_USER_TRIPS: UserTrip[] = [
     name: 'Wild Yala Wildlife Safari',
     destination: 'Yala National Park, Sri Lanka',
     destinationId: 'yala',
+    startDate: '2026-02-10',
+    endDate: '2026-02-12',
     dates: '10 – 12 February 2026',
     duration: '2 Days',
     travelers: 4,

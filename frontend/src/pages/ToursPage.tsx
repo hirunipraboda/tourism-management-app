@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Search,
@@ -24,17 +24,96 @@ import {
   Award,
   Layers,
   HeartHandshake,
-  Check
+  Check,
+  UserCheck
 } from 'lucide-react';
 import { LandingNavbar } from '../components/navigation/LandingNavbar';
 import { Footer } from '../components/navigation/Footer';
 import { TRAVEL_PACKAGES, TravelPackage } from '../mock/tourAndGuideData';
+import { tourPackageService, TourPackageResponse } from '../services/tourPackageService';
 import { NOVAGuideIcon } from '../components/guide/NOVAGuideChat';
 import { NOVAGuideFloatingWidget } from '../components/guide/NOVAGuideFloatingWidget';
 import { BotWaveVector } from '../components/guide/BotWaveVector';
 import sriLankaBeautyImg from '../assets/destinations/Sri_lanka_beauty.jpg';
 import websiteLogo from '../assets/website-logo.png';
+import pickmeLogoImg from '../assets/pickme-logo.png';
+import { PickMeLogo } from '../components/icons/PickMeLogo';
 
+// Helper to map backend TourPackageResponse to TravelPackage
+const mapBackendTourPackageToTravelPackage = (tp: any): TravelPackage => {
+  const destStr = tp.destination || tp.destinationName || 'Sri Lanka';
+  const dests = destStr
+    ? destStr.split(/->|&|,|\+/).map((d: string) => d.trim()).filter(Boolean)
+    : ['Sri Lanka'];
+  
+  const destLower = destStr.toLowerCase();
+  let imageUrl = tp.imageUrl && tp.imageUrl.trim() ? tp.imageUrl.trim() : sriLankaBeautyImg;
+  if (!tp.imageUrl || !tp.imageUrl.trim()) {
+    if (destLower.includes('galle') || destLower.includes('beach') || destLower.includes('matara') || destLower.includes('mirissa')) {
+      imageUrl = 'https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?auto=format&fit=crop&w=800&q=80';
+    } else if (destLower.includes('kandy') || destLower.includes('nuwara') || destLower.includes('ella') || destLower.includes('badulla')) {
+      imageUrl = 'https://images.unsplash.com/photo-1546708973-b339540b5162?auto=format&fit=crop&w=800&q=80';
+    } else if (destLower.includes('yala') || destLower.includes('safari') || destLower.includes('wilpattu')) {
+      imageUrl = 'https://images.unsplash.com/photo-1544644181-1484b3fdfc62?auto=format&fit=crop&w=800&q=80';
+    } else if (destLower.includes('sigiriya') || destLower.includes('dambulla') || destLower.includes('jaffna')) {
+      imageUrl = 'https://images.unsplash.com/photo-1586861635167-e5223aadc9fe?auto=format&fit=crop&w=800&q=80';
+    }
+  }
+
+  const durationDays = tp.durationDays || (typeof tp.duration === 'string' ? parseInt(tp.duration) : 3) || 3;
+  const dailyItinerary = Array.from({ length: Math.min(durationDays, 7) }, (_, idx) => {
+    const dayNum = idx + 1;
+    return {
+      day: dayNum,
+      title: idx === 0 ? 'Arrival & Welcome Reception' : (idx === durationDays - 1 ? 'Final Exploration & Departure' : `Guided Tour of ${dests[idx % dests.length] || destStr}`),
+      morning: idx === 0 ? 'Airport transfer & hotel check-in' : 'Breakfast & morning sightseeing tour',
+      afternoon: 'Guided cultural visit & local cuisine experience',
+      evening: idx === durationDays - 1 ? 'Departure transfer' : 'Leisure time & evening sunset view'
+    };
+  });
+
+  const priceVal = tp.price ?? (tp.priceFrom ? parseFloat(String(tp.priceFrom).replace(/[^0-9.]/g, '')) : 280);
+
+  return {
+    id: tp.id || `db-${tp.tourPackageId || Math.random()}`,
+    name: tp.packageName || tp.title || tp.name || 'Sri Lanka Tour Package',
+    destination: destStr,
+    destinationsList: dests.length > 0 ? dests : [destStr],
+    duration: typeof tp.duration === 'string' ? tp.duration : `${durationDays} Days`,
+    nights: tp.nights || `${Math.max(1, durationDays - 1)} Nights`,
+    priceFrom: typeof tp.priceFrom === 'string' ? tp.priceFrom : `$${priceVal}`,
+    imageUrl: imageUrl,
+    inclusions: tp.inclusions || [
+      'Licensed English-speaking Tour Guide',
+      'Private AC Transport throughout',
+      'Hotel Pickups & Dropoffs',
+      'NOVA AI Travel Assistant Access',
+      'All Entry Tickets & Permits'
+    ],
+    exclusions: tp.exclusions || [
+      'International Flight Tickets',
+      'Personal Travel Insurance',
+      'Personal Gratuities & Tips'
+    ],
+    about: tp.about || tp.description || `Experience ${destStr} with a custom tailored package for travelers.`,
+    groupSize: tp.groupSize || (tp.maxGroupSize ? `Up to ${tp.maxGroupSize} travelers` : 'Up to 8 travelers'),
+    travelStyle: tp.travelStyle || 'Cultural & Scenic Tour',
+    bestFor: tp.bestFor || 'Couples, Families & Small Groups',
+    dailyItinerary: tp.dailyItinerary || dailyItinerary,
+    guide: tp.guide || {
+      name: tp.guideName || 'Licensed Local Guide',
+      title: 'Certified Tourist Guide',
+      languages: 'English, Sinhala',
+      rating: 4.9,
+      experience: '5+ Years'
+    },
+    transport: tp.transport || {
+      type: 'Private AC Vehicle / Van',
+      capacity: `Up to ${tp.maxGroupSize || 8} Seats`,
+      features: 'Free WiFi, Air Conditioning, Bottled Water'
+    }
+  };
+};
 
 export const ToursPage: React.FC = () => {
   const navigate = useNavigate();
@@ -46,6 +125,20 @@ export const ToursPage: React.FC = () => {
   const [selectedTravelPkgModal, setSelectedTravelPkgModal] = useState<TravelPackage | null>(null);
   const [selectedPlanId, setSelectedPlanId] = useState<string>('explorer');
   const [isGuideWidgetOpen, setIsGuideWidgetOpen] = useState<boolean>(false);
+  const [packagesList, setPackagesList] = useState<TravelPackage[]>(() => {
+    try {
+      const stored = localStorage.getItem('nova_custom_travel_packages');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const names = new Set(parsed.map((p: any) => p.name?.toLowerCase()));
+          const nonDup = TRAVEL_PACKAGES.filter(p => !names.has(p.name.toLowerCase()));
+          return [...parsed, ...nonDup];
+        }
+      }
+    } catch {}
+    return TRAVEL_PACKAGES;
+  });
 
   // Booking Form State inside Details Modal
   const [bookingDate, setBookingDate] = useState<string>('2026-10-15');
@@ -54,6 +147,60 @@ export const ToursPage: React.FC = () => {
   const guideSectionRef = useRef<HTMLDivElement>(null);
   const travelPackagesRef = useRef<HTMLDivElement>(null);
   const packageRowRef = useRef<HTMLDivElement>(null);
+
+  // Fetch real active tour packages from backend database + sync with admin-added packages
+  useEffect(() => {
+    let isMounted = true;
+    const fetchTourPackages = async () => {
+      let customPackages: TravelPackage[] = [];
+      try {
+        const stored = localStorage.getItem('nova_custom_travel_packages');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) customPackages = parsed;
+        }
+      } catch {}
+
+      try {
+        const dbPackages = await tourPackageService.getAll();
+        if (dbPackages && Array.isArray(dbPackages) && dbPackages.length > 0) {
+          const activeMapped = dbPackages
+            .filter((p: any) => p.isActive !== false)
+            .map(mapBackendTourPackageToTravelPackage);
+          
+          if (isMounted) {
+            const combined = [...customPackages, ...activeMapped, ...TRAVEL_PACKAGES];
+            const seen = new Set<string>();
+            const unique = combined.filter(p => {
+              const k = p.name.toLowerCase().trim();
+              if (seen.has(k)) return false;
+              seen.add(k);
+              return true;
+            });
+            setPackagesList(unique);
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn('Backend API offline or error fetching packages, using fallback static data:', err);
+      }
+
+      if (isMounted && customPackages.length > 0) {
+        const combined = [...customPackages, ...TRAVEL_PACKAGES];
+        const seen = new Set<string>();
+        const unique = combined.filter(p => {
+          const k = p.name.toLowerCase().trim();
+          if (seen.has(k)) return false;
+          seen.add(k);
+          return true;
+        });
+        setPackagesList(unique);
+      }
+    };
+
+    fetchTourPackages();
+    return () => { isMounted = false; };
+  }, []);
 
   const scrollPackages = (direction: 'left' | 'right') => {
     if (packageRowRef.current) {
@@ -81,7 +228,7 @@ export const ToursPage: React.FC = () => {
 
   // Filtered Travel Packages
   const filteredTravelPackages = useMemo(() => {
-    return TRAVEL_PACKAGES.filter((pkg) => {
+    return packagesList.filter((pkg) => {
       if (selectedDestinationFilter !== 'All') {
         const matchesDest =
           pkg.destination.toLowerCase().includes(selectedDestinationFilter.toLowerCase()) ||
@@ -100,7 +247,7 @@ export const ToursPage: React.FC = () => {
       }
       return true;
     });
-  }, [selectedDestinationFilter, searchDestination]);
+  }, [packagesList, selectedDestinationFilter, searchDestination]);
 
   const scrollToGuide = () => {
     setIsGuideWidgetOpen(true);
@@ -367,10 +514,7 @@ export const ToursPage: React.FC = () => {
               </ul>
             </div>
             <button
-              onClick={() => {
-                setSelectedPlanId('guide');
-                triggerToast('Selected AI Guide Weekly Plan ($4.99/wk)');
-              }}
+              onClick={() => navigate('/payment?plan=AI+GUIDE&price=4.99&period=week&planId=guide')}
               className="w-full py-2.5 rounded-xl bg-slate-100 group-hover:bg-[#0B3A53] group-hover:text-white font-extrabold text-xs transition-all duration-200 cursor-pointer shadow-xs"
             >
               Choose Weekly
@@ -399,10 +543,7 @@ export const ToursPage: React.FC = () => {
               </ul>
             </div>
             <button
-              onClick={() => {
-                setSelectedPlanId('explorer');
-                triggerToast('Selected AI Explorer Plan ($9.99/wk) - Most Popular!');
-              }}
+              onClick={() => navigate('/payment?plan=AI+EXPLORER&price=9.99&period=week&planId=explorer')}
               className="w-full py-2.5 rounded-xl bg-[#16A6A1] group-hover:bg-emerald-400 group-hover:text-slate-950 font-black text-xs transition-all duration-200 shadow-md group-hover:shadow-lg cursor-pointer"
             >
               Choose Explorer
@@ -428,10 +569,7 @@ export const ToursPage: React.FC = () => {
               </ul>
             </div>
             <button
-              onClick={() => {
-                setSelectedPlanId('traveler');
-                triggerToast('Selected AI Traveler Monthly Plan ($19.99/mo)');
-              }}
+              onClick={() => navigate('/payment?plan=AI+TRAVELER&price=19.99&period=month&planId=traveler')}
               className="w-full py-2.5 rounded-xl bg-slate-100 group-hover:bg-[#0B3A53] group-hover:text-white font-extrabold text-xs transition-all duration-200 cursor-pointer shadow-xs"
             >
               Choose Traveler
@@ -456,10 +594,7 @@ export const ToursPage: React.FC = () => {
               </ul>
             </div>
             <button
-              onClick={() => {
-                setSelectedPlanId('wanderer');
-                triggerToast('Selected AI Wanderer Premium Plan ($34.99/mo)');
-              }}
+              onClick={() => navigate('/payment?plan=AI+WANDERER&price=34.99&period=month&planId=wanderer')}
               className="w-full py-2.5 rounded-xl bg-[#0B3A53] group-hover:bg-[#16A6A1] text-white font-extrabold text-xs transition-all duration-200 cursor-pointer shadow-xs"
             >
               Go Premium
@@ -581,7 +716,132 @@ export const ToursPage: React.FC = () => {
         </div>
       </section>
 
+      {/* 7. TRANSPORT SECTION - PICKME PARTNER */}
+      <section id="transport-partner-section" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="space-y-12">
+          {/* Section Header */}
+          <div className="text-center max-w-3xl mx-auto space-y-4">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#16A6A1]/10 text-[#146C86] text-xs font-black uppercase tracking-wider border border-[#16A6A1]/20">
+              <Car className="w-3.5 h-3.5 text-[#16A6A1]" />
+              <span>TRANSPORTATION PARTNER</span>
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-black text-[#0B3A53] tracking-tight font-heading">
+              Need a Ride? We've Got You Covered.
+            </h2>
+            <p className="text-sm sm:text-base text-slate-600 font-medium leading-relaxed">
+              Introducing PickMe, NOVA's transportation partner. Get where you need to go with ease and enjoy an exclusive 10% discount on your rides.
+            </p>
+          </div>
 
+          {/* PickMe Premium Partnership Card */}
+          <div className="bg-gradient-to-r from-[#0B3A53] via-[#146C86] to-[#0B3A53] rounded-3xl p-8 sm:p-12 text-white shadow-2xl border border-[#16A6A1]/30 relative overflow-hidden">
+            {/* Ambient Background Glows */}
+            <div className="absolute -right-10 -top-10 w-64 h-64 bg-[#16A6A1]/20 rounded-full blur-3xl pointer-events-none"></div>
+            <div className="absolute -left-10 -bottom-10 w-64 h-64 bg-teal-400/15 rounded-full blur-3xl pointer-events-none"></div>
+
+            <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+
+              {/* Left Column: Brand & Copy */}
+              <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 border border-white/20 text-teal-300 text-xs font-black uppercase tracking-wider backdrop-blur-md">
+                  <Car className="w-3.5 h-3.5 text-teal-300" />
+                  <span>YOUR JOURNEY DOESN'T STOP HERE</span>
+                </div>
+
+                <div className="space-y-3">
+                  <span className="text-xs font-extrabold uppercase tracking-wider text-teal-200 block">
+                    Meet Our Transportation Partner
+                  </span>
+                  <div className="flex items-center justify-center lg:justify-start pt-1">
+                    <img
+                      src={pickmeLogoImg}
+                      alt="PickMe Logo"
+                      className="h-28 sm:h-36 md:h-44 w-auto object-contain rounded-3xl drop-shadow-2xl hover:scale-105 transition-transform duration-300"
+                    />
+                  </div>
+                </div>
+
+                <p className="text-sm sm:text-base text-slate-100 font-medium leading-relaxed max-w-xl">
+                  Travel around Sri Lanka with ease. Download the PickMe app through NOVA and enjoy 10% off your eligible rides.
+                </p>
+
+                {/* 3 Transport Feature Items */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+                  <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-4 text-left hover:bg-white/15 transition-all">
+                    <div className="text-xl mb-1">🚗</div>
+                    <h4 className="text-xs font-black text-white font-heading">Private Rides</h4>
+                    <p className="text-[11px] text-slate-200 font-medium leading-tight mt-1">
+                      Arrange convenient private transportation for getting around your destination.
+                    </p>
+                  </div>
+
+                  <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-4 text-left hover:bg-white/15 transition-all">
+                    <div className="text-xl mb-1">📍</div>
+                    <h4 className="text-xs font-black text-white font-heading">Destination Transfers</h4>
+                    <p className="text-[11px] text-slate-200 font-medium leading-tight mt-1">
+                      Use PickMe when travelling between attractions, hotels and other locations.
+                    </p>
+                  </div>
+
+                  <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-4 text-left hover:bg-white/15 transition-all">
+                    <div className="text-xl mb-1">🧳</div>
+                    <h4 className="text-xs font-black text-white font-heading">Easy Travel</h4>
+                    <p className="text-[11px] text-slate-200 font-medium leading-tight mt-1">
+                      Arrange transportation through PickMe while keeping your trip planning inside NOVA.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column: Prominent 10% OFF Badge & CTA */}
+              <div className="lg:col-span-5 flex flex-col items-center justify-center text-center space-y-6 bg-slate-900/60 backdrop-blur-xl border border-white/20 rounded-3xl p-8 shadow-2xl">
+                <div className="space-y-2">
+                  <span className="text-xs font-black uppercase tracking-widest text-teal-300 block">
+                    EXCLUSIVE PARTNER OFFER
+                  </span>
+                  <div className="inline-block bg-[#16A6A1] text-slate-950 font-black text-4xl sm:text-5xl px-7 py-3 rounded-2xl shadow-xl font-heading tracking-tight">
+                    10% OFF
+                  </div>
+                  <span className="text-sm font-extrabold text-white block pt-1">
+                    YOUR RIDES
+                  </span>
+                </div>
+
+                <p className="text-xs text-slate-200 font-medium max-w-xs leading-relaxed">
+                  Download PickMe and arrange your ride. Enjoy 10% off eligible rides with PickMe.
+                </p>
+
+                <div className="w-full space-y-3">
+                  <a
+                    href="https://pickme.lk"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => triggerToast('Redirecting to PickMe app destination...')}
+                    className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-[#16A6A1] via-teal-400 to-emerald-400 hover:from-teal-300 hover:to-emerald-300 text-slate-950 text-sm font-black transition-all duration-300 shadow-xl flex items-center justify-center gap-2 cursor-pointer group"
+                  >
+                    <span>Get 10% Off with PickMe →</span>
+                  </a>
+
+                  <a
+                    href="https://pickme.lk"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => triggerToast('Redirecting to PickMe app destination...')}
+                    className="inline-flex items-center gap-1.5 text-xs font-extrabold text-teal-300 hover:text-white transition-colors cursor-pointer"
+                  >
+                    <span>Need transportation? Use PickMe →</span>
+                  </a>
+                </div>
+
+                <p className="text-[10px] text-slate-300 italic font-medium">
+                  *Terms and eligibility may apply.
+                </p>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </section>
 
 
 
@@ -755,8 +1015,9 @@ export const ToursPage: React.FC = () => {
 
                 <button
                   onClick={() => {
+                    const pkg = selectedTravelPkgModal;
                     setSelectedTravelPkgModal(null);
-                    triggerToast(`Booking requested for ${selectedTravelPkgModal.name}!`);
+                    navigate(`/booking?pkgId=${encodeURIComponent(pkg.id)}&name=${encodeURIComponent(pkg.name)}&price=${encodeURIComponent(pkg.priceFrom)}&duration=${encodeURIComponent(pkg.duration)}&destination=${encodeURIComponent(pkg.destination)}`);
                   }}
                   className="bg-[#0B3A53] hover:bg-[#072537] text-white font-extrabold text-xs uppercase tracking-wider px-7 py-3 rounded-full shadow-md cursor-pointer w-full sm:w-auto text-center"
                 >
@@ -768,8 +1029,6 @@ export const ToursPage: React.FC = () => {
           </div>
         </div>
       )}
-
-
 
       {/* FOOTER */}
       <Footer />
@@ -783,3 +1042,4 @@ export const ToursPage: React.FC = () => {
     </div>
   );
 };
+

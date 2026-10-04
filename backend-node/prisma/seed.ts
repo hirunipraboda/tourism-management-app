@@ -21,17 +21,17 @@ async function main() {
   await prisma.user.deleteMany();
 
   // 2. Password Hashes
-  const adminPassword = await bcrypt.hash('AdminPassword123!', 10);
+  const adminPassword = await bcrypt.hash('admin123', 10);
   const userPassword = await bcrypt.hash('UserPassword123!', 10);
 
   // 3. Users (ADMIN & USER roles only)
   const adminUser = await prisma.user.create({
     data: {
-      name: 'System Administrator',
-      email: 'admin@travellink.lk',
+      name: 'TourLink Admin',
+      email: 'admin@tourlink.com',
       password: adminPassword,
       role: Role.ADMIN,
-      profileImage: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+      profileImage: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80',
       phone: '+94 77 123 4567',
       department: 'Operations',
       status: UserStatus.ACTIVE,

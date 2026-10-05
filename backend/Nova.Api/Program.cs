@@ -328,7 +328,21 @@ app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapGet("/api/health", () => Results.Ok(new { status = "healthy", service = "Nova.Api", timestamp = DateTime.UtcNow }));
+app.MapGet("/health", () =>
+{
+    return Results.Ok(new
+    {
+        status = "Healthy"
+    });
+});
+
+app.MapGet("/api/health", () =>
+{
+    return Results.Ok(new
+    {
+        status = "Healthy"
+    });
+});
 
 app.MapControllers();
 

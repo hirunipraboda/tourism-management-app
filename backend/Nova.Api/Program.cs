@@ -13,6 +13,13 @@ using Nova.Api.Services.Agents;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure dynamic listening port from Render's $PORT environment variable if specified
+var port = Environment.GetEnvironmentVariable("PORT");
+if (!string.IsNullOrWhiteSpace(port))
+{
+    builder.WebHost.UseUrls($"http://+:{port}");
+}
+
 // 1. Configure JSON & Controllers
 builder.Services.AddControllers()
     .AddJsonOptions(options =>

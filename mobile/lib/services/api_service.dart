@@ -11,12 +11,16 @@ class ApiService {
   static String? authToken;
   static Map<String, dynamic>? currentUser;
 
+  static const String _defaultUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'https://tourism-planner-api.onrender.com/api',
+  );
+
   static String get baseUrl {
     if (customBaseUrl != null && customBaseUrl!.isNotEmpty) {
       return customBaseUrl!;
     }
-    // Port 5000 is reverse forwarded to 127.0.0.1 on both physical USB device and emulator
-    return 'http://127.0.0.1:5000/api';
+    return _defaultUrl;
   }
 
   static Map<String, String> _headers({bool needsAuth = true, bool isJson = true}) {

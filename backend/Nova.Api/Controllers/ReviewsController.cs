@@ -261,17 +261,15 @@ public class ReviewsController : ControllerBase
         }
         var userId = user != null ? user.Id : "5245563d-3954-4c06-b59a-bd11d2b945f7";
 
-        // Resolve valid destination UUID without querying unmapped columns
-        string? destId = "03f3f458-70cb-4414-b22e-b00d13132364";
+        // Resolve valid destination from Supabase database
+        Destination? dest = null;
         var requestedDest = dto.DestinationId ?? dto.TargetId ?? dto.TargetName;
         if (!string.IsNullOrWhiteSpace(requestedDest))
         {
-            var lower = requestedDest.ToLower();
-            if (lower.Contains("sigiriya") || lower.Contains("dest-1")) destId = "03f3f458-70cb-4414-b22e-b00d13132364";
-            else if (lower.Contains("ella") || lower.Contains("dest-2") || lower.Contains("arches")) destId = "5c762e65-51e8-4a1c-aeda-56859b2b7dbf";
-            else if (lower.Contains("kandy") || lower.Contains("dest-3") || lower.Contains("tooth")) destId = "34628ea0-4bd0-4960-b5fe-1b10bccd20eb";
-            else if (Guid.TryParse(requestedDest, out _)) destId = requestedDest;
+            dest = await _db.Destinations.FirstOrDefaultAsync(d => d.Id == requestedDest || d.Slug == requestedDest);
         }
+        dest ??= await _db.Destinations.FirstOrDefaultAsync();
+        var destId = dest?.Id;
 
         var newReview = new Review
         {
@@ -280,6 +278,9 @@ public class ReviewsController : ControllerBase
             DestinationId = destId,
             Rating = rating,
             Comment = finalComment,
+            SentimentLabel = "Positive",
+            SentimentScore = 0.95,
+            Status = ReviewStatus.Published,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };

@@ -40,3 +40,9 @@ ai-agents/notebooks/data/
 mobile/*.png
 scratch/
 
+# Local configuration & secrets
+**/appsettings.Development.json
+**/appsettings.*.local.json
+**/appsettings.local.json
+
+

@@ -4,6 +4,7 @@ import 'screens/home_screen.dart';
 import 'screens/ai_planner_screen.dart';
 import 'screens/bookings_screen.dart';
 import 'screens/destinations_attractions_screen.dart';
+import 'screens/reviews_screen.dart';
 
 void main() {
   runApp(const NovaTouristApp());
@@ -47,6 +48,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     DestinationsAttractionsScreen(),
     AiPlannerScreen(),
     BookingsScreen(),
+    ReviewsScreen(),
   ];
 
   @override
@@ -83,6 +85,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             icon: Icon(Icons.bookmark_outline),
             selectedIcon: Icon(Icons.bookmark),
             label: 'My Trips',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.rate_review_outlined),
+            selectedIcon: Icon(Icons.rate_review),
+            label: 'Reviews',
           ),
         ],
       ),

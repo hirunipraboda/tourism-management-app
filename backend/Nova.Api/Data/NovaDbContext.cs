@@ -20,6 +20,8 @@ public class NovaDbContext : DbContext
     public DbSet<WorkflowAuditLog> AuditLogs => Set<WorkflowAuditLog>();
     public DbSet<ItineraryApproval> Approvals => Set<ItineraryApproval>();
     public DbSet<TransportOption> TransportOptions => Set<TransportOption>();
+    public DbSet<Review> Reviews => Set<Review>();
+    public DbSet<ReviewHelpfulVote> ReviewHelpfulVotes => Set<ReviewHelpfulVote>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -52,6 +54,10 @@ public class NovaDbContext : DbContext
 
         modelBuilder.Entity<ItineraryApproval>()
             .Property(a => a.NewStatus)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<Review>()
+            .Property(r => r.Status)
             .HasConversion<string>();
 
         // Indexes

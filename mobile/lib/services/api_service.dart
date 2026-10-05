@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/travel_models.dart';
+import '../models/review_item.dart';
 
 class ApiService {
   // Configured to point to the ASP.NET Core Web API (use 10.0.2.2 for Android emulator or localhost for Web/Desktop)
@@ -206,5 +207,49 @@ class ApiService {
         ),
       ],
     );
+  }
+
+  // ─── Reviews ────────────────────────────────────────────────────────────────
+
+  static Future<List<ReviewItem>> getReviews({String? destinationId}) async {
+    try {
+      final uri = destinationId != null
+          ? Uri.parse('$baseUrl/reviews?destinationId=$destinationId')
+          : Uri.parse('$baseUrl/reviews');
+      final res = await http.get(uri);
+      if (res.statusCode == 200) {
+        final body = jsonDecode(res.body);
+        final list = (body['data'] ?? body) as List<dynamic>;
+        return list
+            .map((item) => ReviewItem.fromJson(item as Map<String, dynamic>))
+            .toList();
+      }
+    } catch (_) {}
+    // Offline mock fallback
+    return ReviewItem.mocks;
+  }
+
+  static Future<Map<String, dynamic>> submitReview({
+    required String comment,
+    required int rating,
+    String? destinationId,
+  }) async {
+    try {
+      final res = await http.post(
+        Uri.parse('$baseUrl/reviews'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'comment': comment,
+          'rating': rating,
+          if (destinationId != null) 'destinationId': destinationId,
+        }),
+      );
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        return {'success': true, 'data': jsonDecode(res.body)};
+      }
+      return {'success': false, 'message': 'Server returned ${res.statusCode}'};
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
   }
 }

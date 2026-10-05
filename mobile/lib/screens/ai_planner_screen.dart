@@ -104,6 +104,7 @@ class _AiPlannerScreenState extends State<AiPlannerScreen> {
                             const Text('Travelers', style: TextStyle(fontWeight: FontWeight.w600)),
                             const SizedBox(height: 6),
                             DropdownButtonFormField<int>(
+                              // ignore: deprecated_member_use
                               value: _travelers,
                               decoration: const InputDecoration(
                                 border: OutlineInputBorder(),

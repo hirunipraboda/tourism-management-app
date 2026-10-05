@@ -2,15 +2,20 @@ namespace Nova.Api.DTOs.Recommendations;
 
 public class RecommendationFilterRequestDto
 {
-    public List<string>? Interests { get; set; } = new();
+    public string? DestinationId { get; set; }
     public string? Destination { get; set; }
-    public double? MinRating { get; set; }
+    public List<string>? Interests { get; set; } = new();
+    public string? TripStyle { get; set; }
+    public string? TravelStyle { get; set; }
+    public int? NumberOfTravelers { get; set; }
+    public decimal? Budget { get; set; }
     public decimal? MaxBudget { get; set; }
+    public double? MinRating { get; set; }
     public double? MaxDistance { get; set; }
     public string? ActivityType { get; set; }
     public string? SearchQuery { get; set; }
-    public string? TravelStyle { get; set; }
     public string? PreferredEnvironment { get; set; }
+    public int MaxResults { get; set; } = 10;
 }
 
 public class AiRecommendationDto
@@ -42,12 +47,30 @@ public class AiRecommendationDto
     public double? DistanceKm { get; set; }
 }
 
+public class RecommendedAttractionDto
+{
+    public string Id { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string Category { get; set; } = string.Empty;
+    public string? Location { get; set; }
+    public decimal? EntryFee { get; set; }
+    public int? VisitDurationMinutes { get; set; }
+    public string? ImageUrl { get; set; }
+    public double? Latitude { get; set; }
+    public double? Longitude { get; set; }
+    public double RelevanceScore { get; set; }
+    public string ReasonForRecommendation { get; set; } = string.Empty;
+}
+
 public class RecommendationResponseDto
 {
     public List<AiRecommendationDto> Recommendations { get; set; } = new();
     public string AnalysisSummary { get; set; } = "";
+    public string? Summary { get; set; }
     public List<string> InformationLimitations { get; set; } = new();
     public string? UnsupportedRequestsNote { get; set; }
     public string ValidationStatus { get; set; } = "PASSED";
     public List<object>? ExecutionTrace { get; set; } = new();
+    public DateTime GeneratedAt { get; set; } = DateTime.UtcNow;
 }

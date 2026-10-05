@@ -65,6 +65,16 @@ builder.Services.AddScoped<ISafetyValidationAgent, SafetyValidationAgent>();
 // 5. Register Agentic AI Workflow Orchestrator
 builder.Services.AddScoped<IItineraryGenerationService, ItineraryGenerationService>();
 
+// 6. Register Review Service
+builder.Services.AddScoped<IReviewService, ReviewService>();
+
+// Register AI Agent Client for Recommendations
+builder.Services.AddHttpClient<IAiAgentClient, AiAgentClient>(client =>
+{
+    var baseUrl = builder.Configuration["AiService:BaseUrl"] ?? "http://localhost:8000";
+    client.BaseAddress = new Uri(baseUrl);
+});
+
 // 7. JWT Authentication & Role-Based Authorization
 var jwtSecret = builder.Configuration["Jwt:Secret"] ?? "SuperSecretNovaEnterpriseTourismKey2026!#$";
 var key = Encoding.UTF8.GetBytes(jwtSecret);

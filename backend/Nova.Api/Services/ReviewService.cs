@@ -5,30 +5,6 @@ using Nova.Api.Entities;
 
 namespace Nova.Api.Services;
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Review Service Interface
-// ─────────────────────────────────────────────────────────────────────────────
-
-public interface IReviewService
-{
-    Task<ReviewResponseDto> CreateReviewAsync(string userId, ReviewCreateDto dto);
-    Task<ReviewResponseDto?> GetReviewByIdAsync(string id);
-    Task<ReviewResponseDto?> UpdateReviewAsync(string id, string userId, ReviewUpdateDto dto);
-    Task<bool> DeleteReviewAsync(string id, string userId);
-    Task<(int HelpfulCount, bool IsHelpfulByUser)?> ToggleHelpfulAsync(string id, string userId);
-
-    Task<IEnumerable<ReviewResponseDto>> GetAllReviewsAsync(string? entityType, int? minRating, string? search);
-    Task<IEnumerable<ReviewResponseDto>> GetReviewsByDestinationAsync(string destinationId);
-    Task<ReviewSummaryDto> GetReviewSummaryByDestinationAsync(string destinationId);
-
-    Task<AnalyticsDto> GetAnalyticsAsync();
-    Task<ReviewResponseDto?> UpdateReviewStatusAsync(string id, string? status, string? operatorNotes);
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Review Service Implementation
-// ─────────────────────────────────────────────────────────────────────────────
-
 public class ReviewService : IReviewService
 {
     private readonly NovaDbContext _db;
@@ -38,68 +14,75 @@ public class ReviewService : IReviewService
         _db = db;
     }
 
-    private async Task<ReviewResponseDto> MapToDto(Review review)
+    public async Task<List<ReviewResponseDto>> GetReviewsAsync(string? destinationId = null)
     {
-        var user = await _db.Users.FindAsync(review.UserId);
-        var helpfulCount = await _db.ReviewHelpfulVotes.CountAsync(v => v.ReviewId == review.Id);
+        var query = _db.Reviews
+            .Include(r => r.User)
+            .Include(r => r.HelpfulVotes)
+            .AsQueryable();
 
-        return new ReviewResponseDto
-        {
-            Id = int.TryParse(review.Id, out var intId) ? intId : 0,
-            TouristId = review.UserId,
-            TouristName = user?.Name ?? "Anonymous",
-            EntityId = 0,
-            EntityType = "Destination",
-            EntityName = review.DestinationId ?? string.Empty,
-            Rating = review.Rating,
-            Title = string.Empty,
-            Comment = review.Comment,
-            CreatedAt = review.CreatedAt,
-            Status = review.Status.ToString(),
-            HelpfulCount = helpfulCount,
-            IsHelpfulByUser = false
-        };
-    }
+        if (!string.IsNullOrEmpty(destinationId))
+            query = query.Where(r => r.DestinationId == destinationId);
 
-    public async Task<ReviewResponseDto> CreateReviewAsync(string userId, ReviewCreateDto dto)
-    {
-        var review = new Review
-        {
-            Id = Guid.NewGuid().ToString(),
-            UserId = userId,
-            DestinationId = dto.EntityId > 0 ? dto.EntityId.ToString() : null,
-            Rating = dto.Rating,
-            Comment = dto.Comment,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
-        };
+        var reviews = await query
+            .OrderByDescending(r => r.CreatedAt)
+            .ToListAsync();
 
-        _db.Reviews.Add(review);
-        await _db.SaveChangesAsync();
-        return await MapToDto(review);
+        return reviews.Select(r => MapToDto(r, null)).ToList();
     }
 
     public async Task<ReviewResponseDto?> GetReviewByIdAsync(string id)
     {
-        var review = await _db.Reviews.FindAsync(id);
-        return review is null ? null : await MapToDto(review);
+        var review = await _db.Reviews
+            .Include(r => r.User)
+            .Include(r => r.HelpfulVotes)
+            .FirstOrDefaultAsync(r => r.Id == id);
+
+        return review is null ? null : MapToDto(review, null);
     }
 
-    public async Task<ReviewResponseDto?> UpdateReviewAsync(string id, string userId, ReviewUpdateDto dto)
+    public async Task<ReviewResponseDto> CreateReviewAsync(string userId, CreateReviewDto dto)
     {
-        var review = await _db.Reviews.FirstOrDefaultAsync(r => r.Id == id && r.UserId == userId);
+        var review = new Review
+        {
+            UserId = userId,
+            DestinationId = dto.DestinationId,
+            Comment = dto.Comment,
+            Rating = Math.Clamp(dto.Rating, 1, 5),
+            Status = ReviewStatus.Approved
+        };
+
+        _db.Reviews.Add(review);
+        await _db.SaveChangesAsync();
+
+        await _db.Entry(review).Reference(r => r.User).LoadAsync();
+
+        return MapToDto(review, userId);
+    }
+
+    public async Task<ReviewResponseDto?> UpdateReviewAsync(string id, string userId, UpdateReviewDto dto)
+    {
+        var review = await _db.Reviews
+            .Include(r => r.User)
+            .Include(r => r.HelpfulVotes)
+            .FirstOrDefaultAsync(r => r.Id == id && r.UserId == userId);
+
         if (review is null) return null;
 
-        review.Rating = dto.Rating;
-        review.Comment = dto.Comment;
+        if (dto.Comment is not null) review.Comment = dto.Comment;
+        if (dto.Rating.HasValue) review.Rating = Math.Clamp(dto.Rating.Value, 1, 5);
         review.UpdatedAt = DateTime.UtcNow;
+
         await _db.SaveChangesAsync();
-        return await MapToDto(review);
+        return MapToDto(review, userId);
     }
 
-    public async Task<bool> DeleteReviewAsync(string id, string userId)
+    public async Task<bool> DeleteReviewAsync(string id, string userId, bool isAdmin = false)
     {
-        var review = await _db.Reviews.FirstOrDefaultAsync(r => r.Id == id && r.UserId == userId);
+        var review = isAdmin
+            ? await _db.Reviews.FirstOrDefaultAsync(r => r.Id == id)
+            : await _db.Reviews.FirstOrDefaultAsync(r => r.Id == id && r.UserId == userId);
+
         if (review is null) return false;
 
         _db.Reviews.Remove(review);
@@ -107,107 +90,66 @@ public class ReviewService : IReviewService
         return true;
     }
 
-    public async Task<(int HelpfulCount, bool IsHelpfulByUser)?> ToggleHelpfulAsync(string id, string userId)
+    public async Task<bool> VoteHelpfulAsync(string reviewId, string userId)
     {
-        var review = await _db.Reviews.FindAsync(id);
-        if (review is null) return null;
+        var exists = await _db.ReviewHelpfulVotes
+            .AnyAsync(v => v.ReviewId == reviewId && v.UserId == userId);
 
-        var vote = await _db.ReviewHelpfulVotes
-            .FirstOrDefaultAsync(v => v.ReviewId == id && v.TouristId == userId);
+        if (exists) return false;
 
-        bool isHelpfulByUser;
-        if (vote is null)
+        _db.ReviewHelpfulVotes.Add(new ReviewHelpfulVote
         {
-            _db.ReviewHelpfulVotes.Add(new ReviewHelpfulVote { ReviewId = id, TouristId = userId });
-            isHelpfulByUser = true;
-        }
-        else
-        {
-            _db.ReviewHelpfulVotes.Remove(vote);
-            isHelpfulByUser = false;
-        }
+            ReviewId = reviewId,
+            UserId = userId
+        });
 
         await _db.SaveChangesAsync();
-        var helpfulCount = await _db.ReviewHelpfulVotes.CountAsync(v => v.ReviewId == id);
-        return (helpfulCount, isHelpfulByUser);
+        return true;
     }
 
-    public async Task<IEnumerable<ReviewResponseDto>> GetAllReviewsAsync(string? entityType, int? minRating, string? search)
+    public async Task<bool> UnvoteHelpfulAsync(string reviewId, string userId)
     {
-        var query = _db.Reviews.AsQueryable();
+        var vote = await _db.ReviewHelpfulVotes
+            .FirstOrDefaultAsync(v => v.ReviewId == reviewId && v.UserId == userId);
 
-        if (minRating.HasValue)
-            query = query.Where(r => r.Rating >= minRating.Value);
+        if (vote is null) return false;
 
-        if (!string.IsNullOrWhiteSpace(search))
-            query = query.Where(r => r.Comment.Contains(search));
-
-        var reviews = await query.OrderByDescending(r => r.CreatedAt).Take(100).ToListAsync();
-
-        var result = new List<ReviewResponseDto>();
-        foreach (var r in reviews)
-            result.Add(await MapToDto(r));
-        return result;
+        _db.ReviewHelpfulVotes.Remove(vote);
+        await _db.SaveChangesAsync();
+        return true;
     }
 
-    public async Task<IEnumerable<ReviewResponseDto>> GetReviewsByDestinationAsync(string destinationId)
+    public async Task<ReviewResponseDto?> UpdateStatusAsync(string id, ReviewStatus status)
     {
-        var reviews = await _db.Reviews
-            .Where(r => r.DestinationId == destinationId)
-            .OrderByDescending(r => r.CreatedAt)
-            .ToListAsync();
+        var review = await _db.Reviews
+            .Include(r => r.User)
+            .Include(r => r.HelpfulVotes)
+            .FirstOrDefaultAsync(r => r.Id == id);
 
-        var result = new List<ReviewResponseDto>();
-        foreach (var r in reviews)
-            result.Add(await MapToDto(r));
-        return result;
-    }
-
-    public async Task<ReviewSummaryDto> GetReviewSummaryByDestinationAsync(string destinationId)
-    {
-        var reviews = await _db.Reviews
-            .Where(r => r.DestinationId == destinationId)
-            .ToListAsync();
-
-        var distribution = new Dictionary<int, int>();
-        for (int i = 1; i <= 5; i++)
-            distribution[i] = reviews.Count(r => r.Rating == i);
-
-        return new ReviewSummaryDto
-        {
-            TotalReviews = reviews.Count,
-            AverageRating = reviews.Any() ? reviews.Average(r => r.Rating) : 0,
-            RatingDistribution = distribution
-        };
-    }
-
-    public async Task<AnalyticsDto> GetAnalyticsAsync()
-    {
-        var reviews = await _db.Reviews.ToListAsync();
-        var total = reviews.Count;
-        var avgRating = total > 0 ? reviews.Average(r => r.Rating) : 0;
-        var positiveCount = reviews.Count(r => r.Rating >= 4);
-
-        return new AnalyticsDto
-        {
-            TotalReviews = total,
-            AverageRating = avgRating,
-            FlaggedCount = reviews.Count(r => r.Status == ReviewStatus.Flagged),
-            PendingCount = 0,
-            PositivePercentage = total > 0 ? Math.Round((double)positiveCount / total * 100, 1) : 0
-        };
-    }
-
-    public async Task<ReviewResponseDto?> UpdateReviewStatusAsync(string id, string? status, string? operatorNotes)
-    {
-        var review = await _db.Reviews.FindAsync(id);
         if (review is null) return null;
 
-        if (!string.IsNullOrWhiteSpace(status) && Enum.TryParse<ReviewStatus>(status, out var parsed))
-            review.Status = parsed;
-
+        review.Status = status;
         review.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync();
-        return await MapToDto(review);
+
+        return MapToDto(review, null);
+    }
+
+    private static ReviewResponseDto MapToDto(Review review, string? currentUserId)
+    {
+        return new ReviewResponseDto
+        {
+            Id = review.Id,
+            UserId = review.UserId,
+            UserName = review.User?.Name,
+            DestinationId = review.DestinationId,
+            Comment = review.Comment,
+            Rating = review.Rating,
+            Status = review.Status.ToString(),
+            HelpfulVotesCount = review.HelpfulVotes.Count,
+            HasVoted = currentUserId != null && review.HelpfulVotes.Any(v => v.UserId == currentUserId),
+            CreatedAt = review.CreatedAt,
+            UpdatedAt = review.UpdatedAt
+        };
     }
 }

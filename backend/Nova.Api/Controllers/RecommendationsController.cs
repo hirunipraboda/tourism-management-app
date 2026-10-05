@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Nova.Api.DTOs.Common;
 using Nova.Api.DTOs.Recommendations;
@@ -6,7 +7,7 @@ using Nova.Api.Services;
 namespace Nova.Api.Controllers;
 
 [ApiController]
-[Route("api/recommendations")]
+[Route("api/[controller]")]
 public class RecommendationsController : ControllerBase
 {
     private readonly IAiAgentClient _aiAgentClient;
@@ -18,14 +19,15 @@ public class RecommendationsController : ControllerBase
         _logger = logger;
     }
 
-    [HttpPost("smart-match")]
-    public async Task<IActionResult> GetSmartMatchRecommendations([FromBody] RecommendationFilterRequestDto request)
+    /// <summary>
+    /// Get AI-powered attraction recommendations based on trip preferences.
+    /// </summary>
+    [HttpPost]
+    [ProducesResponseType(typeof(ApiResponse<RecommendationResponseDto>), 200)]
+    public async Task<IActionResult> GetRecommendations([FromBody] RecommendationFilterRequestDto request)
     {
         try
         {
-            _logger.LogInformation("Processing smart match recommendations via RecommendationFeedbackAgent for interests: {Interests}", 
-                string.Join(", ", request.Interests ?? new List<string>()));
-
             var result = await _aiAgentClient.GetRecommendationsAsync(request);
             if (result != null && result.Recommendations.Count > 0)
             {
@@ -34,19 +36,31 @@ public class RecommendationsController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogWarning("AI Recommendation Agent encounter issue: {Message}. Serving local ground-truth fallback.", ex.Message);
+            _logger.LogWarning("AI Recommendation Agent encountered issue: {Message}. Serving local ground-truth fallback.", ex.Message);
         }
 
-        // Resilient Fallback grounded in Sri Lanka tourism data
         var fallback = GetFallbackRecommendations(request);
         return Ok(ApiResponse<RecommendationResponseDto>.Ok(fallback, "Recommendations grounded in verified review knowledge base."));
     }
 
-    [HttpGet]
-    public async Task<IActionResult> GetRecommendations([FromQuery] string? interests, [FromQuery] double? minRating, [FromQuery] string? activityType, [FromQuery] string? search)
+    [HttpPost("smart-match")]
+    public async Task<IActionResult> GetSmartMatchRecommendations([FromBody] RecommendationFilterRequestDto request)
     {
-        var interestList = string.IsNullOrWhiteSpace(interests) 
-            ? new List<string>() 
+        return await GetRecommendations(request);
+    }
+
+    /// <summary>
+    /// Get recommendations with optional query filters.
+    /// </summary>
+    [HttpGet]
+    public async Task<IActionResult> GetRecommendationsByQuery(
+        [FromQuery] string? interests,
+        [FromQuery] double? minRating,
+        [FromQuery] string? activityType,
+        [FromQuery] string? search)
+    {
+        var interestList = string.IsNullOrWhiteSpace(interests)
+            ? new List<string>()
             : interests.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
 
         var request = new RecommendationFilterRequestDto
@@ -57,7 +71,28 @@ public class RecommendationsController : ControllerBase
             SearchQuery = search
         };
 
-        return await GetSmartMatchRecommendations(request);
+        return await GetRecommendations(request);
+    }
+
+    /// <summary>
+    /// Get recommendations for a specific destination.
+    /// </summary>
+    [HttpGet("destination/{destinationId}")]
+    [ProducesResponseType(typeof(ApiResponse<RecommendationResponseDto>), 200)]
+    public async Task<IActionResult> GetDestinationRecommendations(
+        string destinationId,
+        [FromQuery] string? interests,
+        [FromQuery] string? tripStyle)
+    {
+        var request = new RecommendationFilterRequestDto
+        {
+            DestinationId = destinationId,
+            Interests = interests?.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList(),
+            TripStyle = tripStyle,
+            MaxResults = 10
+        };
+
+        return await GetRecommendations(request);
     }
 
     private static RecommendationResponseDto GetFallbackRecommendations(RecommendationFilterRequestDto request)
@@ -67,57 +102,57 @@ public class RecommendationsController : ControllerBase
             new()
             {
                 Id = "rec-001",
-                Name = "Temple of the Sacred Tooth Relic (Sri Dalada Maligawa)",
-                Location = "Kandy",
-                Category = "Culture",
+                Name = "Sigiriya Ancient Rock Fortress",
+                Location = "Central Province",
+                Category = "Cultural",
                 TargetType = "attraction",
                 Rating = 4.9,
-                ReviewCount = 380,
-                Price = "$18 / person",
+                ReviewCount = 520,
+                Price = "$30 / person",
                 SuitabilityScore = 96,
                 InterestMatch = 98,
-                RatingMatch = 95,
+                RatingMatch = 98,
                 BudgetMatch = 92,
-                LocationMatch = 97,
-                PopularityScore = 98,
-                Explanation = "Deeply spiritual and sacred atmosphere with magnificent Kandyan gold architecture and drumming rituals during the evening puja.",
-                Image = "https://images.unsplash.com/photo-1546708973-b339540b5162?auto=format&fit=crop&w=1200&q=80",
-                SentimentSummary = "Highly positive (5/5 rating) with praise for its solemn spiritual environment and architectural majesty.",
+                LocationMatch = 95,
+                PopularityScore = 99,
+                Explanation = "UNESCO World Heritage site featuring 5th-century frescoes, water gardens, and dramatic 360-degree summit views.",
+                Image = "https://images.unsplash.com/photo-1588598198321-9735fd52455d?auto=format&fit=crop&w=1200&q=80",
+                SentimentSummary = "98% positive sentiment across 500+ verified tourist reviews praising the historic preservation and dawn vistas.",
                 SupportingFeedback = new List<string>
                 {
-                    "Deeply spiritual and sacred atmosphere with magnificent Kandyan gold architecture and drumming rituals during the evening puja.",
-                    "Entry fee was reasonable for such a historic world heritage site."
+                    "Ascending the lion paws stairway at sunrise is an unparalleled archaeological encounter.",
+                    "Museum at the base provides essential historical context before the climb."
                 },
-                Limitations = new List<string> { "Respectful attire covering knees and shoulders is strictly required." },
-                ScoreBreakdown = "Matched Culture and Heritage preferences. High sentiment (4.9/5) and verified budget feasibility.",
+                Limitations = new List<string> { "Steep 1,200-step stair climb requires moderate physical fitness." },
+                ScoreBreakdown = "High suitability due to unmatched cultural significance and exceptional traveler ratings.",
                 IsAiGenerated = true
             },
             new()
             {
                 Id = "rec-002",
-                Name = "Sigiriya Ancient Citadel & Sky Palace Fortress",
-                Location = "Sigiriya",
-                Category = "History",
+                Name = "Pekoe Trail & Ella Highland Tea Valleys",
+                Location = "Ella",
+                Category = "Adventure",
                 TargetType = "attraction",
-                Rating = 4.9,
-                ReviewCount = 540,
-                Price = "$36 / person",
-                SuitabilityScore = 95,
+                Rating = 4.8,
+                ReviewCount = 380,
+                Price = "Free / Guided $25",
+                SuitabilityScore = 94,
                 InterestMatch = 96,
-                RatingMatch = 97,
-                BudgetMatch = 88,
-                LocationMatch = 94,
-                PopularityScore = 99,
-                Explanation = "World-famous UNESCO 5th-century rock citadel with ancient frescoes, water gardens, and dramatic 360-degree summit views.",
-                Image = "https://images.unsplash.com/photo-1586861635167-e5223aadc9fe?auto=format&fit=crop&w=1200&q=80",
-                SentimentSummary = "Overwhelmingly awe-inspiring reviews; visitors strongly recommend sunrise climb to beat tropical heat.",
+                RatingMatch = 94,
+                BudgetMatch = 95,
+                LocationMatch = 93,
+                PopularityScore = 94,
+                Explanation = "Scenic hiking trails meandering through cloud forest, historic tea plantations, and panoramic mist-covered mountain gaps.",
+                Image = "https://images.unsplash.com/photo-1546708973-b339540b5162?auto=format&fit=crop&w=1200&q=80",
+                SentimentSummary = "Consistently praised for temperate mountain climate, tranquil walking paths, and dramatic sunrise vantage points.",
                 SupportingFeedback = new List<string>
                 {
-                    "One of the wonders of the ancient world. The climb through the lion paws to the summit palace ruins was breathtaking.",
-                    "Start early at 6:30 AM to beat the crowd and tropical heat."
+                    "Morning hikes through the tea bushes with distant waterfall sounds was the highlight of our hill-country journey.",
+                    "Ella Rock summit offers breathtaking valley panoramas."
                 },
-                Limitations = new List<string> { "1,200 steep steps to the top summit; not recommended for visitors with severe vertigo." },
-                ScoreBreakdown = "Matched History and Adventure preferences. Top rating in review dataset.",
+                Limitations = new List<string> { "Afternoon tropical showers are common; early morning starts are recommended." },
+                ScoreBreakdown = "Perfect for Nature, Hiking, and Scenic photography preferences.",
                 IsAiGenerated = true
             },
             new()

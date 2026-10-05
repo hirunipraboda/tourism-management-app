@@ -80,17 +80,19 @@ export const AppRoutes: React.FC = () => {
         </PageContainer>
       } />
 
+      {/* Publicly Accessible Explorer, Planner, Trips & Review Routes */}
+      <Route path="/trips" element={<TripsPage />} />
+      <Route path="/plan-trip" element={<ManualTripPlannerPage />} />
+      <Route path="/manual-planner" element={<ManualTripPlannerPage />} />
+      <Route path="/ai-workflows" element={<AITripPlannerPage />} />
+      <Route path="/planner" element={<AITripPlannerPage />} />
+      <Route path="/reviews" element={<ReviewsAndRecommendationsPage />} />
+      <Route path="/reviews/my-reviews" element={<ReviewsAndRecommendationsPage />} />
+      <Route path="/recommendations" element={<ReviewsAndRecommendationsPage />} />
+      <Route path="/reviews-recommendations" element={<ReviewsAndRecommendationsPage />} />
+
       {/* Authenticated USER Protected Routes */}
       <Route element={<ProtectedRoute />}>
-        <Route path="/trips" element={<TripsPage />} />
-        <Route path="/plan-trip" element={<ManualTripPlannerPage />} />
-        <Route path="/manual-planner" element={<ManualTripPlannerPage />} />
-        <Route path="/ai-workflows" element={<AITripPlannerPage />} />
-        <Route path="/planner" element={<AITripPlannerPage />} />
-        <Route path="/reviews" element={<ReviewsAndRecommendationsPage />} />
-        <Route path="/reviews/my-reviews" element={<ReviewsAndRecommendationsPage />} />
-        <Route path="/recommendations" element={<ReviewsAndRecommendationsPage />} />
-        <Route path="/reviews-recommendations" element={<ReviewsAndRecommendationsPage />} />
         <Route path="/profile" element={<ProfilePage />} />
       </Route>
 

@@ -73,28 +73,33 @@ class ReviewService {
       // ignore
     }
 
-    const isCurrentTourist = Boolean(currentUserId && r.userId === currentUserId);
+    const isCurrentTourist = Boolean(
+      r.isCurrentTourist === true ||
+      (currentUserId && r.userId === currentUserId) ||
+      this.reviews.some((existing) => existing.id === r.id && existing.isCurrentTourist)
+    );
 
     return {
       id: r.id,
-      touristName: r.user?.name || 'Verified Traveler',
+      touristName: r.touristName || r.user?.name || 'Verified Traveler',
       touristAvatar:
+        r.touristAvatar ||
         r.user?.profileImage ||
         'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80',
-      touristCountry: 'Sri Lanka',
-      travelerType: 'Solo',
-      targetType: r.destinationId ? 'destination' : (r.tourId ? 'tour' : 'attraction'),
-      targetId: r.destinationId || r.tourId || '',
-      targetName: r.destination?.name || r.tour?.title || 'Sri Lanka Destination',
+      touristCountry: r.touristCountry || 'Sri Lanka',
+      travelerType: r.travelerType || 'Solo',
+      targetType: r.targetType || (r.destinationId ? 'destination' : (r.tourId ? 'tour' : 'attraction')),
+      targetId: r.targetId || r.destinationId || r.tourId || '',
+      targetName: r.targetName || r.destination?.name || r.tour?.title || 'Sri Lanka Destination',
       rating: r.rating || 5,
-      title,
-      comment,
-      date: r.createdAt ? new Date(r.createdAt).toISOString().split('T')[0] : 'Recently',
-      helpfulCount: 0,
-      isHelpfulByUser: false,
-      status: 'Published',
-      photos: [],
-      tags: ['Verified Travel', 'Community Feedback'],
+      title: r.title || title,
+      comment: r.comment || comment,
+      date: r.date || (r.createdAt ? new Date(r.createdAt).toISOString().split('T')[0] : 'Recently'),
+      helpfulCount: r.helpfulCount || 0,
+      isHelpfulByUser: Boolean(r.isHelpfulByUser),
+      status: r.status || 'Published',
+      photos: r.photos || [],
+      tags: r.tags || ['Verified Travel', 'Community Feedback'],
       highlightRating: {
         experience: r.rating || 5,
         value: Number(((r.rating || 5) * 0.95).toFixed(1)),
@@ -194,10 +199,24 @@ class ReviewService {
     try {
       const res = await fetchApi<any[]>('/reviews/my-reviews');
       if (res && res.data && Array.isArray(res.data) && res.data.length > 0) {
-        return res.data.map((r: any) => ({
+        const dbReviews = res.data.map((r: any) => ({
           ...this.mapDbReview(r),
           isCurrentTourist: true,
         }));
+
+        // Synchronize with memory cache so Reviews tab also gets these reviews
+        for (const dr of dbReviews) {
+          const existingIdx = this.reviews.findIndex((x) => x.id === dr.id);
+          if (existingIdx >= 0) {
+            this.reviews[existingIdx] = { ...this.reviews[existingIdx], ...dr, isCurrentTourist: true };
+          } else {
+            this.reviews.unshift(dr);
+          }
+        }
+
+        const dbIds = new Set(dbReviews.map((r) => r.id));
+        const localCurrent = this.reviews.filter((r) => r.isCurrentTourist && !dbIds.has(r.id));
+        return [...localCurrent, ...dbReviews];
       }
     } catch {
       // fallback to local filter

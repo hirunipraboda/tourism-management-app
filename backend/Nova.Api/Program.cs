@@ -137,18 +137,33 @@ builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo
     {
-        Title = "NOVA - Trip & Itinerary Management API",
+        Title = "TourLink / NOVA Travel Management & AI Tour Ecosystem API",
         Version = "v1",
-        Description = "Production ASP.NET Core Web API with EF Core, PostgreSQL, JWT/RBAC & 4-Agent AI Itinerary Generation Workflow"
+        Description = "Enterprise RESTful API for TourLink & NOVA Tourism Management System. Features AI agent workflows, destination guides, tour packages, bookings, payment receipts, reviews, and role-based access control (Admin, TourismOperator, Tourist).",
+        Contact = new OpenApiContact
+        {
+            Name = "TourLink / NOVA Engineering",
+            Email = "support@tourlink.lk"
+        }
     });
+
+    c.CustomSchemaIds(type => type.FullName?.Replace("+", "."));
+
+    var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    if (File.Exists(xmlPath))
+    {
+        c.IncludeXmlComments(xmlPath, includeControllerXmlComments: true);
+    }
 
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Description = "JWT Authorization header using the Bearer scheme. Format: 'Bearer {token}'",
+        Description = "JWT Authorization header using the Bearer scheme. Enter 'Bearer {token}' below.\nExample: Bearer eyJhbGciOi...",
         Name = "Authorization",
         In = ParameterLocation.Header,
         Type = SecuritySchemeType.ApiKey,
-        Scheme = "Bearer"
+        Scheme = "Bearer",
+        BearerFormat = "JWT"
     });
 
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -175,20 +190,97 @@ using (var scope = app.Services.CreateScope())
     try
     {
         var db = scope.ServiceProvider.GetRequiredService<NovaDbContext>();
+        await db.Database.MigrateAsync();
         try
         {
             await db.Database.ExecuteSqlRawAsync(@"
+                ALTER TABLE users ADD COLUMN IF NOT EXISTS status text DEFAULT 'ACTIVE';
                 ALTER TABLE users ADD COLUMN IF NOT EXISTS phone text;
                 ALTER TABLE users ADD COLUMN IF NOT EXISTS bio text;
                 ALTER TABLE users ADD COLUMN IF NOT EXISTS location text;
                 ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_image text;
+
+                ALTER TABLE destinations ADD COLUMN IF NOT EXISTS district text;
+                ALTER TABLE destinations ADD COLUMN IF NOT EXISTS category text;
+                ALTER TABLE destinations ADD COLUMN IF NOT EXISTS review_count integer DEFAULT 0;
+                ALTER TABLE destinations ADD COLUMN IF NOT EXISTS entry_fee double precision DEFAULT 0.0;
+                ALTER TABLE destinations ADD COLUMN IF NOT EXISTS opening_time text;
+                ALTER TABLE destinations ADD COLUMN IF NOT EXISTS closing_time text;
+                ALTER TABLE destinations ADD COLUMN IF NOT EXISTS best_time_to_visit text;
+                ALTER TABLE destinations ADD COLUMN IF NOT EXISTS is_active boolean DEFAULT true;
+                ALTER TABLE destinations ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT NOW();
+
+                ALTER TABLE transport_options ADD COLUMN IF NOT EXISTS provider text;
+                ALTER TABLE transport_options ADD COLUMN IF NOT EXISTS vehicle_type text;
+                ALTER TABLE transport_options ADD COLUMN IF NOT EXISTS estimated_cost numeric;
+                ALTER TABLE transport_options ADD COLUMN IF NOT EXISTS status text;
+                ALTER TABLE transport_options ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone;
+
+                ALTER TABLE reviews ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT NOW();
+                ALTER TABLE reviews ALTER COLUMN sentiment_label DROP NOT NULL;
+                ALTER TABLE reviews ALTER COLUMN sentiment_score DROP NOT NULL;
+                ALTER TABLE reviews ALTER COLUMN status DROP NOT NULL;
+                ALTER TABLE reviews ALTER COLUMN sentiment_label SET DEFAULT 'Positive';
+                ALTER TABLE reviews ALTER COLUMN sentiment_score SET DEFAULT 0.0;
+                ALTER TABLE reviews ALTER COLUMN status SET DEFAULT 'Published';
+
+                ALTER TABLE attractions ADD COLUMN IF NOT EXISTS image_url text;
+                ALTER TABLE attractions ADD COLUMN IF NOT EXISTS category text;
+                ALTER TABLE attractions ADD COLUMN IF NOT EXISTS entry_fee double precision DEFAULT 0.0;
+                ALTER TABLE attractions ADD COLUMN IF NOT EXISTS opening_time text;
+                ALTER TABLE attractions ADD COLUMN IF NOT EXISTS closing_time text;
+                ALTER TABLE attractions ADD COLUMN IF NOT EXISTS latitude double precision;
+                ALTER TABLE attractions ADD COLUMN IF NOT EXISTS longitude double precision;
+                ALTER TABLE attractions ADD COLUMN IF NOT EXISTS duration_hours double precision DEFAULT 2.0;
+                ALTER TABLE attractions ADD COLUMN IF NOT EXISTS rating double precision DEFAULT 4.5;
+                ALTER TABLE attractions ADD COLUMN IF NOT EXISTS review_count integer DEFAULT 0;
+                ALTER TABLE attractions ADD COLUMN IF NOT EXISTS is_active boolean DEFAULT true;
+                ALTER TABLE attractions ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT NOW();
+                ALTER TABLE attractions ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT NOW();
+
+                ALTER TABLE trips ALTER COLUMN destination DROP NOT NULL;
+                ALTER TABLE itineraries ALTER COLUMN feasibility_score DROP NOT NULL;
+                ALTER TABLE transport_options ALTER COLUMN intermediate_stops DROP NOT NULL;
+                ALTER TABLE transport_options ALTER COLUMN source DROP NOT NULL;
+                ALTER TABLE transport_options ALTER COLUMN source SET DEFAULT 'SYSTEM';
+                ALTER TABLE transport_options ALTER COLUMN retrieved_at DROP NOT NULL;
+                ALTER TABLE transport_options ALTER COLUMN retrieved_at SET DEFAULT NOW();
+
+                ALTER TABLE attractions ALTER COLUMN location DROP NOT NULL;
+                ALTER TABLE attractions ALTER COLUMN location SET DEFAULT '';
+                ALTER TABLE attractions ALTER COLUMN image_url DROP NOT NULL;
+                ALTER TABLE attractions ALTER COLUMN image_url SET DEFAULT '';
+                ALTER TABLE attractions ALTER COLUMN estimated_duration DROP NOT NULL;
+                ALTER TABLE attractions ALTER COLUMN estimated_duration SET DEFAULT '2 Hours';
+                ALTER TABLE attractions ALTER COLUMN estimated_cost DROP NOT NULL;
+                ALTER TABLE attractions ALTER COLUMN estimated_cost SET DEFAULT 0.0;
+
+                CREATE TABLE IF NOT EXISTS trip_destinations (
+                    trip_id text NOT NULL,
+                    destination_id text NOT NULL,
+                    CONSTRAINT pk_trip_destinations PRIMARY KEY (trip_id, destination_id),
+                    CONSTRAINT fk_trip_destinations_trips_trip_id FOREIGN KEY (trip_id) REFERENCES trips (id) ON DELETE CASCADE,
+                    CONSTRAINT fk_trip_destinations_destinations_destination_id FOREIGN KEY (destination_id) REFERENCES destinations (id) ON DELETE CASCADE
+                );
+                CREATE INDEX IF NOT EXISTS ix_trip_destinations_destination_id ON trip_destinations (destination_id);
+
+                CREATE TABLE IF NOT EXISTS transport_partners (
+                    id text NOT NULL,
+                    name text NOT NULL,
+                    description text NOT NULL,
+                    logo text,
+                    website_url text NOT NULL,
+                    discount double precision NOT NULL DEFAULT 0.0,
+                    discount_description text NOT NULL,
+                    is_active boolean NOT NULL DEFAULT true,
+                    CONSTRAINT pk_transport_partners PRIMARY KEY (id)
+                );
             ");
         }
         catch (Exception colEx)
         {
             Console.WriteLine($"[Schema Sync Warning] {colEx.Message}");
         }
-        await db.Database.MigrateAsync();
         await DbInitializer.SeedAsync(db);
     }
     catch (Exception ex)
@@ -213,13 +305,23 @@ app.Use(async (context, next) =>
     }
 });
 
-// Configure the HTTP request pipeline (Swagger enabled)
-app.UseSwagger();
+// Configure the HTTP request pipeline (Swagger enabled globally)
+app.UseSwagger(c =>
+{
+    c.RouteTemplate = "swagger/{documentName}/swagger.json";
+});
 app.UseSwaggerUI(c =>
 {
-    c.SwaggerEndpoint("/swagger/v1/swagger.json", "NOVA Trip & Itinerary API v1");
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "TourLink / NOVA API v1");
     c.RoutePrefix = "swagger";
+    c.DocumentTitle = "TourLink / NOVA API Documentation";
+    c.DocExpansion(Swashbuckle.AspNetCore.SwaggerUI.DocExpansion.None);
+    c.EnablePersistAuthorization();
+    c.DisplayRequestDuration();
 });
+
+// Root URL redirects straight to Swagger UI for quick developer access
+app.MapGet("/", () => Results.Redirect("/swagger"));
 
 app.UseCors("AllowFrontend");
 

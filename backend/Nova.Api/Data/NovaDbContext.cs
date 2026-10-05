@@ -257,5 +257,26 @@ public class NovaDbContext : DbContext
                 UpdatedBy = "System"
             }
         );
+
+        modelBuilder.Entity<Review>(entity =>
+        {
+            entity.ToTable("reviews");
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.DestinationId).HasColumnName("destination_id");
+            entity.Property(e => e.Rating).HasColumnName("rating");
+            entity.Property(e => e.Comment).HasColumnName("comment");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+            entity.Property(e => e.Status).HasColumnName("status").HasConversion<string>();
+            entity.Property(e => e.SentimentLabel).HasColumnName("sentiment_label");
+            entity.Property(e => e.SentimentScore).HasColumnName("sentiment_score");
+        });
+
+        modelBuilder.Entity<Attraction>(entity =>
+        {
+            entity.ToTable("attractions");
+            entity.Property(e => e.DestinationId).HasColumnName("destination_id");
+        });
     }
 }

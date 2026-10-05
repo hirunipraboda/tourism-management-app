@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:nova_mobile/theme/app_fonts.dart';
 import '../services/api_service.dart';
 import 'register_screen.dart';
+import 'reset_password_screen.dart';
 import '../main.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -168,7 +169,7 @@ class _LoginScreenState extends State<LoginScreen>
                               ),
                               const SizedBox(height: 14),
                               Text(
-                                'NOVA',
+                                'TourLink',
                                 style: GoogleFonts.outfit(
                                   fontSize: 32,
                                   fontWeight: FontWeight.w900,
@@ -297,13 +298,21 @@ class _LoginScreenState extends State<LoginScreen>
                                 Align(
                                   alignment: Alignment.centerRight,
                                   child: GestureDetector(
-                                    onTap: () {},
+                                    onTap: () {
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (_) => ResetPasswordScreen(
+                                            initialEmail: _emailController.text.trim(),
+                                          ),
+                                        ),
+                                      );
+                                    },
                                     child: Text(
                                       'Forgot password?',
                                       style: GoogleFonts.inter(
                                         fontSize: 13,
                                         color: const Color(0xFF34D399),
-                                        fontWeight: FontWeight.w500,
+                                        fontWeight: FontWeight.w600,
                                       ),
                                     ),
                                   ),

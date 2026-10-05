@@ -124,6 +124,8 @@ export const ReviewsAndRecommendationsPage: React.FC = () => {
       await reviewService.createReview(formData);
       showToast('Review submitted successfully.');
     }
+    const updatedReviews = await reviewService.getReviews();
+    setReviews(updatedReviews);
   };
 
   // Handle Delete Review

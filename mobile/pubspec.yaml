@@ -1,5 +1,5 @@
 name: nova_mobile
-description: "NOVA - AI-Powered Smart Tourism Mobile Application"
+description: "TourLink - AI-Powered Smart Tourism Mobile Application"
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -24,5 +24,6 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
+    - assets/
     - assets/images/
     - assets/images/destinations/

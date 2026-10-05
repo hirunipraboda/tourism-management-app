@@ -2,6 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:nova_mobile/theme/app_fonts.dart';
 import '../theme/app_theme.dart';
 import 'bookings_screen.dart';
+import 'payment_receipts_screen.dart';
+import 'preferences_screen.dart';
+import 'travel_support_screen.dart';
+import 'login_screen.dart';
+import 'reviews_screen.dart';
+import '../services/api_service.dart';
+import '../models/app_settings.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -75,7 +82,7 @@ class ProfileScreen extends StatelessWidget {
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Text(
-                            'NOVA PLATINUM EXPLORER',
+                            'TOURLINK PLATINUM EXPLORER',
                             style: GoogleFonts.inter(
                               fontSize: 9,
                               fontWeight: FontWeight.w800,
@@ -134,16 +141,47 @@ class ProfileScreen extends StatelessWidget {
                     color: NovaBrand.primary,
                     title: 'Payment Receipts',
                     subtitle: 'Secure checkout and invoice history',
-                    onTap: () {},
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const PaymentReceiptsScreen()),
+                      );
+                    },
                   ),
                   const Divider(height: 1, color: NovaBrand.cardBorderSoft),
                   _buildMenuItem(
                     context,
-                    icon: Icons.settings_outlined,
-                    color: NovaBrand.slateDark,
-                    title: 'Preferences & Currency',
-                    subtitle: 'USD (\$) · English · Notifications ON',
-                    onTap: () {},
+                    icon: Icons.rate_review_outlined,
+                    color: const Color(0xFFF59E0B),
+                    title: 'My Reviews & Stories',
+                    subtitle: 'Manage your ratings, travel feedback, and stories',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const Scaffold(
+                            body: ReviewsScreen(initialTab: ActiveSubTab.myReviews),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  const Divider(height: 1, color: NovaBrand.cardBorderSoft),
+                  ListenableBuilder(
+                    listenable: AppSettings.instance,
+                    builder: (context, _) => _buildMenuItem(
+                      context,
+                      icon: Icons.settings_outlined,
+                      color: NovaBrand.slateDark,
+                      title: 'Preferences & Currency',
+                      subtitle: AppSettings.instance.summary,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const PreferencesScreen()),
+                        );
+                      },
+                    ),
                   ),
                   const Divider(height: 1, color: NovaBrand.cardBorderSoft),
                   _buildMenuItem(
@@ -152,37 +190,76 @@ class ProfileScreen extends StatelessWidget {
                     color: NovaBrand.tertiary,
                     title: 'Travel Support & FAQ',
                     subtitle: 'Emergency contacts and live travel desk',
-                    onTap: () {},
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const TravelSupportScreen()),
+                      );
+                    },
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 24),
 
-            // Sign out button
+            // Sign out / Sign in button
             SizedBox(
               width: double.infinity,
-              child: OutlinedButton(
+              child: OutlinedButton.icon(
                 onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      backgroundColor: NovaBrand.primary,
-                      content: Text('Signed out successfully', style: GoogleFonts.inter()),
+                  showDialog(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      title: Text(
+                        'Sign Out',
+                        style: GoogleFonts.outfit(fontWeight: FontWeight.w800, color: NovaBrand.primary),
+                      ),
+                      content: Text(
+                        'Are you sure you want to sign out from your TourLink explorer account?',
+                        style: GoogleFonts.inter(fontSize: 13, color: NovaBrand.slateDark),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          child: Text('Cancel', style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: NovaBrand.slateMuted)),
+                        ),
+                        ElevatedButton(
+                          onPressed: () {
+                            Navigator.pop(ctx);
+                            ApiService.logout();
+                            Navigator.of(context).pushAndRemoveUntil(
+                              MaterialPageRoute(builder: (_) => const LoginScreen()),
+                              (route) => false,
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFBE123C),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          child: Text(
+                            'Sign Out',
+                            style: GoogleFonts.outfit(fontWeight: FontWeight.w700, color: Colors.white),
+                          ),
+                        ),
+                      ],
                     ),
                   );
                 },
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: NovaBrand.cardBorder),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                ),
-                child: Text(
+                icon: const Icon(Icons.logout_rounded, size: 18, color: Color(0xFFBE123C)),
+                label: Text(
                   'Sign Out',
                   style: GoogleFonts.outfit(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
                     color: const Color(0xFFBE123C),
                   ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Color(0xFFFECDD3)),
+                  backgroundColor: const Color(0xFFFFF1F2),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
               ),
             ),

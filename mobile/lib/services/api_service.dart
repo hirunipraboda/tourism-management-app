@@ -137,6 +137,48 @@ class ApiService {
     currentUser = null;
   }
 
+  static Future<Map<String, dynamic>> forgotPassword({required String email}) async {
+    try {
+      final res = await http.post(
+        Uri.parse('$baseUrl/auth/forgot-password'),
+        headers: _headers(needsAuth: false),
+        body: jsonEncode({'email': email.trim()}),
+      );
+      final body = jsonDecode(res.body);
+      return {
+        'success': res.statusCode == 200,
+        'message': body['message'] ?? (res.statusCode == 200 ? 'Account verified successfully' : 'Account not found'),
+      };
+    } catch (e) {
+      return {'success': false, 'message': 'Connection error: $e'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> resetPassword({
+    required String email,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    try {
+      final res = await http.post(
+        Uri.parse('$baseUrl/auth/reset-password'),
+        headers: _headers(needsAuth: false),
+        body: jsonEncode({
+          'email': email.trim(),
+          'newPassword': newPassword,
+          'confirmPassword': confirmPassword,
+        }),
+      );
+      final body = jsonDecode(res.body);
+      return {
+        'success': res.statusCode == 200,
+        'message': body['message'] ?? (res.statusCode == 200 ? 'Password reset successfully' : 'Reset failed'),
+      };
+    } catch (e) {
+      return {'success': false, 'message': 'Connection error: $e'};
+    }
+  }
+
   // =========================================================================
   // 2. DESTINATIONS & ATTRACTIONS
   // =========================================================================
@@ -558,46 +600,59 @@ class ApiService {
         final list = (body['data'] as List<dynamic>? ?? []);
         for (final item in list) {
           final id = item['id']?.toString() ?? '';
-          if (id.isNotEmpty && !_inMemoryReviews.any((r) => r.id == id)) {
-            String title = 'Trip Experience';
-            String comment = item['comment'] ?? '';
-            if (comment.startsWith('[') && comment.contains(']')) {
-              final end = comment.indexOf(']');
-              title = comment.substring(1, end);
-              comment = comment.substring(end + 1).trim();
-            } else if (comment.isNotEmpty) {
-              title = comment.length > 40 ? '${comment.substring(0, 40)}...' : comment;
-            }
-            final rRating = (item['rating'] as num?)?.toDouble() ?? 5.0;
-            _inMemoryReviews.add(ReviewDetailItem(
-              id: id,
-              touristName: item['user']?['name'] ?? 'Verified Traveler',
-              touristAvatar: item['user']?['profileImage'] ??
-                  'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200',
-              touristCountry: 'Sri Lanka',
-              travelerType: 'Solo',
-              targetType: item['destinationId'] != null
-                  ? 'destination'
-                  : (item['tourId'] != null ? 'tour' : 'attraction'),
-              targetId: item['destinationId'] ?? item['tourId'] ?? 'dest-1',
-              targetName: item['destination']?['name'] ?? item['tour']?['title'] ?? 'Sri Lanka Destination',
-              rating: rRating,
-              title: title,
-              comment: comment,
-              date: item['createdAt'] != null ? item['createdAt'].toString().split('T')[0] : 'Recently',
-              helpfulCount: 2,
-              isHelpfulByUser: false,
-              status: 'Published',
-              photos: [],
-              tags: ['Verified Travel', 'Community Feedback'],
-              highlightRating: HighlightRatings(
-                experience: rRating,
-                value: (rRating * 0.95).clamp(1.0, 5.0),
-                safety: 5.0,
-                hospitality: 5.0,
-              ),
-              isCurrentTourist: item['userId'] == (currentUser?['id'] ?? currentUser?['userId']),
-            ));
+          if (id.isEmpty) continue;
+
+          final isCurr = (item['isCurrentTourist'] == true) ||
+              (currentUser != null && item['userId'] == (currentUser?['id'] ?? currentUser?['userId'])) ||
+              _inMemoryReviews.any((r) => r.id == id && r.isCurrentTourist);
+
+          String title = item['title'] ?? 'Trip Experience';
+          String comment = item['comment'] ?? '';
+          if (comment.startsWith('[') && comment.contains(']')) {
+            final end = comment.indexOf(']');
+            title = comment.substring(1, end);
+            comment = comment.substring(end + 1).trim();
+          } else if (comment.isNotEmpty && title == 'Trip Experience') {
+            title = comment.length > 40 ? '${comment.substring(0, 40)}...' : comment;
+          }
+          final rRating = (item['rating'] as num?)?.toDouble() ?? 5.0;
+          final targetName = item['targetName'] ?? item['destination']?['name'] ?? item['tour']?['title'] ?? 'Sri Lanka Destination';
+          final touristName = item['touristName'] ?? item['user']?['name'] ?? 'Verified Traveler';
+
+          final parsedReview = ReviewDetailItem(
+            id: id,
+            touristName: touristName,
+            touristAvatar: item['touristAvatar'] ?? item['user']?['profileImage'] ?? 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200',
+            touristCountry: item['touristCountry'] ?? 'Sri Lanka',
+            travelerType: item['travelerType'] ?? 'Solo',
+            targetType: item['targetType'] ?? (item['destinationId'] != null ? 'destination' : 'attraction'),
+            targetId: item['targetId'] ?? item['destinationId'] ?? 'dest-1',
+            targetName: targetName,
+            rating: rRating,
+            title: title,
+            comment: comment,
+            date: item['date'] ?? (item['createdAt'] != null ? item['createdAt'].toString().split('T')[0] : 'Recently'),
+            helpfulCount: (item['helpfulCount'] as num?)?.toInt() ?? 8,
+            isHelpfulByUser: item['isHelpfulByUser'] == true,
+            status: item['status'] ?? 'Published',
+            photos: const ['assets/images/destinations/sigiriya.jpg'],
+            tags: const ['Verified Travel', 'Community Feedback'],
+            highlightRating: HighlightRatings(
+              experience: rRating,
+              value: (rRating * 0.95).clamp(1.0, 5.0),
+              safety: 5.0,
+              hospitality: 5.0,
+            ),
+            isCurrentTourist: isCurr,
+          );
+
+          final existingIdx = _inMemoryReviews.indexWhere((r) => r.id == id);
+          if (existingIdx != -1) {
+            _inMemoryReviews[existingIdx] = parsedReview.copyWith(
+              isCurrentTourist: _inMemoryReviews[existingIdx].isCurrentTourist || isCurr,
+            );
+          } else {
+            _inMemoryReviews.insert(0, parsedReview);
           }
         }
       }
@@ -638,7 +693,11 @@ class ApiService {
     } else if (sortBy == 'helpful') {
       filtered.sort((a, b) => b.helpfulCount.compareTo(a.helpfulCount));
     } else {
-      filtered.sort((a, b) => b.date.compareTo(a.date));
+      filtered.sort((a, b) {
+        if (a.isCurrentTourist && !b.isCurrentTourist) return -1;
+        if (!a.isCurrentTourist && b.isCurrentTourist) return 1;
+        return b.date.compareTo(a.date);
+      });
     }
 
     return filtered;
@@ -664,25 +723,44 @@ class ApiService {
   }
 
   static Future<ReviewDetailItem> submitDetailedReview(ReviewDetailItem review) async {
-    final idx = _inMemoryReviews.indexWhere((r) => r.id == review.id);
+    final updated = review.copyWith(isCurrentTourist: true);
+    final idx = _inMemoryReviews.indexWhere((r) => r.id == updated.id);
     if (idx != -1) {
-      _inMemoryReviews[idx] = review;
+      _inMemoryReviews[idx] = updated;
     } else {
-      _inMemoryReviews.insert(0, review);
+      _inMemoryReviews.insert(0, updated);
     }
     try {
-      await http.post(
+      final res = await http.post(
         Uri.parse('$baseUrl/reviews'),
         headers: _headers(),
         body: jsonEncode({
-          'comment': '[${review.title}] ${review.comment}',
-          'rating': review.rating.round(),
-          'destinationId': review.targetType == 'destination' ? review.targetId : null,
-          'tourId': review.targetType == 'tour' ? review.targetId : null,
+          'title': updated.title,
+          'comment': updated.comment,
+          'rating': updated.rating.round(),
+          'destinationId': updated.targetId,
+          'targetId': updated.targetId,
+          'targetName': updated.targetName,
+          'targetType': updated.targetType,
+          'touristName': updated.touristName,
+          'touristCountry': updated.touristCountry,
+          'travelerType': updated.travelerType,
         }),
       );
-    } catch (_) {}
-    return review;
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        final body = jsonDecode(res.body);
+        if (body['data'] != null && body['data']['id'] != null) {
+          final serverId = body['data']['id'].toString();
+          final curIdx = _inMemoryReviews.indexWhere((r) => r.id == updated.id);
+          if (curIdx != -1) {
+            _inMemoryReviews[curIdx] = _inMemoryReviews[curIdx].copyWith(id: serverId, isCurrentTourist: true);
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('[ApiService] submitDetailedReview error: $e');
+    }
+    return updated;
   }
 
   static Future<List<RecommendationItem>> getRecommendations(RecommendationFilterState filters) async {

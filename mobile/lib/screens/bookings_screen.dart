@@ -1,9 +1,206 @@
 import 'package:flutter/material.dart';
 import 'package:nova_mobile/theme/app_fonts.dart';
+import '../models/user_trip_models.dart';
+import '../services/api_service.dart';
 import '../theme/app_theme.dart';
 
-class BookingsScreen extends StatelessWidget {
+class _HotelStay {
+  final UserTripDetail trip;
+  final TripBookingDetail booking;
+  _HotelStay(this.trip, this.booking);
+}
+
+class BookingsScreen extends StatefulWidget {
   const BookingsScreen({super.key});
+
+  @override
+  State<BookingsScreen> createState() => _BookingsScreenState();
+}
+
+class _BookingsScreenState extends State<BookingsScreen> {
+  List<_HotelStay> _hotelStays = [];
+  bool _loadingHotels = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadHotels();
+  }
+
+  Future<void> _loadHotels() async {
+    List<UserTripDetail> trips;
+    try {
+      trips = await ApiService.getEnrichedUserTrips();
+    } catch (_) {
+      trips = List.from(kMockTripsData);
+    }
+    final stays = <_HotelStay>[];
+    for (final t in trips) {
+      for (final b in t.bookingsList) {
+        if (b.type == 'Hotel') stays.add(_HotelStay(t, b));
+      }
+    }
+    if (!mounted) return;
+    setState(() {
+      _hotelStays = stays;
+      _loadingHotels = false;
+    });
+  }
+
+  Widget _buildHotelSection() {
+    Widget header = Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Text(
+        'Hotel Bookings',
+        style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w800, color: NovaBrand.primary),
+      ),
+    );
+    if (_loadingHotels) {
+      return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        header,
+        const Padding(padding: EdgeInsets.symmetric(vertical: 16), child: Center(child: CircularProgressIndicator())),
+      ]);
+    }
+    if (_hotelStays.isEmpty) {
+      return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        header,
+        Container(
+          width: double.infinity,
+          margin: const EdgeInsets.only(bottom: 16),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: NovaBrand.cardBorder),
+          ),
+          child: Text('No hotels booked for your planned trips yet.',
+              style: GoogleFonts.inter(fontSize: 12, color: NovaBrand.slateMuted)),
+        ),
+      ]);
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [header, ..._hotelStays.map(_buildHotelCard)],
+    );
+  }
+
+  Widget _buildHotelCard(_HotelStay s) {
+    final b = s.booking;
+    final confirmed = b.status.toLowerCase() == 'confirmed';
+    final statusColor = confirmed ? const Color(0xFF059669) : NovaBrand.accentAmber;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: NovaBrand.cardBorder),
+        boxShadow: NovaBrand.softShadow,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: NovaBrand.slateLight,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: NovaBrand.cardBorderSoft),
+                ),
+                child: Text(b.confirmationCode,
+                    style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: NovaBrand.primary, fontSize: 11)),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(b.status.toUpperCase(),
+                    style: GoogleFonts.inter(color: statusColor, fontWeight: FontWeight.w800, fontSize: 10)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              const Icon(Icons.hotel, size: 18, color: NovaBrand.secondary),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(b.provider,
+                    style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w800, color: NovaBrand.slateDark)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(b.details, style: GoogleFonts.inter(fontSize: 12, color: NovaBrand.slateMuted)),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(color: NovaBrand.slateLight, borderRadius: BorderRadius.circular(14)),
+            child: Column(
+              children: [
+                _hotelRow(Icons.luggage_outlined, 'Trip: ${s.trip.name}'),
+                const SizedBox(height: 4),
+                _hotelRow(Icons.calendar_today, b.dates),
+                if (b.rooms != null) ...[
+                  const SizedBox(height: 4),
+                  _hotelRow(Icons.bed, '${b.rooms} room${b.rooms == 1 ? '' : 's'}${b.nights != null ? ' · ${b.nights} nights' : ''}'),
+                ],
+                if (b.packageName != null) ...[
+                  const SizedBox(height: 4),
+                  _hotelRow(Icons.card_giftcard, b.packageName!),
+                ],
+              ],
+            ),
+          ),
+          if (b.includedFacilities.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: b.includedFacilities
+                  .map((f) => Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: NovaBrand.tertiary.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(f,
+                            style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: NovaBrand.secondary)),
+                      ))
+                  .toList(),
+            ),
+          ],
+          const Divider(height: 24, color: NovaBrand.cardBorderSoft),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Total', style: GoogleFonts.inter(fontSize: 10, color: NovaBrand.slateMuted)),
+              Text(b.amount,
+                  style: GoogleFonts.outfit(fontWeight: FontWeight.w900, color: NovaBrand.primary, fontSize: 18)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _hotelRow(IconData icon, String text) {
+    return Row(
+      children: [
+        Icon(icon, size: 14, color: NovaBrand.tertiary),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(text,
+              style: GoogleFonts.inter(fontSize: 11, color: NovaBrand.slateDark, fontWeight: FontWeight.w600)),
+        ),
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -46,9 +243,10 @@ class BookingsScreen extends StatelessWidget {
       ),
       body: ListView.builder(
         padding: const EdgeInsets.all(16),
-        itemCount: bookings.length,
+        itemCount: bookings.length + 1,
         itemBuilder: (context, index) {
-          final b = bookings[index];
+          if (index == 0) return _buildHotelSection();
+          final b = bookings[index - 1];
           return Container(
             margin: const EdgeInsets.only(bottom: 16),
             decoration: BoxDecoration(

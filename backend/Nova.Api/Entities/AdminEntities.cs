@@ -265,11 +265,8 @@ public class Review
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-    [NotMapped]
     public string SentimentLabel { get; set; } = "Positive"; // Positive, Neutral, Negative
-    [NotMapped]
     public double SentimentScore { get; set; } = 0.92;
-    [NotMapped]
     public ReviewStatus Status { get; set; } = ReviewStatus.Published;
 }
 
@@ -299,7 +296,6 @@ public class Attraction
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-    [NotMapped]
     public string Location { get; set; } = string.Empty;
     [NotMapped]
     public decimal EstimatedCost { get => (decimal)EntryFee; set => EntryFee = (double)value; }

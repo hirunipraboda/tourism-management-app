@@ -22,7 +22,7 @@ class NovaTouristApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'NOVA - Sri Lanka Travel Platform',
+      title: 'TourLink - Sri Lanka Travel Platform',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       home: const SplashScreen(),

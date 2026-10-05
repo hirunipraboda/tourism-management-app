@@ -1576,18 +1576,23 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Traveler Community Feedback (${_allReviews.length})',
-                style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w900, color: const Color(0xFF0B3A53)),
+              Expanded(
+                child: Text(
+                  'Traveler Feedback (${_allReviews.length})',
+                  style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.w900, color: const Color(0xFF0B3A53)),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
+              const SizedBox(width: 8),
               ElevatedButton.icon(
                 onPressed: () => _showWriteReviewModal(),
-                icon: const Icon(Icons.add_rounded, size: 16),
+                icon: const Icon(Icons.add_rounded, size: 15),
                 label: const Text('Write a Review'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF0B3A53),
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   textStyle: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w800),
                 ),
@@ -2357,7 +2362,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
                           );
 
                           await ApiService.submitDetailedReview(updatedRev);
-                          _loadReviews();
+                          await _loadReviews();
                           _showToast(editingReview != null ? 'Review updated successfully!' : 'Review published and synced with web!');
                         },
                         style: ElevatedButton.styleFrom(

@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:nova_mobile/theme/app_fonts.dart';
 import '../theme/app_theme.dart';
-import '../screens/bookings_screen.dart';
 import '../screens/profile_screen.dart';
-import '../screens/reviews_screen.dart';
 
 class NovaHeader extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onNotificationTap;
@@ -200,7 +198,7 @@ class NovaHeader extends StatelessWidget implements PreferredSizeWidget {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
-                                'NOVA',
+                                'TourLink',
                                 style: GoogleFonts.outfit(
                                   fontWeight: FontWeight.w900,
                                   color: NovaBrand.primary,
@@ -228,30 +226,6 @@ class NovaHeader extends StatelessWidget implements PreferredSizeWidget {
               // Action Buttons
               Row(
                 children: [
-                  // Reviews & Recs Button
-                  IconButton(
-                    icon: const Icon(Icons.star_rounded, color: NovaBrand.accentAmber, size: 22),
-                    tooltip: 'Reviews & Recommendations',
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const ReviewsScreen()),
-                      );
-                    },
-                  ),
-
-                  // Bookings / Trips
-                  IconButton(
-                    icon: const Icon(Icons.confirmation_number_outlined, color: NovaBrand.secondary, size: 21),
-                    tooltip: 'My Trips & Bookings',
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const BookingsScreen()),
-                      );
-                    },
-                  ),
-
                   // Notifications Bell
                   IconButton(
                     icon: Stack(

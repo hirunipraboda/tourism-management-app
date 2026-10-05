@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../models/payment_receipt_models.dart';
 import '../models/travel_models.dart';
 import '../services/api_service.dart';
 import '../widgets/nova_guide_floating_bot.dart';
@@ -1930,6 +1931,22 @@ class _ToursScreenState extends State<ToursScreen> {
                             Navigator.pop(ctx);
                           }
                           final isSuccess = res['success'] == true;
+                          if (isSuccess) {
+                            final bookingData = res['booking'];
+                            final ref = (bookingData is Map ? bookingData['id'] ?? bookingData['bookingReference'] : null)?.toString();
+                            PaymentReceiptStore.add(PaymentReceipt(
+                              orderId: ref ?? 'TL-BK-${DateTime.now().millisecondsSinceEpoch % 100000}',
+                              type: ReceiptType.tourPackage,
+                              title: tour.name,
+                              description: 'Tour package · ${tour.durationDays} Days / ${tour.durationNights} Nights · ${tour.destinations}',
+                              amount: total,
+                              paidAt: DateTime.now(),
+                              paymentMethod: 'Online Card Verified',
+                              customerName: nameController.text.trim(),
+                              customerEmail: emailController.text.trim(),
+                              participants: participants,
+                            ));
+                          }
                           final msg = res['message'] ?? 'Booking processed successfully!';
                           if (!mounted) return;
 

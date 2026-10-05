@@ -108,7 +108,7 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// User & Admin Login
+    /// User &amp; Admin Login
     /// Verifies BCrypt hashed password, checks active account status,
     /// determines role (USER vs ADMIN), and returns JWT.
     /// </summary>

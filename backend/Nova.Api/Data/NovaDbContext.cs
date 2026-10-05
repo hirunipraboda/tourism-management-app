@@ -21,6 +21,12 @@ public class NovaDbContext : DbContext
     public DbSet<ItineraryApproval> Approvals => Set<ItineraryApproval>();
     public DbSet<TransportOption> TransportOptions => Set<TransportOption>();
 
+    // Guide & Tour Operations
+    public DbSet<Guide> Guides => Set<Guide>();
+    public DbSet<GuideAvailability> GuideAvailabilities => Set<GuideAvailability>();
+    public DbSet<TourPackage> TourPackages => Set<TourPackage>();
+    public DbSet<TourOperation> TourOperations => Set<TourOperation>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -52,6 +58,15 @@ public class NovaDbContext : DbContext
 
         modelBuilder.Entity<ItineraryApproval>()
             .Property(a => a.NewStatus)
+            .HasConversion<string>();
+
+        // Guide & Tour Operations enum conversions
+        modelBuilder.Entity<Guide>()
+            .Property(g => g.VerificationStatus)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<TourOperation>()
+            .Property(o => o.Status)
             .HasConversion<string>();
 
         // Indexes

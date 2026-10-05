@@ -31,6 +31,7 @@
   <ItemGroup>
     <Compile Include="..\Nova.Api\Entities\**\*.cs" />
     <Compile Include="..\Nova.Api\DTOs\**\*.cs" />
+    <Compile Include="..\Nova.Api\Models\**\*.cs" />
     <Compile Include="..\Nova.Api\Data\**\*.cs" />
     <Compile Include="..\Nova.Api\Services\**\*.cs" />
   </ItemGroup>

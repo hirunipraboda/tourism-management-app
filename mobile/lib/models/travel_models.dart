@@ -112,6 +112,69 @@ class ItineraryDay {
   }
 }
 
+/// Chat message model used by the AI Guide chat screen.
+class ChatMessage {
+  final String id;
+  final String role; // 'user' | 'assistant'
+  final String content;
+  final DateTime timestamp;
+
+  ChatMessage({
+    required this.id,
+    required this.role,
+    required this.content,
+    required this.timestamp,
+  });
+}
+
+/// Tour package model used by the Tours & Guide screen.
+class TourPackage {
+  final String id;
+  final String name;
+  final String coverImage;
+  final int durationDays;
+  final int durationNights;
+  final double price;
+  final double rating;
+  final String destinations;
+  final String inclusions;
+  final String groupSize;
+  final String transportType;
+  final String travelStyle;
+
+  TourPackage({
+    required this.id,
+    required this.name,
+    required this.coverImage,
+    required this.durationDays,
+    required this.durationNights,
+    required this.price,
+    required this.rating,
+    required this.destinations,
+    required this.inclusions,
+    required this.groupSize,
+    required this.transportType,
+    required this.travelStyle,
+  });
+
+  factory TourPackage.fromJson(Map<String, dynamic> json) {
+    return TourPackage(
+      id: json['id']?.toString() ?? '',
+      name: json['name'] ?? '',
+      coverImage: json['coverImage'] ?? json['imageUrl'] ?? '',
+      durationDays: (json['durationDays'] as num?)?.toInt() ?? 0,
+      durationNights: (json['durationNights'] as num?)?.toInt() ?? 0,
+      price: (json['price'] as num?)?.toDouble() ?? 0.0,
+      rating: (json['rating'] as num?)?.toDouble() ?? 4.5,
+      destinations: json['destinations'] ?? json['destination'] ?? '',
+      inclusions: json['inclusions'] ?? '',
+      groupSize: json['groupSize'] ?? '',
+      transportType: json['transportType'] ?? 'Private AC Vehicle',
+      travelStyle: json['travelStyle'] ?? '',
+    );
+  }
+}
+
 class TripPlanResult {
   final String title;
   final int duration;

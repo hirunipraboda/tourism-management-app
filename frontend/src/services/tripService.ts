@@ -74,7 +74,7 @@ export const tripService = {
 
           let status: 'Upcoming' | 'Planning' | 'Ongoing' | 'Completed' = 'Upcoming';
           if (t.status === 'Draft' || t.status === 'Planning' || t.status === 'PLANNED') status = 'Planning';
-          else if (t.status === 'Ongoing' || t.status === 'IN_PROGRESS') status = 'Ongoing';
+          else if (t.status === 'Ongoing' || t.status === 'IN_PROGRESS' || t.status === 'In Progress') status = 'Ongoing';
           else if (t.status === 'Completed' || t.status === 'COMPLETED') status = 'Completed';
           else status = 'Upcoming';
 
@@ -155,9 +155,11 @@ export const tripService = {
     tripStyle?: string;
   }): Promise<any> {
     try {
+      // Backend reads 'title' not 'tripName' — map the field correctly
+      const { tripName, ...rest } = tripData;
       const res = await fetchApi<any>('/trips', {
         method: 'POST',
-        body: JSON.stringify(tripData),
+        body: JSON.stringify({ ...rest, title: tripName || tripData.destination }),
       });
       return res.data;
     } catch (err) {

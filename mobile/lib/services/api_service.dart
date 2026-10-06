@@ -354,11 +354,11 @@ class ApiService {
           dates: '${bt.startDate.day} ${_monthName(bt.startDate.month)} – ${bt.endDate.day} ${_monthName(bt.endDate.month)} ${bt.endDate.year}',
           duration: durationStr,
           travelers: bt.numberOfTravelers,
-          status: bt.status.toLowerCase() == 'ongoing'
+          status: bt.status.toLowerCase() == 'ongoing' || bt.status.toLowerCase() == 'in_progress' || bt.status.toLowerCase() == 'in progress'
               ? 'Ongoing'
               : bt.status.toLowerCase() == 'completed'
                   ? 'Completed'
-                  : bt.status.toLowerCase() == 'planning'
+                  : bt.status.toLowerCase() == 'planning' || bt.status.toLowerCase() == 'planned' || bt.status.toLowerCase() == 'draft'
                       ? 'Planning'
                       : 'Upcoming',
           timelineLabel: bt.status.toLowerCase() == 'ongoing' ? 'Ongoing - Day 1 of $days' : 'Upcoming',

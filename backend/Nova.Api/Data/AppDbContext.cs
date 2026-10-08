@@ -21,6 +21,9 @@ namespace Nova.Api.Data
                 .WithOne(a => a.Destination)
                 .HasForeignKey(a => a.DestinationId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<TripDestination>()
+                .HasKey(td => new { td.TripId, td.DestinationId });
         }
     }
 }

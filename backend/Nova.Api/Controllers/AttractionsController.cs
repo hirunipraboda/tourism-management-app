@@ -11,10 +11,10 @@ namespace Nova.Api.Controllers
     [Route("api/[controller]")]
     public class AttractionsController : ControllerBase
     {
-        private readonly AppDbContext _context;
+        private readonly NovaDbContext _context;
         private readonly IAttractionAiAgentService _aiAgentService;
 
-        public AttractionsController(AppDbContext context, IAttractionAiAgentService aiAgentService)
+        public AttractionsController(NovaDbContext context, IAttractionAiAgentService aiAgentService)
         {
             _context = context;
             _aiAgentService = aiAgentService;

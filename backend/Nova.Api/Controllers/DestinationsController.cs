@@ -68,6 +68,35 @@ public class DestinationsController : ControllerBase
         return NotFound(ApiResponse<Destination>.Fail("Destination not found."));
     }
 
+    /// <summary>
+    /// GET /api/destinations/{id}/attractions
+    /// Returns attractions belonging to the specified destination.
+    /// Called by the Flutter mobile app (ApiService.getAttractionsByDestination).
+    /// </summary>
+    [HttpGet("{id}/attractions")]
+    public async Task<IActionResult> GetAttractionsByDestination(string id)
+    {
+        try
+        {
+            var destination = await _db.Destinations
+                .Include(d => d.Attractions)
+                .FirstOrDefaultAsync(d => d.Id == id || d.Slug == id);
+
+            if (destination != null)
+                return Ok(ApiResponse<List<Attraction>>.Ok(destination.Attractions));
+        }
+        catch
+        {
+            // Fallback: check default destinations
+        }
+
+        var fallbackDest = GetDefaultDestinations().FirstOrDefault(d => d.Id == id || d.Slug == id);
+        if (fallbackDest != null)
+            return Ok(ApiResponse<List<Attraction>>.Ok(fallbackDest.Attractions));
+
+        return NotFound(ApiResponse<List<Attraction>>.Fail("Destination not found."));
+    }
+
     private static List<Destination> GetDefaultDestinations()
     {
         return [

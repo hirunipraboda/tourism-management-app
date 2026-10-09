@@ -1,0 +1,15 @@
+✔ NFR-ACC-001: Login page accessibility - Form labels, error roles, and input types (0.7562ms)
+✔ NFR-ACC-002: Destination page accessibility - Headings hierarchy and image alt attributes (0.251ms)
+✔ NFR-ACC-003: Trip management accessibility - Date picker accessible names and traveler counters (0.1307ms)
+✔ NFR-ACC-004: Itinerary accessibility - Tabs keyboard navigation and timeline milestones (0.1653ms)
+✔ NFR-ACC-005: Guide & tour page accessibility - Rating badges and interactive CTAs (0.1602ms)
+✔ NFR-ACC-006: Review submission accessibility - Star rating controls and feedback announcements (0.1452ms)
+✔ NFR-ACC-007: Admin moderation accessibility - Table headers and modal focus trap (0.133ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 130.5672

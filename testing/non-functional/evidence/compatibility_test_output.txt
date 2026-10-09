@@ -1,0 +1,13 @@
+✔ NFR-COMP-001: Chrome compatibility - Web APIs and modern CSS flexbox/grid layout (0.7193ms)
+✔ NFR-COMP-002: Edge compatibility - Chromium engine parity and security headers (0.1577ms)
+✔ NFR-COMP-003: Firefox compatibility - CSS standard properties and font fallbacks (0.1634ms)
+✔ NFR-COMP-004: Mobile web compatibility - Responsive viewport and touch targets (0.122ms)
+✔ NFR-COMP-005: Flutter Android compatibility - Data contract serialization parity (0.1491ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 141.3708

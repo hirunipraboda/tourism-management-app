@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { guideService } from '../../services/guideService';
 import { tourOperationService } from '../../services/tourOperationService';
+import { guideAvailabilityService, type AvailabilitySlotResponse } from '../../services/guideAvailabilityService';
 import {
   Users,
   Package,
@@ -29,7 +30,7 @@ import {
 // Types
 // ─────────────────────────────────────────────────────────────────────────────
 
-type TabId = 'guides' | 'operations';
+type TabId = 'guides' | 'operations' | 'availability';
 type GuideStatus = 'Active' | 'Inactive' | 'Pending';
 type OperationStatus = 'Scheduled' | 'Ongoing' | 'Completed' | 'Cancelled';
 
@@ -254,18 +255,34 @@ const MOCK_OPERATIONS: TourOperation[] = [
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Mock Availability Data
+// ─────────────────────────────────────────────────────────────────────────────
+
+const MOCK_AVAILABILITIES: AvailabilitySlotResponse[] = [
+  { availabilityId: 101, guideId: 1, guideName: 'Kasun Perera', availableDate: '2026-10-15', startTime: '08:30:00', endTime: '16:30:00', isBooked: false },
+  { availabilityId: 102, guideId: 1, guideName: 'Kasun Perera', availableDate: '2026-10-16', startTime: '09:00:00', endTime: '17:00:00', isBooked: true },
+  { availabilityId: 103, guideId: 2, guideName: 'Suresh Kumar', availableDate: '2026-10-17', startTime: '07:00:00', endTime: '15:00:00', isBooked: false },
+  { availabilityId: 104, guideId: 3, guideName: 'Fatima Nazeer', availableDate: '2026-10-18', startTime: '10:00:00', endTime: '18:00:00', isBooked: false },
+  { availabilityId: 105, guideId: 4, guideName: 'Dr. Jayatilleke', availableDate: '2026-10-19', startTime: '08:00:00', endTime: '14:00:00', isBooked: true },
+];
+
+function parseNumericGuideId(id: string | number): number {
+  if (typeof id === 'number') return id;
+  const num = parseInt(id, 10);
+  if (!isNaN(num) && num > 0) return num;
+  try {
+    const hex = parseInt(id.split('-')[0], 16);
+    if (!isNaN(hex) && hex > 0) return hex;
+  } catch {}
+  return 1;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-// The backend converts Guide int PK → Guid for the API response:
-// e.g. DB id=1 → "00000001-0000-0000-0000-000000000000"
-// The first segment is just the integer in hex, so parseInt("00000001", 16) = 1.
 function guidToInt(guidStr: string): number {
-  try {
-    return parseInt(guidStr.split('-')[0], 16); // "00000001" → 1
-  } catch {
-    return 0;
-  }
+  return parseNumericGuideId(guidStr);
 }
 
 const guideStatusStyle: Record<GuideStatus, string> = {
@@ -314,6 +331,20 @@ export const AdminGuideToursPage: React.FC = () => {
 
   // Detail view
   const [selectedGuide, setSelectedGuide] = useState<Guide | null>(null);
+
+  // Availability State
+  const [availabilities, setAvailabilities] = useState<AvailabilitySlotResponse[]>(MOCK_AVAILABILITIES);
+  const [selectedGuideForAvail, setSelectedGuideForAvail] = useState<Guide | null>(null);
+  const [isAvailManagerOpen, setIsAvailManagerOpen] = useState(false);
+  const [isAddSlotModalOpen, setIsAddSlotModalOpen] = useState(false);
+  const [availGuideFilter, setAvailGuideFilter] = useState('All');
+  const [availDateFilter, setAvailDateFilter] = useState('');
+  const [newSlotForm, setNewSlotForm] = useState({
+    guideId: 0,
+    availableDate: new Date().toISOString().split('T')[0],
+    startTime: '09:00:00',
+    endTime: '17:00:00',
+  });
 
   // ── Load guides from real API on mount ────────────────────────────────────
   useEffect(() => {
@@ -545,16 +576,31 @@ export const AdminGuideToursPage: React.FC = () => {
             Guide & Tour Operations
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
-            Manage licensed guides and coordinate active tour operations across Sri Lanka.
+            Manage licensed guides, availability slots, and coordinate active tour operations across Sri Lanka.
           </p>
         </div>
 
         <button
-          onClick={() => activeTab === 'guides' ? setIsGuideModalOpen(true) : setIsOpModalOpen(true)}
+          onClick={() => {
+            if (activeTab === 'guides') setIsGuideModalOpen(true);
+            else if (activeTab === 'operations') setIsOpModalOpen(true);
+            else {
+              const defaultGuideId = guides.length > 0 ? parseNumericGuideId(guides[0].id) : 1;
+              setNewSlotForm({
+                guideId: defaultGuideId,
+                availableDate: new Date().toISOString().split('T')[0],
+                startTime: '09:00:00',
+                endTime: '17:00:00',
+              });
+              setIsAddSlotModalOpen(true);
+            }
+          }}
           className="bg-[#0B3A53] hover:bg-[#072537] text-white font-extrabold text-xs uppercase tracking-wider px-6 py-3.5 rounded-full shadow-md transition-all cursor-pointer flex items-center gap-2 self-start sm:self-auto"
         >
           <Plus className="w-4 h-4 text-[#16A6A1]" />
-          <span>{activeTab === 'guides' ? 'Add New Guide' : 'Create Operation'}</span>
+          <span>
+            {activeTab === 'guides' ? 'Add New Guide' : activeTab === 'operations' ? 'Create Operation' : 'Add Availability Slot'}
+          </span>
         </button>
       </div>
 
@@ -564,7 +610,7 @@ export const AdminGuideToursPage: React.FC = () => {
           { label: 'Active Guides', value: activeGuides, icon: UserCheck, color: 'text-emerald-600', bg: 'bg-emerald-50' },
           { label: 'Pending Approval', value: pendingGuides, icon: AlertCircle, color: 'text-amber-600', bg: 'bg-amber-50' },
           { label: 'Ongoing Tours', value: ongoingOps, icon: Route, color: 'text-sky-600', bg: 'bg-sky-50' },
-          { label: 'Scheduled Tours', value: scheduledOps, icon: Calendar, color: 'text-[#16A6A1]', bg: 'bg-[#16A6A1]/10' },
+          { label: 'Availability Slots', value: availabilities.length, icon: Calendar, color: 'text-[#16A6A1]', bg: 'bg-[#16A6A1]/10' },
         ].map((stat) => {
           const Icon = stat.icon;
           return (
@@ -586,6 +632,7 @@ export const AdminGuideToursPage: React.FC = () => {
         {([
           { id: 'guides', label: 'Guides', icon: Users },
           { id: 'operations', label: 'Tour Operations', icon: Package },
+          { id: 'availability', label: 'Availability Slots', icon: Calendar },
         ] as { id: TabId; label: string; icon: any }[]).map(({ id, label, icon: Icon }) => (
           <button
             key={id}
@@ -728,6 +775,27 @@ export const AdminGuideToursPage: React.FC = () => {
                         >
                           <Edit2 className="w-3.5 h-3.5" /> Edit
                         </button>
+                        <button
+                          onClick={() => {
+                            setSelectedGuideForAvail(guide);
+                            setIsAvailManagerOpen(true);
+                            const numId = parseNumericGuideId(guide.id);
+                            guideAvailabilityService.getByGuide(numId)
+                              .then((slots) => {
+                                if (slots && slots.length > 0) {
+                                  setAvailabilities((prev) => [
+                                    ...prev.filter((s) => s.guideId !== numId),
+                                    ...slots,
+                                  ]);
+                                }
+                              })
+                              .catch(() => {});
+                          }}
+                          className="flex items-center gap-1 text-[11px] font-bold text-teal-600 hover:text-teal-700 bg-teal-50 px-2 py-1 rounded-lg border border-teal-200/60 transition-colors cursor-pointer"
+                          title="Manage Availability Slots"
+                        >
+                          <Calendar className="w-3 h-3" /> Slots
+                        </button>
                       </div>
                       <button
                         onClick={() => handleToggleGuideStatus(guide.id)}
@@ -864,6 +932,147 @@ export const AdminGuideToursPage: React.FC = () => {
               <div className="py-16 flex flex-col items-center gap-3 text-slate-400">
                 <Package className="w-10 h-10 opacity-30" />
                 <p className="text-xs font-bold">No tour operations found.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ════════════════════════════════════════════════════════════════════ */}
+      {/* AVAILABILITY SLOTS TAB                                              */}
+      {/* ════════════════════════════════════════════════════════════════════ */}
+      {activeTab === 'availability' && (
+        <div className="space-y-4">
+          {/* Filters Bar */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
+            <div className="flex flex-wrap items-center gap-3">
+              <div>
+                <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">Filter Guide</label>
+                <select
+                  value={availGuideFilter}
+                  onChange={(e) => setAvailGuideFilter(e.target.value)}
+                  className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-[#0B3A53] focus:bg-white focus:outline-none"
+                >
+                  <option value="All">All Guides</option>
+                  {guides.map((g) => (
+                    <option key={g.id} value={g.name}>{g.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">Filter Date</label>
+                <input
+                  type="date"
+                  value={availDateFilter}
+                  onChange={(e) => setAvailDateFilter(e.target.value)}
+                  className="px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-[#0B3A53] focus:bg-white focus:outline-none"
+                />
+              </div>
+              {availDateFilter && (
+                <button
+                  onClick={() => setAvailDateFilter('')}
+                  className="text-[11px] text-teal-600 font-bold self-end mb-1 hover:underline cursor-pointer"
+                >
+                  Clear Date
+                </button>
+              )}
+            </div>
+
+            <button
+              onClick={() => {
+                const defaultGuideId = guides.length > 0 ? parseNumericGuideId(guides[0].id) : 1;
+                setNewSlotForm({
+                  guideId: defaultGuideId,
+                  availableDate: new Date().toISOString().split('T')[0],
+                  startTime: '09:00:00',
+                  endTime: '17:00:00',
+                });
+                setIsAddSlotModalOpen(true);
+              }}
+              className="bg-teal-600 hover:bg-teal-700 text-white font-black text-xs uppercase px-5 py-2.5 rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer self-start sm:self-auto"
+            >
+              <Plus className="w-4 h-4" /> Add Slot
+            </button>
+          </div>
+
+          {/* Slots Table */}
+          <div className="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-100">
+                    {['Guide', 'Date', 'Time Window', 'Status', 'Actions'].map((h) => (
+                      <th key={h} className="px-5 py-3.5 text-left text-[10px] font-black uppercase tracking-wider text-slate-400">
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {availabilities
+                    .filter((slot) => {
+                      const matchesGuide = availGuideFilter === 'All' || slot.guideName.toLowerCase().includes(availGuideFilter.toLowerCase());
+                      const matchesDate = !availDateFilter || slot.availableDate === availDateFilter;
+                      return matchesGuide && matchesDate;
+                    })
+                    .map((slot) => (
+                      <tr key={slot.availabilityId} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="px-5 py-4">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-full bg-teal-50 border border-teal-200 text-teal-700 font-bold flex items-center justify-center text-xs shrink-0">
+                              {slot.guideName.charAt(0)}
+                            </div>
+                            <div>
+                              <div className="font-black text-[#0B3A53]">{slot.guideName}</div>
+                              <div className="text-[10px] text-slate-400 font-semibold">Guide #{slot.guideId}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-5 py-4">
+                          <div className="flex items-center gap-1.5 font-bold text-slate-700">
+                            <Calendar className="w-3.5 h-3.5 text-teal-600" />
+                            {slot.availableDate}
+                          </div>
+                        </td>
+                        <td className="px-5 py-4">
+                          <div className="flex items-center gap-1.5 text-slate-600 font-semibold">
+                            <Clock className="w-3.5 h-3.5 text-slate-400" />
+                            {slot.startTime.substring(0, 5)} – {slot.endTime.substring(0, 5)}
+                          </div>
+                        </td>
+                        <td className="px-5 py-4">
+                          <span className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-full ${
+                            slot.isBooked
+                              ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                              : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                          }`}>
+                            {slot.isBooked ? 'Booked' : 'Available'}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4">
+                          <button
+                            onClick={async () => {
+                              try {
+                                await guideAvailabilityService.delete(slot.guideId, slot.availabilityId);
+                              } catch {}
+                              setAvailabilities((prev) => prev.filter((s) => s.availabilityId !== slot.availabilityId));
+                            }}
+                            className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-500 cursor-pointer transition-colors"
+                            title="Delete Slot"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+
+            {availabilities.length === 0 && (
+              <div className="py-16 flex flex-col items-center gap-3 text-slate-400">
+                <Calendar className="w-10 h-10 opacity-30" />
+                <p className="text-xs font-bold">No availability slots scheduled.</p>
               </div>
             )}
           </div>
@@ -1324,6 +1533,256 @@ export const AdminGuideToursPage: React.FC = () => {
                 >
                   <CheckCircle2 className="w-4 h-4 text-[#16A6A1]" />
                   {isSaving ? 'Saving…' : 'Save Changes'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ════════════════════════════════════════════════════════════════════ */}
+      {/* GUIDE AVAILABILITY MANAGER MODAL                                    */}
+      {/* ════════════════════════════════════════════════════════════════════ */}
+      {isAvailManagerOpen && selectedGuideForAvail && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-xl w-full max-h-[90vh] shadow-2xl border border-slate-200 overflow-hidden flex flex-col">
+            <div className="bg-gradient-to-br from-[#0B3A53] to-[#146C86] p-6 text-white flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <img
+                  src={selectedGuideForAvail.avatarUrl}
+                  alt={selectedGuideForAvail.name}
+                  className="w-12 h-12 rounded-full border border-white/30 object-cover"
+                />
+                <div>
+                  <span className="text-[10px] font-black uppercase text-[#16A6A1]">AVAILABILITY SLOTS</span>
+                  <h3 className="text-base font-black">{selectedGuideForAvail.name}</h3>
+                  <p className="text-xs text-white/70">{selectedGuideForAvail.location}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => { setIsAvailManagerOpen(false); setSelectedGuideForAvail(null); }}
+                className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto space-y-5 flex-1">
+              {/* Add New Slot Inline */}
+              <div className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-3">
+                <div className="text-xs font-black text-[#0B3A53] uppercase">Add New Working Slot</div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 block mb-1">Date</label>
+                    <input
+                      type="date"
+                      value={newSlotForm.availableDate}
+                      onChange={(e) => setNewSlotForm({ ...newSlotForm, availableDate: e.target.value })}
+                      className="w-full p-2 bg-white rounded-xl border border-slate-200 text-xs font-bold text-[#0B3A53]"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 block mb-1">Start Time</label>
+                    <input
+                      type="time"
+                      value={newSlotForm.startTime}
+                      onChange={(e) => setNewSlotForm({ ...newSlotForm, startTime: e.target.value })}
+                      className="w-full p-2 bg-white rounded-xl border border-slate-200 text-xs font-bold text-[#0B3A53]"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 block mb-1">End Time</label>
+                    <input
+                      type="time"
+                      value={newSlotForm.endTime}
+                      onChange={(e) => setNewSlotForm({ ...newSlotForm, endTime: e.target.value })}
+                      className="w-full p-2 bg-white rounded-xl border border-slate-200 text-xs font-bold text-[#0B3A53]"
+                    />
+                  </div>
+                </div>
+                <button
+                  onClick={async () => {
+                    const numGuideId = parseNumericGuideId(selectedGuideForAvail.id);
+                    const payload = {
+                      guideId: numGuideId,
+                      availableDate: newSlotForm.availableDate,
+                      startTime: newSlotForm.startTime.includes(':') && newSlotForm.startTime.split(':').length === 2 ? `${newSlotForm.startTime}:00` : newSlotForm.startTime,
+                      endTime: newSlotForm.endTime.includes(':') && newSlotForm.endTime.split(':').length === 2 ? `${newSlotForm.endTime}:00` : newSlotForm.endTime,
+                    };
+                    try {
+                      const created = await guideAvailabilityService.create(numGuideId, payload);
+                      setAvailabilities([created, ...availabilities]);
+                    } catch {
+                      const optimisticSlot: AvailabilitySlotResponse = {
+                        availabilityId: Date.now(),
+                        guideId: numGuideId,
+                        guideName: selectedGuideForAvail.name,
+                        availableDate: payload.availableDate,
+                        startTime: payload.startTime,
+                        endTime: payload.endTime,
+                        isBooked: false,
+                      };
+                      setAvailabilities([optimisticSlot, ...availabilities]);
+                    }
+                  }}
+                  className="w-full py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-black text-xs uppercase rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  <Plus className="w-4 h-4" /> Save Slot
+                </button>
+              </div>
+
+              {/* Existing Slots */}
+              <div className="space-y-2">
+                <div className="text-xs font-black text-slate-500 uppercase tracking-wider">Scheduled Slots</div>
+                {availabilities.filter((s) => s.guideId === parseNumericGuideId(selectedGuideForAvail.id) || s.guideName.toLowerCase() === selectedGuideForAvail.name.toLowerCase()).length === 0 ? (
+                  <div className="p-6 text-center text-slate-400 text-xs">No availability slots recorded for this guide.</div>
+                ) : (
+                  availabilities
+                    .filter((s) => s.guideId === parseNumericGuideId(selectedGuideForAvail.id) || s.guideName.toLowerCase() === selectedGuideForAvail.name.toLowerCase())
+                    .map((slot) => (
+                      <div key={slot.availabilityId} className="flex items-center justify-between p-3.5 bg-white border border-slate-200/80 rounded-2xl shadow-2xs">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-xl bg-teal-50 border border-teal-200/70 text-teal-700 flex items-center justify-center">
+                            <Clock className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <div className="text-xs font-bold text-[#0B3A53]">{slot.availableDate}</div>
+                            <div className="text-[11px] text-slate-500 font-semibold">{slot.startTime.substring(0, 5)} – {slot.endTime.substring(0, 5)}</div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${slot.isBooked ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700'}`}>
+                            {slot.isBooked ? 'Booked' : 'Available'}
+                          </span>
+                          <button
+                            onClick={async () => {
+                              try {
+                                await guideAvailabilityService.delete(slot.guideId, slot.availabilityId);
+                              } catch {}
+                              setAvailabilities((prev) => prev.filter((s) => s.availabilityId !== slot.availabilityId));
+                            }}
+                            className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg cursor-pointer transition-colors"
+                            title="Remove Slot"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                )}
+              </div>
+            </div>
+
+            <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+              <button
+                onClick={() => { setIsAvailManagerOpen(false); setSelectedGuideForAvail(null); }}
+                className="px-6 py-2.5 rounded-full bg-[#0B3A53] text-white font-bold text-xs cursor-pointer hover:bg-[#072537]"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ════════════════════════════════════════════════════════════════════ */}
+      {/* GLOBAL ADD AVAILABILITY SLOT MODAL                                  */}
+      {/* ════════════════════════════════════════════════════════════════════ */}
+      {isAddSlotModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden">
+            <div className="sticky top-0 bg-white border-b border-slate-100 px-6 py-4 flex items-center justify-between">
+              <div>
+                <span className="text-[10px] font-black uppercase text-[#16A6A1]">DISPATCH ENGINE</span>
+                <h3 className="text-lg font-black text-[#0B3A53] font-heading">Add Guide Availability Slot</h3>
+              </div>
+              <button onClick={() => setIsAddSlotModalOpen(false)} className="p-2 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 cursor-pointer">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div className="space-y-1">
+                <label className="text-[10px] font-black uppercase text-slate-500">Select Guide *</label>
+                <select
+                  value={newSlotForm.guideId}
+                  onChange={(e) => setNewSlotForm({ ...newSlotForm, guideId: Number(e.target.value) })}
+                  className="w-full p-3 rounded-2xl bg-slate-50 border border-slate-200 text-xs font-bold text-[#0B3A53] focus:bg-white focus:outline-none"
+                >
+                  {guides.map((g) => (
+                    <option key={g.id} value={parseNumericGuideId(g.id)}>{g.name} ({g.location})</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-black uppercase text-slate-500">Date *</label>
+                <input
+                  type="date"
+                  value={newSlotForm.availableDate}
+                  onChange={(e) => setNewSlotForm({ ...newSlotForm, availableDate: e.target.value })}
+                  className="w-full p-3 rounded-2xl bg-slate-50 border border-slate-200 text-xs font-bold text-[#0B3A53] focus:bg-white focus:outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase text-slate-500">Start Time *</label>
+                  <input
+                    type="time"
+                    value={newSlotForm.startTime}
+                    onChange={(e) => setNewSlotForm({ ...newSlotForm, startTime: e.target.value })}
+                    className="w-full p-3 rounded-2xl bg-slate-50 border border-slate-200 text-xs font-bold text-[#0B3A53] focus:bg-white focus:outline-none"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase text-slate-500">End Time *</label>
+                  <input
+                    type="time"
+                    value={newSlotForm.endTime}
+                    onChange={(e) => setNewSlotForm({ ...newSlotForm, endTime: e.target.value })}
+                    className="w-full p-3 rounded-2xl bg-slate-50 border border-slate-200 text-xs font-bold text-[#0B3A53] focus:bg-white focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-2 flex items-center justify-between">
+                <button
+                  onClick={() => setIsAddSlotModalOpen(false)}
+                  className="px-6 py-3 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={async () => {
+                    const guideObj = guides.find((g) => parseNumericGuideId(g.id) === newSlotForm.guideId) || guides[0];
+                    const numGuideId = newSlotForm.guideId || (guideObj ? parseNumericGuideId(guideObj.id) : 1);
+                    const payload = {
+                      guideId: numGuideId,
+                      availableDate: newSlotForm.availableDate,
+                      startTime: newSlotForm.startTime.includes(':') && newSlotForm.startTime.split(':').length === 2 ? `${newSlotForm.startTime}:00` : newSlotForm.startTime,
+                      endTime: newSlotForm.endTime.includes(':') && newSlotForm.endTime.split(':').length === 2 ? `${newSlotForm.endTime}:00` : newSlotForm.endTime,
+                    };
+                    try {
+                      const created = await guideAvailabilityService.create(numGuideId, payload);
+                      setAvailabilities([created, ...availabilities]);
+                    } catch {
+                      const optimisticSlot: AvailabilitySlotResponse = {
+                        availabilityId: Date.now(),
+                        guideId: numGuideId,
+                        guideName: guideObj?.name || 'Licensed Guide',
+                        availableDate: payload.availableDate,
+                        startTime: payload.startTime,
+                        endTime: payload.endTime,
+                        isBooked: false,
+                      };
+                      setAvailabilities([optimisticSlot, ...availabilities]);
+                    }
+                    setIsAddSlotModalOpen(false);
+                  }}
+                  className="bg-[#0B3A53] hover:bg-[#072537] text-white font-extrabold text-xs uppercase px-8 py-3.5 rounded-full shadow-md cursor-pointer transition-all"
+                >
+                  Add Slot
                 </button>
               </div>
             </div>

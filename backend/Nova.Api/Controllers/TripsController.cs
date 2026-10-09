@@ -65,8 +65,19 @@ public class TripsController : ControllerBase
 
     [HttpGet("user/{userId}")]
     [ProducesResponseType(typeof(ApiResponse<List<TripResponse>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<List<TripResponse>>), StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetTripsByUser(string userId)
     {
+        var currentUserId = GetCurrentUserId();
+        var currentRole = GetCurrentUserRole();
+        var isAdmin = currentRole.Equals(UserRole.Admin.ToString(), StringComparison.OrdinalIgnoreCase) ||
+                      currentRole.Equals("ADMIN", StringComparison.OrdinalIgnoreCase);
+
+        if (!isAdmin && !currentUserId.Equals(userId, StringComparison.OrdinalIgnoreCase))
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<List<TripResponse>>.Fail("You are not authorized to view another user's trips."));
+        }
+
         var result = await _tripService.GetTripsByUserIdAsync(userId);
         return Ok(result);
     }

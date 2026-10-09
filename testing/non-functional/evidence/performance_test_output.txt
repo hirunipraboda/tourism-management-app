@@ -1,0 +1,30 @@
+Test run for C:\Users\user\NOVA\backend\Nova.Tests\bin\Release\net8.0\Nova.Tests.dll (.NETCoreApp,Version=v8.0)
+VSTest version 17.11.1 (x64)
+
+Starting test execution, please wait...
+A total of 1 test files matched the specified pattern.
+[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v2.5.3.1+6b60a9e56a (64-bit .NET 8.0.29)
+[xUnit.net 00:00:00.09]   Discovering: Nova.Tests
+[xUnit.net 00:00:00.19]   Discovered:  Nova.Tests
+[xUnit.net 00:00:00.19]   Starting:    Nova.Tests
+  Passed Nova.Tests.NonFunctional.PerformanceAndLoadTests.NFR_PERF_007_RecommendationApiResponsePerformance [3 s]
+  Passed Nova.Tests.NonFunctional.PerformanceAndLoadTests.NFR_PERF_006_ReviewApiResponsePerformance [1 s]
+  Passed Nova.Tests.NonFunctional.PerformanceAndLoadTests.NFR_STRESS_001_GradualConcurrentRampUp [1 s]
+  Passed Nova.Tests.NonFunctional.PerformanceAndLoadTests.NFR_STRESS_002_HighRequestVolumeAgainstDestinationApis [1 s]
+  Passed Nova.Tests.NonFunctional.PerformanceAndLoadTests.NFR_PERF_001_DestinationApiResponsePerformance [958 ms]
+  Passed Nova.Tests.NonFunctional.PerformanceAndLoadTests.NFR_LOAD_003_FiftyConcurrentUsers_Load [832 ms]
+  Passed Nova.Tests.NonFunctional.PerformanceAndLoadTests.NFR_PERF_004_GuideApiResponsePerformance [694 ms]
+  Passed Nova.Tests.NonFunctional.PerformanceAndLoadTests.NFR_LOAD_004_OneHundredConcurrentUsers_Load [1 s]
+  Passed Nova.Tests.NonFunctional.PerformanceAndLoadTests.NFR_LOAD_001_TenConcurrentUsers_Load [543 ms]
+  Passed Nova.Tests.NonFunctional.PerformanceAndLoadTests.NFR_LOAD_002_TwentyFiveConcurrentUsers_Load [854 ms]
+  Passed Nova.Tests.NonFunctional.PerformanceAndLoadTests.NFR_PERF_002_TripApiResponsePerformance [955 ms]
+  Passed Nova.Tests.NonFunctional.PerformanceAndLoadTests.NFR_STRESS_004_AiRecommendationWorkloadStress [400 ms]
+  Passed Nova.Tests.NonFunctional.PerformanceAndLoadTests.NFR_STRESS_003_HighRequestVolumeAgainstTripApis [1 s]
+[xUnit.net 00:00:17.07]   Finished:    Nova.Tests
+  Passed Nova.Tests.NonFunctional.PerformanceAndLoadTests.NFR_PERF_003_ItineraryApiResponsePerformance [1 s]
+  Passed Nova.Tests.NonFunctional.PerformanceAndLoadTests.NFR_PERF_005_TourPackageApiResponsePerformance [574 ms]
+
+Test Run Successful.
+Total tests: 15
+     Passed: 15
+ Total time: 17.6383 Seconds

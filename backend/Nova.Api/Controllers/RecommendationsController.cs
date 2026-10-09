@@ -21,6 +21,16 @@ public class RecommendationsController : ControllerBase
     [HttpPost("smart-match")]
     public async Task<IActionResult> GetSmartMatchRecommendations([FromBody] RecommendationFilterRequestDto request)
     {
+        if (request == null)
+        {
+            return BadRequest(ApiResponse<object>.Fail("Invalid recommendation request."));
+        }
+
+        if (request.MinRating.HasValue && (request.MinRating.Value < 0 || request.MinRating.Value > 5))
+        {
+            return BadRequest(ApiResponse<object>.Fail("MinRating must be between 0 and 5."));
+        }
+
         try
         {
             _logger.LogInformation("Processing smart match recommendations via RecommendationFeedbackAgent for interests: {Interests}", 

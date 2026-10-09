@@ -159,8 +159,9 @@ public class GuidesController : ControllerBase
         return Ok(await ToResponse(guide));
     }
 
-    // PATCH /api/v1/guides/{id}/verification
+    // PATCH or PUT /api/v1/guides/{id}/verification
     [HttpPatch("{id:int}/verification")]
+    [HttpPut("{id:int}/verification")]
     [Authorize(Policy = "AdminOnly")]
     public async Task<ActionResult<GuideResponse>> UpdateVerification(int id, VerifyGuideRequest request)
     {
@@ -214,6 +215,10 @@ public class GuideAvailabilityController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<List<AvailabilityResponse>>> GetByGuide(int guideId)
     {
+        var guide = await _db.Guides.FindAsync(guideId);
+        if (guide is null)
+            return NotFound("Guide not found.");
+
         var slots = await _db.GuideAvailabilities
             .Include(ga => ga.Guide)
             .Where(ga => ga.GuideId == guideId)
@@ -229,8 +234,14 @@ public class GuideAvailabilityController : ControllerBase
     [Authorize(Policy = "OperatorOrAdmin")]
     public async Task<ActionResult<AvailabilityResponse>> Create(int guideId, CreateAvailabilityRequest request)
     {
-        if (guideId != request.GuideId)
+        if (request.GuideId != 0 && guideId != request.GuideId)
             return BadRequest("GuideId mismatch.");
+
+        if (request.AvailableDate == default)
+            return BadRequest("Valid AvailableDate is required.");
+
+        if (request.EndTime <= request.StartTime)
+            return BadRequest("EndTime must be after StartTime.");
 
         var guide = await _db.Guides.FindAsync(guideId);
         if (guide is null)
@@ -254,11 +265,12 @@ public class GuideAvailabilityController : ControllerBase
 
     // DELETE /api/v1/guides/{guideId}/availability/{availabilityId}
     [HttpDelete("{availabilityId:int}")]
+    [HttpDelete("/api/v1/guides/availability/{availabilityId:int}")]
     [Authorize(Policy = "OperatorOrAdmin")]
     public async Task<IActionResult> Delete(int guideId, int availabilityId)
     {
         var slot = await _db.GuideAvailabilities
-            .FirstOrDefaultAsync(ga => ga.GuideId == guideId && ga.AvailabilityId == availabilityId);
+            .FirstOrDefaultAsync(ga => (guideId == 0 || ga.GuideId == guideId) && ga.AvailabilityId == availabilityId);
 
         if (slot is null)
             return NotFound();

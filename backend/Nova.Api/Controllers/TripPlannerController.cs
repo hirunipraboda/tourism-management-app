@@ -135,7 +135,7 @@ public class TripPlannerController : ControllerBase
             {
                 // Check recent duplicate within 2 hours with same user & title
                 trip = await _db.Trips.Include(t => t.Itineraries)
-                    .FirstOrDefaultAsync(t => t.UserId == userId && (t.TripName == tripTitle || t.Destination == destination) && t.CreatedAt >= DateTime.UtcNow.AddHours(-2));
+                    .FirstOrDefaultAsync(t => t.UserId == userId && t.TripName == tripTitle && t.CreatedAt >= DateTime.UtcNow.AddHours(-2));
             }
 
             if (trip != null)

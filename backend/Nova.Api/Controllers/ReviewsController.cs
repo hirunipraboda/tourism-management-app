@@ -215,8 +215,8 @@ public class ReviewsController : ControllerBase
 
         var list = await query.OrderByDescending(r => r.CreatedAt).ToListAsync();
 
-        // If no user-specific reviews yet found, return the seeded demo reviews marked as my reviews so user sees their submissions
-        if (list.Count == 0)
+        // If no user-specific reviews yet found and user is unauthenticated, return the seeded demo reviews
+        if (string.IsNullOrEmpty(currentUserId) && list.Count == 0)
         {
             list = await _db.Reviews.AsNoTracking().OrderByDescending(r => r.CreatedAt).Take(2).ToListAsync();
         }
@@ -234,7 +234,12 @@ public class ReviewsController : ControllerBase
             return BadRequest(ApiResponse<object>.Fail("Invalid review data."));
         }
 
-        var rating = Math.Clamp(dto.Rating, 1, 5);
+        if (dto.Rating < 1 || dto.Rating > 5)
+        {
+            return BadRequest(ApiResponse<object>.Fail("Rating must be between 1 and 5."));
+        }
+
+        var rating = dto.Rating;
         var title = (dto.Title ?? string.Empty).Trim();
         var comment = (dto.Comment ?? string.Empty).Trim();
 
@@ -301,14 +306,29 @@ public class ReviewsController : ControllerBase
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateReview(string id, [FromBody] ReviewSubmissionDto dto)
     {
+        if (dto == null)
+        {
+            return BadRequest(ApiResponse<object>.Fail("Invalid update data."));
+        }
+
         var review = await _db.Reviews.FirstOrDefaultAsync(r => r.Id == id);
         if (review == null)
         {
             return NotFound(ApiResponse<object>.Fail("Review not found."));
         }
 
-        if (dto.Rating >= 1 && dto.Rating <= 5)
+        var currentUserId = GetCurrentUserId();
+        if (!string.IsNullOrEmpty(currentUserId) && review.UserId != currentUserId && !User.IsInRole("Admin") && !User.IsInRole("ADMIN"))
         {
+            return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<object>.Fail("Unauthorized: You cannot modify another user's review."));
+        }
+
+        if (dto.Rating != 0)
+        {
+            if (dto.Rating < 1 || dto.Rating > 5)
+            {
+                return BadRequest(ApiResponse<object>.Fail("Rating must be between 1 and 5."));
+            }
             review.Rating = dto.Rating;
         }
 
@@ -324,7 +344,6 @@ public class ReviewsController : ControllerBase
         review.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync();
 
-        var currentUserId = GetCurrentUserId();
         return Ok(ApiResponse<object>.Ok(MapReview(review, currentUserId, new Dictionary<string, string>(), forceCurrentTourist: true), "Review updated successfully."));
     }
 
@@ -335,6 +354,12 @@ public class ReviewsController : ControllerBase
         if (review == null)
         {
             return NotFound(ApiResponse<object>.Fail("Review not found."));
+        }
+
+        var currentUserId = GetCurrentUserId();
+        if (!string.IsNullOrEmpty(currentUserId) && review.UserId != currentUserId && !User.IsInRole("Admin") && !User.IsInRole("ADMIN"))
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<object>.Fail("Unauthorized: You cannot delete another user's review."));
         }
 
         _db.Reviews.Remove(review);

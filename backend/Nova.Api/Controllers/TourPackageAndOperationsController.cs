@@ -198,6 +198,9 @@ public class TourOperationsController : ControllerBase
     [Authorize(Policy = "OperatorOrAdmin")]
     public async Task<ActionResult<TourOperationResponse>> Create(CreateTourOperationRequest request)
     {
+        if (request.ScheduledDate == default)
+            return BadRequest("ScheduledDate cannot be empty.");
+
         var guide = await _db.Guides.FindAsync(request.GuideId);
         if (guide is null) return BadRequest("Guide not found.");
 
@@ -250,6 +253,9 @@ public class TourOperationsController : ControllerBase
     [Authorize(Policy = "OperatorOrAdmin")]
     public async Task<ActionResult<TourOperationResponse>> Update(int id, UpdateTourOperationRequest request)
     {
+        if (request.ScheduledDate == default)
+            return BadRequest("ScheduledDate cannot be empty.");
+
         var op = await _db.TourOperations
             .Include(to => to.TourPackage)
             .Include(to => to.Guide)

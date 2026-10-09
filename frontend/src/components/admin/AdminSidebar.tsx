@@ -261,6 +261,16 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
             {!isCollapsed && <span className="truncate">Package Bookings & Payments</span>}
           </NavLink>
 
+          {/* 6. Guide & Tour Operations */}
+          <NavLink
+            to="/admin/guide-tours"
+            title={isCollapsed ? 'Guide & Tour Operations' : undefined}
+            className={({ isActive }) => getItemClass(isActive)}
+          >
+            <Users className="w-5 h-5 shrink-0 transition-transform group-hover:scale-110" />
+            {!isCollapsed && <span className="truncate">Guide & Tour Operations</span>}
+          </NavLink>
+
 
 
           {/* 7. Transportation (Collapsible) */}

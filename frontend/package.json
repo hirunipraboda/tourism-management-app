@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "test": "node --test src/tests/app.test.ts",
+    "test": "node --test src/tests/app.test.ts src/tests/trips/*.test.ts src/tests/guides/*.test.ts src/tests/reviews/*.test.ts src/tests/system/*.test.ts",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -25,6 +25,7 @@
     "tailwindcss": "^4.3.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.0",
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",

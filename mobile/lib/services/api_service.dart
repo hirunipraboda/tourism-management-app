@@ -5,6 +5,7 @@ import '../models/travel_models.dart';
 import '../models/ai_trip_planner_models.dart';
 import '../models/user_trip_models.dart';
 import '../models/review_recommendation_models.dart';
+import '../models/guide_models.dart';
 
 class ApiService {
   static String? customBaseUrl;
@@ -1322,5 +1323,319 @@ class ApiService {
       'totalDestinations': 10,
       'satisfactionRate': 99.4,
     };
+  }
+
+  // =========================================================================
+  // 11. GUIDE & AVAILABILITY MANAGEMENT
+  // =========================================================================
+
+  static final List<GuideModel> _inMemoryGuides = List<GuideModel>.from(kInitialMockGuides);
+  static final List<GuideAvailabilitySlot> _inMemoryAvailabilitySlots = List<GuideAvailabilitySlot>.from(kInitialMockAvailabilitySlots);
+
+  static Future<List<GuideModel>> getGuides({
+    String? language,
+    String? specialty,
+    double? minRating,
+    bool? isActive,
+  }) async {
+    try {
+      String query = '$baseUrl/v1/guides';
+      final params = <String>[];
+      if (language != null && language.isNotEmpty) params.add('language=${Uri.encodeComponent(language)}');
+      if (specialty != null && specialty.isNotEmpty) params.add('specialty=${Uri.encodeComponent(specialty)}');
+      if (minRating != null) params.add('minRating=$minRating');
+      if (isActive != null) params.add('isActive=$isActive');
+      if (params.isNotEmpty) query += '?${params.join('&')}';
+
+      final res = await http.get(Uri.parse(query), headers: _headers(needsAuth: false)).timeout(const Duration(seconds: 2));
+      if (res.statusCode == 200) {
+        final dynamic raw = jsonDecode(res.body);
+        final list = (raw is List) ? raw : (raw['data'] as List<dynamic>? ?? []);
+        final parsed = list.map((g) => GuideModel.fromJson(g as Map<String, dynamic>)).toList();
+        if (parsed.isNotEmpty) {
+          for (final item in parsed) {
+            final idx = _inMemoryGuides.indexWhere((g) => g.id == item.id);
+            if (idx != -1) {
+              _inMemoryGuides[idx] = item;
+            } else {
+              _inMemoryGuides.add(item);
+            }
+          }
+          return parsed;
+        }
+      }
+    } catch (e) {
+      debugPrint('[ApiService] getGuides error: $e');
+    }
+
+    var result = List<GuideModel>.from(_inMemoryGuides);
+    if (language != null && language.isNotEmpty) {
+      result = result.where((g) => g.languages.any((l) => l.toLowerCase().contains(language.toLowerCase()))).toList();
+    }
+    if (specialty != null && specialty.isNotEmpty) {
+      result = result.where((g) => g.specialties.any((s) => s.toLowerCase().contains(specialty.toLowerCase()))).toList();
+    }
+    if (minRating != null) {
+      result = result.where((g) => g.rating >= minRating).toList();
+    }
+    if (isActive != null) {
+      result = result.where((g) => (g.status != 'Inactive') == isActive).toList();
+    }
+    return result;
+  }
+
+  static Future<GuideModel?> getGuideById(int id) async {
+    try {
+      final res = await http.get(Uri.parse('$baseUrl/v1/guides/$id'), headers: _headers(needsAuth: false)).timeout(const Duration(seconds: 2));
+      if (res.statusCode == 200) {
+        final body = jsonDecode(res.body);
+        final data = body is Map<String, dynamic> ? (body['data'] ?? body) : body;
+        return GuideModel.fromJson(data as Map<String, dynamic>);
+      }
+    } catch (e) {
+      debugPrint('[ApiService] getGuideById error: $e');
+    }
+    return _inMemoryGuides.firstWhere((g) => g.id == id, orElse: () => _inMemoryGuides.first);
+  }
+
+  static Future<Map<String, dynamic>> createGuide({
+    required String name,
+    required String email,
+    String? phone,
+    String? bio,
+    List<String>? languages,
+    List<String>? specialties,
+    int? yearsExperience,
+    String? avatarUrl,
+  }) async {
+    final payload = {
+      'name': name.trim(),
+      'email': email.trim(),
+      if (phone != null) 'phone': phone.trim(),
+      if (bio != null) 'bio': bio.trim(),
+      'languages': languages ?? [],
+      'specialties': specialties ?? [],
+      if (yearsExperience != null) 'yearsExperience': yearsExperience,
+      if (avatarUrl != null) 'avatarUrl': avatarUrl.trim(),
+    };
+
+    try {
+      final res = await http.post(
+        Uri.parse('$baseUrl/v1/guides'),
+        headers: _headers(),
+        body: jsonEncode(payload),
+      ).timeout(const Duration(seconds: 2));
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        final body = jsonDecode(res.body);
+        final guideData = GuideModel.fromJson(body is Map<String, dynamic> ? (body['data'] ?? body) : body);
+        _inMemoryGuides.insert(0, guideData);
+        return {'success': true, 'guide': guideData};
+      }
+    } catch (e) {
+      debugPrint('[ApiService] createGuide error: $e');
+    }
+
+    final newGuide = GuideModel(
+      id: _inMemoryGuides.length + 10,
+      name: name,
+      email: email,
+      phone: phone ?? '',
+      bio: bio ?? '',
+      languages: languages ?? ['English'],
+      specialties: specialties ?? ['Cultural Heritage'],
+      yearsExperience: yearsExperience ?? 3,
+      avatarUrl: avatarUrl ?? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200',
+      status: 'Available',
+      verificationStatus: 'Pending',
+    );
+    _inMemoryGuides.insert(0, newGuide);
+    return {'success': true, 'guide': newGuide};
+  }
+
+  static Future<Map<String, dynamic>> updateGuide(
+    int id, {
+    required String name,
+    required String email,
+    String? phone,
+    String? bio,
+    List<String>? languages,
+    List<String>? specialties,
+    int? yearsExperience,
+    String? avatarUrl,
+  }) async {
+    final payload = {
+      'name': name.trim(),
+      'email': email.trim(),
+      if (phone != null) 'phone': phone.trim(),
+      if (bio != null) 'bio': bio.trim(),
+      'languages': languages ?? [],
+      'specialties': specialties ?? [],
+      if (yearsExperience != null) 'yearsExperience': yearsExperience,
+      if (avatarUrl != null) 'avatarUrl': avatarUrl.trim(),
+    };
+
+    try {
+      final res = await http.put(
+        Uri.parse('$baseUrl/v1/guides/$id'),
+        headers: _headers(),
+        body: jsonEncode(payload),
+      ).timeout(const Duration(seconds: 2));
+      if (res.statusCode == 200) {
+        final body = jsonDecode(res.body);
+        final updated = GuideModel.fromJson(body is Map<String, dynamic> ? (body['data'] ?? body) : body);
+        final idx = _inMemoryGuides.indexWhere((g) => g.id == id);
+        if (idx != -1) _inMemoryGuides[idx] = updated;
+        return {'success': true, 'guide': updated};
+      }
+    } catch (e) {
+      debugPrint('[ApiService] updateGuide error: $e');
+    }
+
+    final idx = _inMemoryGuides.indexWhere((g) => g.id == id);
+    if (idx != -1) {
+      _inMemoryGuides[idx] = _inMemoryGuides[idx].copyWith(
+        name: name,
+        email: email,
+        phone: phone,
+        bio: bio,
+        languages: languages,
+        specialties: specialties,
+        yearsExperience: yearsExperience,
+        avatarUrl: avatarUrl,
+      );
+      return {'success': true, 'guide': _inMemoryGuides[idx]};
+    }
+    return {'success': false, 'message': 'Guide not found'};
+  }
+
+  static Future<bool> deleteGuide(int id) async {
+    try {
+      final res = await http.delete(
+        Uri.parse('$baseUrl/v1/guides/$id'),
+        headers: _headers(),
+      ).timeout(const Duration(seconds: 2));
+      if (res.statusCode == 200 || res.statusCode == 204) {
+        _inMemoryGuides.removeWhere((g) => g.id == id);
+        return true;
+      }
+    } catch (e) {
+      debugPrint('[ApiService] deleteGuide error: $e');
+    }
+    _inMemoryGuides.removeWhere((g) => g.id == id);
+    return true;
+  }
+
+  static Future<bool> verifyGuide(int id, String verificationStatus) async {
+    try {
+      final res = await http.patch(
+        Uri.parse('$baseUrl/v1/guides/$id/verification'),
+        headers: _headers(),
+        body: jsonEncode({'verificationStatus': verificationStatus}),
+      ).timeout(const Duration(seconds: 2));
+      if (res.statusCode == 200) {
+        final idx = _inMemoryGuides.indexWhere((g) => g.id == id);
+        if (idx != -1) {
+          _inMemoryGuides[idx] = _inMemoryGuides[idx].copyWith(
+            verificationStatus: verificationStatus,
+            status: verificationStatus == 'Verified' ? 'Available' : 'Inactive',
+          );
+        }
+        return true;
+      }
+    } catch (e) {
+      debugPrint('[ApiService] verifyGuide error: $e');
+    }
+
+    final idx = _inMemoryGuides.indexWhere((g) => g.id == id);
+    if (idx != -1) {
+      _inMemoryGuides[idx] = _inMemoryGuides[idx].copyWith(
+        verificationStatus: verificationStatus,
+        status: verificationStatus == 'Verified' ? 'Available' : 'Inactive',
+      );
+      return true;
+    }
+    return false;
+  }
+
+  static Future<List<GuideAvailabilitySlot>> getGuideAvailability(int guideId) async {
+    try {
+      final res = await http.get(
+        Uri.parse('$baseUrl/v1/guides/$guideId/availability'),
+        headers: _headers(needsAuth: false),
+      ).timeout(const Duration(seconds: 2));
+      if (res.statusCode == 200) {
+        final dynamic raw = jsonDecode(res.body);
+        final list = (raw is List) ? raw : (raw['data'] as List<dynamic>? ?? []);
+        final parsed = list.map((s) => GuideAvailabilitySlot.fromJson(s as Map<String, dynamic>)).toList();
+        if (parsed.isNotEmpty) {
+          _inMemoryAvailabilitySlots.removeWhere((s) => s.guideId == guideId);
+          _inMemoryAvailabilitySlots.addAll(parsed);
+          return parsed;
+        }
+      }
+    } catch (e) {
+      debugPrint('[ApiService] getGuideAvailability error: $e');
+    }
+    return _inMemoryAvailabilitySlots.where((s) => s.guideId == guideId).toList();
+  }
+
+  static Future<GuideAvailabilitySlot?> createGuideAvailability({
+    required int guideId,
+    required String availableDate,
+    required String startTime,
+    required String endTime,
+  }) async {
+    final payload = {
+      'guideId': guideId,
+      'availableDate': availableDate,
+      'startTime': startTime.length == 5 ? '$startTime:00' : startTime,
+      'endTime': endTime.length == 5 ? '$endTime:00' : endTime,
+    };
+
+    try {
+      final res = await http.post(
+        Uri.parse('$baseUrl/v1/guides/$guideId/availability'),
+        headers: _headers(),
+        body: jsonEncode(payload),
+      ).timeout(const Duration(seconds: 2));
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        final body = jsonDecode(res.body);
+        final slot = GuideAvailabilitySlot.fromJson(body is Map<String, dynamic> ? (body['data'] ?? body) : body);
+        _inMemoryAvailabilitySlots.insert(0, slot);
+        return slot;
+      }
+    } catch (e) {
+      debugPrint('[ApiService] createGuideAvailability error: $e');
+    }
+
+    final guide = _inMemoryGuides.firstWhere((g) => g.id == guideId, orElse: () => _inMemoryGuides.first);
+    final localSlot = GuideAvailabilitySlot(
+      availabilityId: DateTime.now().millisecondsSinceEpoch,
+      guideId: guideId,
+      guideName: guide.name,
+      availableDate: availableDate,
+      startTime: startTime,
+      endTime: endTime,
+      isBooked: false,
+    );
+    _inMemoryAvailabilitySlots.insert(0, localSlot);
+    return localSlot;
+  }
+
+  static Future<bool> deleteGuideAvailability(int guideId, int availabilityId) async {
+    try {
+      final res = await http.delete(
+        Uri.parse('$baseUrl/v1/guides/$guideId/availability/$availabilityId'),
+        headers: _headers(),
+      ).timeout(const Duration(seconds: 2));
+      if (res.statusCode == 200 || res.statusCode == 204) {
+        _inMemoryAvailabilitySlots.removeWhere((s) => s.availabilityId == availabilityId);
+        return true;
+      }
+    } catch (e) {
+      debugPrint('[ApiService] deleteGuideAvailability error: $e');
+    }
+    _inMemoryAvailabilitySlots.removeWhere((s) => s.availabilityId == availabilityId);
+    return true;
   }
 }

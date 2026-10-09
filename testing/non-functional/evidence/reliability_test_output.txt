@@ -1,0 +1,27 @@
+Test run for C:\Users\user\NOVA\backend\Nova.Tests\bin\Release\net8.0\Nova.Tests.dll (.NETCoreApp,Version=v8.0)
+VSTest version 17.11.1 (x64)
+
+Starting test execution, please wait...
+A total of 1 test files matched the specified pattern.
+[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v2.5.3.1+6b60a9e56a (64-bit .NET 8.0.29)
+[xUnit.net 00:00:00.09]   Discovering: Nova.Tests
+[xUnit.net 00:00:00.19]   Discovered:  Nova.Tests
+[xUnit.net 00:00:00.20]   Starting:    Nova.Tests
+  Passed Nova.Tests.NonFunctional.ReliabilityAndRecoveryTests.NFR_REL_002_RepeatedTripRetrieval [4 s]
+  Passed Nova.Tests.NonFunctional.ReliabilityAndRecoveryTests.NFR_REC_002_AiServiceUnavailableThenRestored [612 ms]
+  Passed Nova.Tests.NonFunctional.ReliabilityAndRecoveryTests.NFR_REC_005_ClientRetryAfterFailedRequest [677 ms]
+  Passed Nova.Tests.NonFunctional.ReliabilityAndRecoveryTests.NFR_REC_001_BackendUnavailableThenRestoredSimulation [729 ms]
+  Passed Nova.Tests.NonFunctional.ReliabilityAndRecoveryTests.NFR_REL_006_RepeatedRecommendationRequests [496 ms]
+  Passed Nova.Tests.NonFunctional.ReliabilityAndRecoveryTests.NFR_REL_004_RepeatedGuideTourRetrieval [2 s]
+  Passed Nova.Tests.NonFunctional.ReliabilityAndRecoveryTests.NFR_REC_004_DatabaseConnectionDropAndRecovery [745 ms]
+  Passed Nova.Tests.NonFunctional.ReliabilityAndRecoveryTests.NFR_REL_001_RepeatedDestinationRetrieval [1 s]
+  Passed Nova.Tests.NonFunctional.ReliabilityAndRecoveryTests.NFR_REL_005_RepeatedReviewSubmissionAndRetrieval [1 s]
+  Passed Nova.Tests.NonFunctional.ReliabilityAndRecoveryTests.NFR_REC_003_TemporaryApiNetworkFailureSimulation [515 ms]
+  Passed Nova.Tests.NonFunctional.ReliabilityAndRecoveryTests.NFR_REL_003_RepeatedItineraryOperations [1 s]
+[xUnit.net 00:00:16.10]   Finished:    Nova.Tests
+  Passed Nova.Tests.NonFunctional.ReliabilityAndRecoveryTests.NFR_REL_007_AiServiceUnavailableResilience [404 ms]
+
+Test Run Successful.
+Total tests: 12
+     Passed: 12
+ Total time: 16.6506 Seconds

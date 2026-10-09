@@ -6,6 +6,7 @@ import '../services/api_service.dart';
 import '../widgets/nova_guide_floating_bot.dart';
 import '../widgets/nova_guide_modal.dart';
 import '../widgets/travel_bot_avatar.dart';
+import 'guide_management_screen.dart';
 
 class ToursScreen extends StatefulWidget {
   const ToursScreen({super.key});
@@ -643,6 +644,43 @@ class _ToursScreenState extends State<ToursScreen> {
                                 color: Colors.white,
                               ),
                             ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+
+                    // Tertiary CTA: Licensed Guides & Availability Dispatch
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const GuideManagementScreen()),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF146C86),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 13),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.badge_outlined, size: 17, color: Color(0xFF5EEAD4)),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Licensed Guides & Availability',
+                              style: GoogleFonts.outfit(
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            const Icon(Icons.arrow_forward_rounded, size: 15, color: Colors.white70),
                           ],
                         ),
                       ),

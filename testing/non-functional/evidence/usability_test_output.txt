@@ -1,0 +1,16 @@
+✔ NFR-USE-001: Usability - Destination discovery and search clarity (0.836ms)
+✔ NFR-USE-002: Usability - Destination details cognitive clarity (0.1946ms)
+✔ NFR-USE-003: Usability - Trip creation wizard guided flow (0.1334ms)
+✔ NFR-USE-004: Usability - Itinerary timeline information clarity (0.1497ms)
+✔ NFR-USE-005: Usability - Guide and tour package discoverability (0.1292ms)
+✔ NFR-USE-006: Usability - Review submission workflow simplicity (0.1783ms)
+✔ NFR-USE-007: Usability - Recommendation transparency and explainability (0.1174ms)
+✔ NFR-USE-008: Usability - Human-understandable error messages (0.3194ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 126.1402

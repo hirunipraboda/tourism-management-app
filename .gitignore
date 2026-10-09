@@ -45,4 +45,9 @@ scratch/
 **/appsettings.*.local.json
 **/appsettings.local.json
 
+# Test output directories
+test-results/
+**/test-results/
+
+
 

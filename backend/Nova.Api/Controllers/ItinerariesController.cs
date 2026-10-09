@@ -110,7 +110,7 @@ public class ItinerariesController : ControllerBase
 
     // Human Approval Endpoints (Tour Operator / Admin)
     [HttpPost("api/itineraries/{id}/approve")]
-    [Authorize(Roles = "TourismOperator,Admin")]
+    [Authorize(Roles = "TourismOperator,Admin,ADMIN")]
     [ProducesResponseType(typeof(ApiResponse<ApprovalResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<ApprovalResponse>), StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> ApproveItinerary(string id, [FromBody] ApprovalRequest request)
@@ -125,7 +125,7 @@ public class ItinerariesController : ControllerBase
     }
 
     [HttpPost("api/itineraries/{id}/reject")]
-    [Authorize(Roles = "TourismOperator,Admin")]
+    [Authorize(Roles = "TourismOperator,Admin,ADMIN")]
     [ProducesResponseType(typeof(ApiResponse<ApprovalResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> RejectItinerary(string id, [FromBody] ApprovalRequest request)
     {
@@ -139,7 +139,7 @@ public class ItinerariesController : ControllerBase
     }
 
     [HttpPost("api/itineraries/{id}/request-revision")]
-    [Authorize(Roles = "TourismOperator,Admin")]
+    [Authorize(Roles = "TourismOperator,Admin,ADMIN")]
     [ProducesResponseType(typeof(ApiResponse<ApprovalResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> RequestRevision(string id, [FromBody] ApprovalRequest request)
     {

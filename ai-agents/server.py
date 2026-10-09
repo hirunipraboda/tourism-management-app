@@ -845,7 +845,12 @@ def _generate_fallback_trip_plan(req: PlanTripApiRequest, dest_list: List[str], 
 
             times = ["13:30 - 15:30", "16:30 - 18:30"]
             for a_idx, att in enumerate(chosen):
-                cost = float(str(att.get("estimated_cost", "15.0")).replace("$", "").replace("LKR", "").strip() or 10.0)
+                raw_cost_str = str(att.get("estimated_cost", "15.0")).replace("$", "").replace("LKR", "").strip()
+                cleaned_digits = "".join(ch for ch in raw_cost_str if ch.isdigit() or ch == ".")
+                try:
+                    cost = float(cleaned_digits) if cleaned_digits else (0.0 if "free" in raw_cost_str.lower() else 10.0)
+                except Exception:
+                    cost = 10.0
                 if cost > 500: cost = round(cost / 300.0, 1)
                 day_cost += cost
                 day_activities.append({
@@ -876,7 +881,12 @@ def _generate_fallback_trip_plan(req: PlanTripApiRequest, dest_list: List[str], 
                 ("16:30 - 18:30", "Sightseeing")
             ]
             for a_idx, att in enumerate(chosen):
-                cost = float(str(att.get("estimated_cost", "15.0")).replace("$", "").replace("LKR", "").strip() or 10.0)
+                raw_cost_str = str(att.get("estimated_cost", "15.0")).replace("$", "").replace("LKR", "").strip()
+                cleaned_digits = "".join(ch for ch in raw_cost_str if ch.isdigit() or ch == ".")
+                try:
+                    cost = float(cleaned_digits) if cleaned_digits else (0.0 if "free" in raw_cost_str.lower() else 10.0)
+                except Exception:
+                    cost = 10.0
                 if cost > 500: cost = round(cost / 300.0, 1)
                 day_cost += cost
                 slot_time, act_type = day_slots[a_idx] if a_idx < len(day_slots) else ("16:00 - 18:00", "Activity")

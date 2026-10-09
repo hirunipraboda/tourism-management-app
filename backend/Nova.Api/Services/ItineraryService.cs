@@ -36,7 +36,7 @@ public class ItineraryService : IItineraryService
         var trip = await _db.Trips.FirstOrDefaultAsync(t => t.Id == tripId);
         if (trip == null) return ApiResponse<ItineraryResponse>.Fail("Trip not found.");
 
-        if (userRole.Equals(UserRole.Tourist.ToString(), StringComparison.OrdinalIgnoreCase) && trip.UserId != userId)
+        if (IsRestrictedUser(userRole) && trip.UserId != userId)
         {
             return ApiResponse<ItineraryResponse>.Fail("You are not authorized to create itineraries for this trip.");
         }
@@ -106,7 +106,7 @@ public class ItineraryService : IItineraryService
         var trip = await _db.Trips.FirstOrDefaultAsync(t => t.Id == tripId);
         if (trip == null) return ApiResponse<ItineraryResponse>.Fail("Trip not found.");
 
-        if (userRole.Equals(UserRole.Tourist.ToString(), StringComparison.OrdinalIgnoreCase) && trip.UserId != userId)
+        if (IsRestrictedUser(userRole) && trip.UserId != userId)
         {
             return ApiResponse<ItineraryResponse>.Fail("You are not authorized to access itineraries for this trip.");
         }
@@ -132,7 +132,7 @@ public class ItineraryService : IItineraryService
 
         if (itinerary == null) return ApiResponse<ItineraryResponse>.Fail("Itinerary not found.");
 
-        if (userRole.Equals(UserRole.Tourist.ToString(), StringComparison.OrdinalIgnoreCase) && itinerary.Trip?.UserId != userId)
+        if (IsRestrictedUser(userRole) && itinerary.Trip?.UserId != userId)
         {
             return ApiResponse<ItineraryResponse>.Fail("You are not authorized to access this itinerary.");
         }
@@ -145,7 +145,7 @@ public class ItineraryService : IItineraryService
         var itinerary = await _db.Itineraries.Include(i => i.Trip).FirstOrDefaultAsync(i => i.Id == itineraryId);
         if (itinerary == null) return ApiResponse<bool>.Fail("Itinerary not found.");
 
-        if (userRole.Equals(UserRole.Tourist.ToString(), StringComparison.OrdinalIgnoreCase) && itinerary.Trip?.UserId != userId)
+        if (IsRestrictedUser(userRole) && itinerary.Trip?.UserId != userId)
         {
             return ApiResponse<bool>.Fail("You are not authorized to delete this itinerary.");
         }
@@ -161,7 +161,7 @@ public class ItineraryService : IItineraryService
         var itinerary = await _db.Itineraries.Include(i => i.Trip).Include(i => i.Days).FirstOrDefaultAsync(i => i.Id == itineraryId);
         if (itinerary == null) return ApiResponse<ItineraryDayResponse>.Fail("Itinerary not found.");
 
-        if (userRole.Equals(UserRole.Tourist.ToString(), StringComparison.OrdinalIgnoreCase) && itinerary.Trip?.UserId != userId)
+        if (IsRestrictedUser(userRole) && itinerary.Trip?.UserId != userId)
         {
             return ApiResponse<ItineraryDayResponse>.Fail("You are not authorized to modify this itinerary.");
         }
@@ -206,7 +206,7 @@ public class ItineraryService : IItineraryService
         var itinerary = await _db.Itineraries.Include(i => i.Trip).FirstOrDefaultAsync(i => i.Id == itineraryId);
         if (itinerary == null) return ApiResponse<List<ItineraryDayResponse>>.Fail("Itinerary not found.");
 
-        if (userRole.Equals(UserRole.Tourist.ToString(), StringComparison.OrdinalIgnoreCase) && itinerary.Trip?.UserId != userId)
+        if (IsRestrictedUser(userRole) && itinerary.Trip?.UserId != userId)
         {
             return ApiResponse<List<ItineraryDayResponse>>.Fail("You are not authorized to access this itinerary.");
         }
@@ -230,7 +230,7 @@ public class ItineraryService : IItineraryService
 
         if (day == null) return ApiResponse<ItineraryItemResponse>.Fail("Itinerary day not found.");
 
-        if (userRole.Equals(UserRole.Tourist.ToString(), StringComparison.OrdinalIgnoreCase) && day.Itinerary?.Trip?.UserId != userId)
+        if (IsRestrictedUser(userRole) && day.Itinerary?.Trip?.UserId != userId)
         {
             return ApiResponse<ItineraryItemResponse>.Fail("You are not authorized to modify this itinerary.");
         }
@@ -273,7 +273,7 @@ public class ItineraryService : IItineraryService
 
         if (item == null) return ApiResponse<ItineraryItemResponse>.Fail("Itinerary item not found.");
 
-        if (userRole.Equals(UserRole.Tourist.ToString(), StringComparison.OrdinalIgnoreCase) && item.ItineraryDay?.Itinerary?.Trip?.UserId != userId)
+        if (IsRestrictedUser(userRole) && item.ItineraryDay?.Itinerary?.Trip?.UserId != userId)
         {
             return ApiResponse<ItineraryItemResponse>.Fail("You are not authorized to modify this item.");
         }
@@ -310,7 +310,7 @@ public class ItineraryService : IItineraryService
 
         if (item == null) return ApiResponse<bool>.Fail("Itinerary item not found.");
 
-        if (userRole.Equals(UserRole.Tourist.ToString(), StringComparison.OrdinalIgnoreCase) && item.ItineraryDay?.Itinerary?.Trip?.UserId != userId)
+        if (IsRestrictedUser(userRole) && item.ItineraryDay?.Itinerary?.Trip?.UserId != userId)
         {
             return ApiResponse<bool>.Fail("You are not authorized to delete this item.");
         }
@@ -400,4 +400,8 @@ public class ItineraryService : IItineraryService
             SequenceOrder = item.SequenceOrder
         };
     }
+
+    private static bool IsRestrictedUser(string userRole) =>
+        !userRole.Equals(UserRole.Admin.ToString(), StringComparison.OrdinalIgnoreCase) &&
+        !userRole.Equals("ADMIN", StringComparison.OrdinalIgnoreCase);
 }

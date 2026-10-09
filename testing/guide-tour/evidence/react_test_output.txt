@@ -1,0 +1,72 @@
+Command: npm test
+Working Directory: C:\Users\user\NOVA\frontend
+Timestamp: 2026-10-08T14:42:16+05:30
+
+> frontend@0.0.0 test
+> node --test src/tests/app.test.ts src/tests/trips/*.test.ts src/tests/guides/*.test.ts
+
+✔ Frontend configuration: API endpoint resolution (1.2788ms)
+✔ Tourism data structure integrity (0.2505ms)
+✔ Reviews and recommendations data structure integrity (0.1828ms)
+✔ Customer Satisfaction Analytics integrity (0.1759ms)
+✔ Multi-Destination and Day-by-Day Transport Leg integrity (0.2361ms)
+✔ Itinerary-derived Travel Legs: Yala -> Colombo -> Kandy automatic generation (0.2902ms)
+✔ Specific Bus & Train Selection per route leg with fares and timetables (1.3882ms)
+✔ Transportation Flow: Choose Public (From->To Search on Itinerary Places) vs Private (Vehicle Selection) (1.1234ms)
+✔ Multi-Leg Sequential Transport Selection: displays all selected options relevant to origin to destination (0.3944ms)
+✔ Staycation Booking Confirmation Receipt: Verification code and receipt breakdown integrity (0.3879ms)
+✔ Trips Search Functionality: Filters trips by name, destination, and staycation booking (0.4417ms)
+✔ Real Calendar Trip Timeline Engine: Trip Statuses and Relative Countdown Logic (41.5238ms)
+✔ WEB-AVL-001: Open availability dashboard displays slots correctly (1.4071ms)
+✔ WEB-AVL-002: Filter availability by guide and date (0.3524ms)
+✔ WEB-AVL-003: Create availability slot with valid times (0.3138ms)
+✔ WEB-AVL-004: Enter invalid availability details rejects inverted times or missing dates (0.262ms)
+✔ WEB-AVL-005: Delete availability slot removes it from active list (0.1922ms)
+✔ WEB-GUI-001: Open Guide Directory - List displays guides correctly (1.1255ms)
+✔ WEB-GUI-002: Search/filter guides by query and specialty (0.2851ms)
+✔ WEB-GUI-003: Open guide details - Selected guide info presented (0.1631ms)
+✔ WEB-GUI-004: Register a guide with valid information (0.2053ms)
+✔ WEB-GUI-005: Submit guide registration with invalid/missing data (0.3145ms)
+✔ WEB-GUI-006: Edit guide information updates fields (0.187ms)
+✔ WEB-GUI-007: Deactivate guide removes from active list (0.2563ms)
+✔ WEB-GUI-008: Approve guide verification sets Verified status (0.1862ms)
+✔ WEB-GUI-009: Reject guide verification sets Rejected status (0.2472ms)
+✔ WEB-TOP-001: Display tour operations list with correct details (0.8888ms)
+✔ WEB-TOP-002: Update tour operation modifies tourist count and costs (0.1946ms)
+✔ WEB-TOP-003: Change tour operation status through valid lifecycle (0.4546ms)
+✔ WEB-TPK-001: Open Tour Packages section displays catalog packages correctly (1.3402ms)
+✔ WEB-TPK-002: Create tour package with valid details (1.3356ms)
+✔ WEB-TPK-003: Edit tour package updates price, duration and group size (0.292ms)
+✔ WEB-TPK-004: Delete tour package sets isActive to false (soft delete) (0.2981ms)
+✔ WEB-TPK-005: Submit invalid tour package information returns validation errors (0.2782ms)
+✔ ITN-001 & ITN-002: Itinerary Multi-Day Hierarchy and Date Tracking (1.2068ms)
+✔ ITN-003, ITN-004, ITN-005: Itinerary Days CRUD Operations (0.3208ms)
+✔ ITN-006, ITN-007, ITN-008: Itinerary Activities Cost and Timing Management (0.3328ms)
+✔ ITN-009 & ITN-010: Transport Leg Selection and Transit Times (0.321ms)
+✔ ITN-011 to ITN-015: Approval Lifecycle and Operator Authorization Verification (0.2651ms)
+✔ GEN-001 to GEN-004: Generation Workflow Audit Logging and Fallbacks (0.2227ms)
+✔ TRP-001: Valid Trip Creation Payload Structure (1.0298ms)
+✔ TRP-002: Optional Fields Defaulting (0.7664ms)
+✔ TRP-003: Validation - End Date Precedes Start Date (1.0929ms)
+✔ TRP-004: Validation - Negative Budget and Zero Travelers (0.1883ms)
+✔ TRP-005 & TRP-006: Trip Filtering and Pagination Parameters (0.2402ms)
+✔ TRP-007 & TRP-011: Trip Timeline Calculator and Status Engine (16.4513ms)
+✔ TRP-008: Multi-user Ownership and Access Isolation (0.2375ms)
+✔ TRP-009 & TRP-010: Trip Update and Dependent Day Date Shifting (1.281ms)
+✔ TRP-012: Trip Deletion Flow (0.2287ms)
+✔ ATP-001: AI Trip Plan Generation Request and Response Schema (0.9902ms)
+✔ ATP-002: Validation - Missing Destination or Negative Travelers (0.2066ms)
+✔ ATP-003: Save Generated Plan Payload Construction (0.1344ms)
+✔ ATP-004: Targeted Day Regeneration in Plan (0.1704ms)
+✔ ATP-005: Targeted Activity Replacement within Day (0.1532ms)
+✔ ATP-006 & ATP-007: Plan Retrieval and Plan Deletion (0.1417ms)
+✔ ATP-008: AI Engine Service Unavailable Fallback Handling (0.1502ms)
+ℹ tests 56
+ℹ suites 0
+ℹ pass 56
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 247.2328
+Result: SUCCESS (22 Tour & Guide Tests + 34 Trip & Itinerary Tests = 56 Passed, 0 Failed)

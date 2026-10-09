@@ -1,0 +1,12 @@
+Running 8 tests using 1 worker
+
+  ok 1 [Google Chrome] › e2e\auth.spec.ts:4:3 › E2E Authentication Workflows › E2E-001: User Login page renders with form fields and validates empty inputs (1.5s)
+  ok 2 [Google Chrome] › e2e\auth.spec.ts:20:3 › E2E Authentication Workflows › E2E-001: User Registration page renders correctly with validation (1.5s)
+  ok 3 [Google Chrome] › e2e\destination-trip.spec.ts:4:3 › E2E Destination & Trip Workflows › E2E-002 & E2E-003: Destinations directory loads and allows searching (1.4s)
+  ok 4 [Google Chrome] › e2e\destination-trip.spec.ts:19:3 › E2E Destination & Trip Workflows › E2E-004: Trip planner wizard loads with step options (1.7s)
+  ok 5 [Google Chrome] › e2e\full-tourism-workflow.spec.ts:4:3 › E2E Full Tourism Planning Workflow › E2E-012: Complete landing to destination explorer navigation flow (1.7s)
+  ok 6 [Google Chrome] › e2e\reviews-recommendations.spec.ts:4:3 › E2E Reviews & Recommendations Workflows › E2E-009 & E2E-010: Reviews and Recommendations hub renders categories and cards (1.4s)
+  ok 7 [Google Chrome] › e2e\tour-guide.spec.ts:4:3 › E2E Tour & Guide Workflows › E2E-006 & E2E-008: Tours page loads with travel packages and filters (1.9s)
+  ok 8 [Google Chrome] › e2e\tour-guide.spec.ts:11:3 › E2E Tour & Guide Workflows › E2E-007: Guide registration page renders with license and experience fields (1.4s)
+
+  8 passed (16.7s)

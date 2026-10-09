@@ -1,0 +1,27 @@
+============================= test session starts =============================
+platform win32 -- Python 3.11.9, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\user\AppData\Local\Programs\Python\Python311\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\user\NOVA\ai-agents
+plugins: anyio-4.15.1, langsmith-0.12.6
+collecting ... collected 12 items
+
+tests/recommendations/test_rag_retrieval.py::test_rag_review_documents_ingestion_and_metadata_ai_rec_005 PASSED [  8%]
+tests/recommendations/test_rag_retrieval.py::test_recommendations_no_matching_knowledge_handled_safely_ai_rec_007 PASSED [ 16%]
+tests/recommendations/test_recommendation_failures.py::test_malformed_ai_response_handling_ai_rec_008 PASSED [ 25%]
+tests/recommendations/test_recommendation_failures.py::test_ai_service_unavailable_fallback_ai_rec_009 PASSED [ 33%]
+tests/recommendations/test_recommendations.py::test_generate_recommendations_valid_preferences_ai_rec_001 PASSED [ 41%]
+tests/recommendations/test_recommendations.py::test_generate_recommendations_missing_preferences_ai_rec_002 PASSED [ 50%]
+tests/recommendations/test_recommendations.py::test_generate_recommendations_valid_destination_interest_ai_rec_003 PASSED [ 58%]
+tests/recommendations/test_recommendations.py::test_recommendation_response_structure_schema_ai_rec_004 PASSED [ 66%]
+tests/recommendations/test_recommendations.py::test_recommendations_different_interests_diversity_ai_rec_006 PASSED [ 75%]
+tests/recommendations/test_recommendations.py::test_repeat_same_request_consistency_ai_rec_010 PASSED [ 83%]
+tests/recommendations/test_recommendations.py::test_recommendation_relevance_against_preferences_ai_rec_011 PASSED [ 91%]
+tests/recommendations/test_recommendations.py::test_prompt_injection_safety_ai_rec_012 PASSED [100%]
+
+============================== warnings summary ===============================
+tools\tourism_search_tool.py:27
+  C:\Users\user\NOVA\ai-agents\tools\tourism_search_tool.py:27: DeprecationWarning: `langchain-community` is being sunset and is no longer actively maintained. See https://github.com/langchain-ai/langchain-community/issues/674 for details and migration guidance toward standalone integration packages.
+    from langchain_community.vectorstores import FAISS
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================== 12 passed, 1 warning in 7.14s ========================

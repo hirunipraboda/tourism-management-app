@@ -296,6 +296,24 @@ export const LoginPage: React.FC = () => {
                 )}
               </button>
 
+              {/* Quick Demo Admin Credential Shortcut */}
+              <div className="pt-1 flex items-center justify-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEmail('admin@tourlink.com');
+                    setPassword('admin123');
+                    setEmailError('');
+                    setPasswordError('');
+                  }}
+                  className="px-3.5 py-1.5 rounded-xl bg-teal-50 hover:bg-teal-100 text-[#0B3A53] border border-teal-200 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs"
+                  title="Autofill Administrator & Guide Operations credentials"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5 text-[#16A6A1]" />
+                  <span>Fill Demo Admin / Guide Console</span>
+                </button>
+              </div>
+
               {/* Social Login Divider */}
               <div className="relative py-2 flex items-center justify-center">
                 <div className="absolute inset-0 flex items-center">

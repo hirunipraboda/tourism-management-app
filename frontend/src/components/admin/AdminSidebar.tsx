@@ -19,6 +19,7 @@ import {
   LogOut,
   HelpCircle,
   Milestone,
+  UserCheck,
 } from 'lucide-react';
 import websiteLogo from '../../assets/website-logo.png';
 import { adminAuthService } from '../../services/adminAuthService';
@@ -267,7 +268,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
             title={isCollapsed ? 'Guide & Tour Operations' : undefined}
             className={({ isActive }) => getItemClass(isActive)}
           >
-            <Users className="w-5 h-5 shrink-0 transition-transform group-hover:scale-110" />
+            <UserCheck className="w-5 h-5 shrink-0 transition-transform group-hover:scale-110" />
             {!isCollapsed && <span className="truncate">Guide & Tour Operations</span>}
           </NavLink>
 

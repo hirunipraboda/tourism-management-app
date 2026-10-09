@@ -70,6 +70,12 @@ export const LandingNavbar: React.FC = () => {
       onClick: () => navigate('/profile'),
     },
     {
+      id: 'admin-console',
+      label: 'Guide & Tour Console',
+      icon: <Shield className="w-4 h-4 text-[#16A6A1]" />,
+      onClick: () => navigate('/admin/guide-tours'),
+    },
+    {
       id: 'logout',
       label: 'Sign Out',
       icon: <LogOut className="w-4 h-4" />,
@@ -259,6 +265,13 @@ export const LandingNavbar: React.FC = () => {
             }`}
           >
             Reviews & Recs
+          </button>
+          <button
+            onClick={() => { navigate('/admin/guide-tours'); setMobileMenuOpen(false); }}
+            className="w-full text-left px-4 py-2.5 rounded-xl font-extrabold text-sm transition-colors text-[#146C86] hover:bg-teal-50 flex items-center justify-between border-t border-slate-100 pt-3"
+          >
+            <span>Guide & Tour Console</span>
+            <Shield className="w-4 h-4 text-[#16A6A1]" />
           </button>
         </div>
       )}

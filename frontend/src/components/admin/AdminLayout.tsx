@@ -7,7 +7,7 @@ import { adminAuthService } from '../../services/adminAuthService';
 export const AdminLayout: React.FC = () => {
   const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {
     const saved = localStorage.getItem('nova_admin_sidebar_collapsed');
-    return saved !== null ? saved === 'true' : true;
+    return saved !== null ? saved === 'true' : false;
   });
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const location = useLocation();
@@ -39,6 +39,7 @@ export const AdminLayout: React.FC = () => {
     if (pathname.startsWith('/admin/transportation/bus-routes')) return 'Bus Routes & Schedules';
     if (pathname.startsWith('/admin/transportation/train-schedules')) return 'Train Routes & Schedules';
     if (pathname.startsWith('/admin/transportation')) return 'Transportation Suite';
+    if (pathname.startsWith('/admin/guide-tours') || pathname.startsWith('/admin/guides') || pathname.startsWith('/admin/tour-operations')) return 'Guide & Tour Operations Management';
     if (pathname.startsWith('/admin/ai-guide/packages')) return 'AI Travel Guide Packages';
     if (pathname.startsWith('/admin/ai-guide/purchases')) return 'Chatbot Package Purchases';
     if (pathname.startsWith('/admin/ai-guide/usage')) return 'AI Guide Usage Analytics';

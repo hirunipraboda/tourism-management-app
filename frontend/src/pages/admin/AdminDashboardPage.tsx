@@ -19,6 +19,7 @@ import {
   Clock,
   RotateCcw,
   RefreshCw,
+  UserCheck,
 } from 'lucide-react';
 import { adminService } from '../../services/adminService';
 import { AdminDashboardData } from '../../types/adminTypes';
@@ -296,6 +297,27 @@ export const AdminDashboardPage: React.FC = () => {
             {kpis.aiGuideQueries ?? 0}
           </div>
           <p className="text-[11px] text-slate-400 font-medium">Traveler questions & landmark scans</p>
+        </div>
+
+        {/* Guide & Tour Operations */}
+        <div
+          onClick={() => navigate('/admin/guide-tours')}
+          className="bg-gradient-to-br from-teal-50/50 to-white p-5 rounded-3xl border-2 border-[#16A6A1]/40 shadow-xs space-y-3 hover:shadow-md hover:border-[#16A6A1] transition-all cursor-pointer group"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-extrabold text-[#0B3A53] uppercase tracking-wider flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-[#16A6A1] animate-pulse" />
+              Guide Operations
+            </span>
+            <div className="w-10 h-10 rounded-2xl bg-[#16A6A1]/15 text-[#146C86] flex items-center justify-center transition-transform group-hover:scale-110">
+              <UserCheck className="w-5 h-5 text-[#16A6A1]" />
+            </div>
+          </div>
+          <div className="text-2xl sm:text-3xl font-black text-[#0B3A53] font-heading flex items-center gap-2">
+            <span>Manage</span>
+            <ArrowRight className="w-5 h-5 text-[#16A6A1] group-hover:translate-x-1.5 transition-transform" />
+          </div>
+          <p className="text-[11px] text-slate-500 font-bold">Profiles, Rosters, Shifts & Assignments</p>
         </div>
       </div>
 

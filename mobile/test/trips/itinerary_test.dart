@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nova_mobile/models/user_trip_models.dart';
 import 'package:nova_mobile/models/ai_trip_planner_models.dart';
-import 'package:nova_mobile/models/travel_models.dart';
 
 void main() {
   group('Itinerary & Workflow Mobile Tests - ITN & GEN Suite', () {

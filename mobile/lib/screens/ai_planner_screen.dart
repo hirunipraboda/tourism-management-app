@@ -104,7 +104,7 @@ class _AiPlannerScreenState extends State<AiPlannerScreen> {
                             const Text('Travelers', style: TextStyle(fontWeight: FontWeight.w600)),
                             const SizedBox(height: 6),
                             DropdownButtonFormField<int>(
-                              value: _travelers,
+                              initialValue: _travelers,
                               decoration: const InputDecoration(
                                 border: OutlineInputBorder(),
                                 isDense: true,

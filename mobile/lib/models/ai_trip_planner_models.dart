@@ -1,5 +1,3 @@
-import 'package:flutter/foundation.dart';
-
 class TripBudgetInput {
   final double amount;
   final String currency;

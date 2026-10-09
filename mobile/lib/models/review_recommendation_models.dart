@@ -1,0 +1,635 @@
+class HighlightRatings {
+  final double experience;
+  final double value;
+  final double safety;
+  final double hospitality;
+
+  const HighlightRatings({
+    this.experience = 5.0,
+    this.value = 5.0,
+    this.safety = 5.0,
+    this.hospitality = 5.0,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'experience': experience,
+        'value': value,
+        'safety': safety,
+        'hospitality': hospitality,
+      };
+
+  factory HighlightRatings.fromJson(Map<String, dynamic> json) => HighlightRatings(
+        experience: (json['experience'] as num?)?.toDouble() ?? 5.0,
+        value: (json['value'] as num?)?.toDouble() ?? 5.0,
+        safety: (json['safety'] as num?)?.toDouble() ?? 5.0,
+        hospitality: (json['hospitality'] as num?)?.toDouble() ?? 5.0,
+      );
+}
+
+class ReviewDetailItem {
+  final String id;
+  final String touristName;
+  final String touristAvatar;
+  final String touristCountry;
+  final String travelerType; // 'Solo' | 'Couple' | 'Family' | 'Friends'
+  final String targetType; // 'destination' | 'attraction' | 'tour'
+  final String targetId;
+  final String targetName;
+  final double rating; // 1 to 5
+  final String title;
+  final String comment;
+  final String date;
+  int helpfulCount;
+  bool isHelpfulByUser;
+  final String status;
+  final List<String> photos;
+  final List<String> tags;
+  final HighlightRatings? highlightRating;
+  final bool isCurrentTourist;
+  final String? operatorNotes;
+
+  ReviewDetailItem({
+    required this.id,
+    required this.touristName,
+    required this.touristAvatar,
+    required this.touristCountry,
+    this.travelerType = 'Solo',
+    this.targetType = 'attraction',
+    required this.targetId,
+    required this.targetName,
+    required this.rating,
+    required this.title,
+    required this.comment,
+    required this.date,
+    this.helpfulCount = 0,
+    this.isHelpfulByUser = false,
+    this.status = 'Published',
+    this.photos = const [],
+    this.tags = const [],
+    this.highlightRating,
+    this.isCurrentTourist = false,
+    this.operatorNotes,
+  });
+
+  ReviewDetailItem copyWith({
+    String? id,
+    String? touristName,
+    String? touristAvatar,
+    String? touristCountry,
+    String? travelerType,
+    String? targetType,
+    String? targetId,
+    String? targetName,
+    double? rating,
+    String? title,
+    String? comment,
+    String? date,
+    int? helpfulCount,
+    bool? isHelpfulByUser,
+    String? status,
+    List<String>? photos,
+    List<String>? tags,
+    HighlightRatings? highlightRating,
+    bool? isCurrentTourist,
+    String? operatorNotes,
+  }) {
+    return ReviewDetailItem(
+      id: id ?? this.id,
+      touristName: touristName ?? this.touristName,
+      touristAvatar: touristAvatar ?? this.touristAvatar,
+      touristCountry: touristCountry ?? this.touristCountry,
+      travelerType: travelerType ?? this.travelerType,
+      targetType: targetType ?? this.targetType,
+      targetId: targetId ?? this.targetId,
+      targetName: targetName ?? this.targetName,
+      rating: rating ?? this.rating,
+      title: title ?? this.title,
+      comment: comment ?? this.comment,
+      date: date ?? this.date,
+      helpfulCount: helpfulCount ?? this.helpfulCount,
+      isHelpfulByUser: isHelpfulByUser ?? this.isHelpfulByUser,
+      status: status ?? this.status,
+      photos: photos ?? this.photos,
+      tags: tags ?? this.tags,
+      highlightRating: highlightRating ?? this.highlightRating,
+      isCurrentTourist: isCurrentTourist ?? this.isCurrentTourist,
+      operatorNotes: operatorNotes ?? this.operatorNotes,
+    );
+  }
+}
+
+class RecommendationItem {
+  final String id;
+  final String name;
+  final String location;
+  final String category; // 'Culture' | 'History' | 'Nature' | 'Adventure' | 'Food' | 'Wildlife' | 'Beaches'
+  final String targetType; // 'destination' | 'attraction' | 'tour'
+  final double rating;
+  final int reviewCount;
+  final String price;
+  int suitabilityScore;
+  int interestMatch;
+  int ratingMatch;
+  int budgetMatch;
+  int locationMatch;
+  int popularityScore;
+  final String explanation;
+  final String image;
+  final String? openingHours;
+  final String? description;
+  final String? bestTimeToVisit;
+  final String? duration;
+  final double? distanceKm;
+  bool isSaved;
+
+  RecommendationItem({
+    required this.id,
+    required this.name,
+    required this.location,
+    required this.category,
+    this.targetType = 'attraction',
+    required this.rating,
+    required this.reviewCount,
+    required this.price,
+    required this.suitabilityScore,
+    required this.interestMatch,
+    required this.ratingMatch,
+    required this.budgetMatch,
+    required this.locationMatch,
+    required this.popularityScore,
+    required this.explanation,
+    required this.image,
+    this.openingHours,
+    this.description,
+    this.bestTimeToVisit,
+    this.duration,
+    this.distanceKm,
+    this.isSaved = false,
+  });
+
+  RecommendationItem copyWith({
+    String? id,
+    String? name,
+    String? location,
+    String? category,
+    String? targetType,
+    double? rating,
+    int? reviewCount,
+    String? price,
+    int? suitabilityScore,
+    int? interestMatch,
+    int? ratingMatch,
+    int? budgetMatch,
+    int? locationMatch,
+    int? popularityScore,
+    String? explanation,
+    String? image,
+    String? openingHours,
+    String? description,
+    String? bestTimeToVisit,
+    String? duration,
+    double? distanceKm,
+    bool? isSaved,
+  }) {
+    return RecommendationItem(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      location: location ?? this.location,
+      category: category ?? this.category,
+      targetType: targetType ?? this.targetType,
+      rating: rating ?? this.rating,
+      reviewCount: reviewCount ?? this.reviewCount,
+      price: price ?? this.price,
+      suitabilityScore: suitabilityScore ?? this.suitabilityScore,
+      interestMatch: interestMatch ?? this.interestMatch,
+      ratingMatch: ratingMatch ?? this.ratingMatch,
+      budgetMatch: budgetMatch ?? this.budgetMatch,
+      locationMatch: locationMatch ?? this.locationMatch,
+      popularityScore: popularityScore ?? this.popularityScore,
+      explanation: explanation ?? this.explanation,
+      image: image ?? this.image,
+      openingHours: openingHours ?? this.openingHours,
+      description: description ?? this.description,
+      bestTimeToVisit: bestTimeToVisit ?? this.bestTimeToVisit,
+      duration: duration ?? this.duration,
+      distanceKm: distanceKm ?? this.distanceKm,
+      isSaved: isSaved ?? this.isSaved,
+    );
+  }
+}
+
+class RecommendationFilterState {
+  final List<String> interests;
+  final double maxBudget;
+  final double maxDistance;
+  final double minRating;
+  final String activityType;
+  final String searchQuery;
+
+  const RecommendationFilterState({
+    this.interests = const ['All'],
+    this.maxBudget = 100.0,
+    this.maxDistance = 150.0,
+    this.minRating = 0.0,
+    this.activityType = 'All',
+    this.searchQuery = '',
+  });
+
+  RecommendationFilterState copyWith({
+    List<String>? interests,
+    double? maxBudget,
+    double? maxDistance,
+    double? minRating,
+    String? activityType,
+    String? searchQuery,
+  }) {
+    return RecommendationFilterState(
+      interests: interests ?? List.from(this.interests),
+      maxBudget: maxBudget ?? this.maxBudget,
+      maxDistance: maxDistance ?? this.maxDistance,
+      minRating: minRating ?? this.minRating,
+      activityType: activityType ?? this.activityType,
+      searchQuery: searchQuery ?? this.searchQuery,
+    );
+  }
+}
+
+/// Pre-bundled mock recommendations matching frontend/src/mock/mockRecommendations.ts
+final List<RecommendationItem> kInitialRecommendations = [
+  RecommendationItem(
+    id: 'rec-001',
+    name: 'Kandy Cultural Experience & Sacred Tooth Relic',
+    location: 'Kandy',
+    category: 'Culture',
+    targetType: 'attraction',
+    rating: 4.8,
+    reviewCount: 342,
+    price: '\$18 / person',
+    suitabilityScore: 94,
+    interestMatch: 95,
+    ratingMatch: 92,
+    budgetMatch: 90,
+    locationMatch: 96,
+    popularityScore: 94,
+    explanation: 'Recommended because you showed interest in culture and history and previously rated similar attractions highly.',
+    image: 'assets/images/destinations/Kandy.jpg',
+    openingHours: '5:30 AM - 8:00 PM Daily',
+    description: 'The Temple of the Sacred Tooth Relic is Sri Lanka’s most revered Buddhist sanctuary, surrounded by Kandy Lake and misty highlands. Experience ancient rituals, golden canopy architecture, and royal palace museums.',
+    bestTimeToVisit: 'Year-round (Best during Esala Perahera in July/Aug)',
+    duration: '2 - 3 Hours',
+    distanceKm: 12,
+  ),
+  RecommendationItem(
+    id: 'rec-002',
+    name: 'Sigiriya Ancient Citadel & Sky Palace Fortress',
+    location: 'Sigiriya, Cultural Triangle',
+    category: 'History',
+    targetType: 'attraction',
+    rating: 4.9,
+    reviewCount: 521,
+    price: '\$36 / person',
+    suitabilityScore: 96,
+    interestMatch: 98,
+    ratingMatch: 95,
+    budgetMatch: 88,
+    locationMatch: 94,
+    popularityScore: 99,
+    explanation: 'Recommended because you enjoy UNESCO world heritage landmarks and historical archaeology with breathtaking panoramic sunrise views.',
+    image: 'assets/images/destinations/sigiriya.jpg',
+    openingHours: '6:00 AM - 5:30 PM Daily',
+    description: 'Rising 200 meters above the central jungle, this 5th-century palace citadel built by King Kashyapa showcases water gardens, world-famous cave frescoes, the Mirror Wall, and colossal lion paws guarding the summit.',
+    bestTimeToVisit: 'Nov - April (Early morning 6:30 AM recommended)',
+    duration: '3 - 4 Hours',
+    distanceKm: 85,
+  ),
+  RecommendationItem(
+    id: 'rec-003',
+    name: 'Ella Rock & Nine Arches Colonial Rail Trek',
+    location: 'Ella Highlands',
+    category: 'Nature',
+    targetType: 'attraction',
+    rating: 4.8,
+    reviewCount: 289,
+    price: 'Free entry (Guided \$25)',
+    suitabilityScore: 92,
+    interestMatch: 94,
+    ratingMatch: 91,
+    budgetMatch: 97,
+    locationMatch: 89,
+    popularityScore: 93,
+    explanation: 'Recommended because you love scenic mountain photography, lush cloud-forest hiking, and scenic tea estate landscapes.',
+    image: 'assets/images/destinations/Ella.jpg',
+    openingHours: 'Open 24 Hours (Sunrise 6:00 AM recommended)',
+    description: 'Hike through tea plantations and eucalyptus woods to reach Ella Rock’s cliff edge overlooking Ella Gap, then stroll along the iconic stone Nine Arches Bridge as the colonial train crosses through morning mist.',
+    bestTimeToVisit: 'Dec - May',
+    duration: '4 - 5 Hours',
+    distanceKm: 45,
+  ),
+  RecommendationItem(
+    id: 'rec-004',
+    name: 'Yala National Park Leopard & Elephant 4x4 Safari',
+    location: 'Yala & Ruhuna Reserve',
+    category: 'Wildlife',
+    targetType: 'tour',
+    rating: 4.7,
+    reviewCount: 418,
+    price: '\$75 / person (Jeep included)',
+    suitabilityScore: 91,
+    interestMatch: 96,
+    ratingMatch: 89,
+    budgetMatch: 82,
+    locationMatch: 91,
+    popularityScore: 97,
+    explanation: 'Recommended because your profile highlights wildlife encounters and open-vehicle photography tours with verified nature trackers.',
+    image: 'assets/images/destinations/Yala.jpg',
+    openingHours: 'Morning: 5:45 AM - 10:00 AM | Afternoon: 2:30 PM - 6:30 PM',
+    description: 'Home to the highest leopard density on earth, Yala Block 1 blends coastal scrubland, freshwater lagoons, and granite outcrops inhabited by wild elephant herds, sloth bears, and saltwater crocodiles.',
+    bestTimeToVisit: 'Feb - July',
+    duration: 'Half-day or Full-day',
+    distanceKm: 140,
+  ),
+  RecommendationItem(
+    id: 'rec-005',
+    name: 'Galle Fort 17th Century Dutch Ramparts Walk',
+    location: 'Galle Southern Coast',
+    category: 'History',
+    targetType: 'attraction',
+    rating: 4.8,
+    reviewCount: 395,
+    price: 'Free entry (Museum \$12)',
+    suitabilityScore: 89,
+    interestMatch: 92,
+    ratingMatch: 90,
+    budgetMatch: 96,
+    locationMatch: 85,
+    popularityScore: 92,
+    explanation: 'Recommended because your preferences favor historical architecture, coastal walking routes, and boutique culinary heritage.',
+    image: 'assets/images/destinations/Galle.jpg',
+    openingHours: 'Open 24 Hours (Museums 9:00 AM - 5:00 PM)',
+    description: 'A living UNESCO World Heritage fortress where Portuguese and Dutch stone ramparts shelter boutique cafes, artisan jewelers, spice shops, and the famous Galle Lighthouse overlooking the Indian Ocean.',
+    bestTimeToVisit: 'Nov - April',
+    duration: 'Half-day',
+    distanceKm: 110,
+  ),
+  RecommendationItem(
+    id: 'rec-006',
+    name: 'Mirissa Blue Whale Ethical Ocean Catamaran',
+    location: 'Mirissa Bay',
+    category: 'Beaches',
+    targetType: 'tour',
+    rating: 4.9,
+    reviewCount: 310,
+    price: '\$55 / person',
+    suitabilityScore: 93,
+    interestMatch: 95,
+    ratingMatch: 93,
+    budgetMatch: 88,
+    locationMatch: 92,
+    popularityScore: 95,
+    explanation: 'Recommended because you enjoy marine coastal expeditions with high ethical standards and marine biologist guides.',
+    image: 'assets/images/destinations/Mirissa.jpg',
+    openingHours: 'Daily Departures: 6:15 AM',
+    description: 'Sail into the deep continental shelf off Mirissa to witness blue whales—the largest mammals on planet earth—alongside spinner dolphins, sperm whales, and flying fish aboard comfortable stable catamarans.',
+    bestTimeToVisit: 'Nov - April',
+    duration: '4 - 5 Hours',
+    distanceKm: 125,
+  ),
+  RecommendationItem(
+    id: 'rec-007',
+    name: 'Horton Plains & World’s End Sheer Precipice',
+    location: 'Central Highlands',
+    category: 'Adventure',
+    targetType: 'attraction',
+    rating: 4.8,
+    reviewCount: 275,
+    price: '\$32 / person',
+    suitabilityScore: 90,
+    interestMatch: 93,
+    ratingMatch: 89,
+    budgetMatch: 86,
+    locationMatch: 88,
+    popularityScore: 91,
+    explanation: 'Recommended because you enjoy high-elevation mountain trekking, cool climates, and cascading waterfall trails.',
+    image: 'assets/images/destinations/Horton Plains.jpg',
+    openingHours: '6:00 AM - 4:00 PM Daily',
+    description: 'An undulating highland plateau 2,100 meters above sea level where windswept grasslands and pygmy cloud forests end abruptly at World’s End, an 880-meter vertical drop overlooking tea valleys and the southern coast.',
+    bestTimeToVisit: 'Jan - April',
+    duration: '3 - 4 Hours hike',
+    distanceKm: 60,
+  ),
+  RecommendationItem(
+    id: 'rec-008',
+    name: 'Knuckles Cloud Forest Hidden Waterfalls Trek',
+    location: 'Riverston & Matale Range',
+    category: 'Nature',
+    targetType: 'attraction',
+    rating: 4.9,
+    reviewCount: 164,
+    price: '\$20 / person (Guide included)',
+    suitabilityScore: 95,
+    interestMatch: 97,
+    ratingMatch: 94,
+    budgetMatch: 95,
+    locationMatch: 92,
+    popularityScore: 89,
+    explanation: 'Recommended because you enjoy serene, uncrowded nature trails with rare endemic flora, misty mountain ridges, and crystal streams.',
+    image: 'assets/images/destinations/riverston.jpg',
+    openingHours: '6:30 AM - 5:00 PM Daily',
+    description: 'A secluded biodiversity hotspot boasting rugged peaks resembling clenched knuckles. Hike through cloud-forest corridors, discover isolated mountain hamlets, and take a refreshing dip in crystal mountain cascades.',
+    bestTimeToVisit: 'Year-round',
+    duration: 'Full-day',
+    distanceKm: 38,
+  ),
+  RecommendationItem(
+    id: 'rec-009',
+    name: 'Nilaveli Coral Island Snorkeling & Dolphin Cruise',
+    location: 'Trincomalee Coast',
+    category: 'Beaches',
+    targetType: 'tour',
+    rating: 4.8,
+    reviewCount: 198,
+    price: '\$45 / person',
+    suitabilityScore: 88,
+    interestMatch: 91,
+    ratingMatch: 87,
+    budgetMatch: 85,
+    locationMatch: 80,
+    popularityScore: 90,
+    explanation: 'Recommended because you appreciate turquoise waters, marine turtle sanctuaries, and white sand coral beaches.',
+    image: 'assets/images/destinations/Nilaweli.png',
+    openingHours: '7:00 AM - 4:00 PM Daily',
+    description: 'Pigeon Island National Park off Nilaveli beach features vibrant coral gardens teeming with blacktip reef sharks, green sea turtles, and hundreds of tropical reef fish species in calm, crystal-clear water.',
+    bestTimeToVisit: 'April - Sept',
+    duration: '3 - 4 Hours',
+    distanceKm: 180,
+  ),
+  RecommendationItem(
+    id: 'rec-010',
+    name: 'Halpewatte Ceylon Tea Tasting & Factory Masterclass',
+    location: 'Ella Mountain Ridge',
+    category: 'Food',
+    targetType: 'tour',
+    rating: 4.9,
+    reviewCount: 220,
+    price: '\$15 / person',
+    suitabilityScore: 92,
+    interestMatch: 94,
+    ratingMatch: 92,
+    budgetMatch: 98,
+    locationMatch: 90,
+    popularityScore: 91,
+    explanation: 'Recommended because your tastes indicate a love for authentic artisan food production, tea history, and culinary tastings.',
+    image: 'assets/images/destinations/Ella.jpg',
+    openingHours: '8:30 AM - 5:30 PM Daily',
+    description: 'Tour a functioning colonial tea factory overlooking mist-capped valleys, learn how Ceylon tea leaves are withered, rolled, and fired, and finish with a guided sommelier tasting of rare single-estate grades.',
+    bestTimeToVisit: 'Year-round',
+    duration: '2 Hours',
+    distanceKm: 22,
+  ),
+];
+
+/// Pre-bundled mock reviews matching frontend/src/mock/mockReviews.ts
+final List<ReviewDetailItem> kInitialReviews = [
+  ReviewDetailItem(
+    id: 'rev-001',
+    touristName: 'Elena Rostova',
+    touristAvatar: 'assets/images/destinations/Ella.jpg',
+    touristCountry: 'Germany',
+    travelerType: 'Solo',
+    targetType: 'attraction',
+    targetId: 'att-nine-arches',
+    targetName: 'Nine Arches Bridge & Ella Gap',
+    rating: 5.0,
+    title: 'The Blue Train crossing at sunrise is pure magic',
+    comment: 'I followed the smart recommendation to arrive at 6:30 AM before the crowds. Watching the colonial blue express curve through the tea plantation valley with the morning mist rolling off Ella Rock was unforgettable. A must-do for photography lovers!',
+    date: '2 days ago',
+    helpfulCount: 34,
+    isHelpfulByUser: false,
+    status: 'Published',
+    photos: ['assets/images/destinations/Ella.jpg', 'assets/images/destinations/riverston.jpg'],
+    tags: ['Scenic Views', 'Hiking', 'Photography', 'Tea Valleys'],
+    highlightRating: const HighlightRatings(experience: 5.0, value: 4.9, safety: 5.0, hospitality: 4.8),
+  ),
+  ReviewDetailItem(
+    id: 'rev-002',
+    touristName: 'Sarah Jenkins',
+    touristAvatar: 'assets/images/destinations/Kandy.jpg',
+    touristCountry: 'United Kingdom',
+    travelerType: 'Solo',
+    targetType: 'attraction',
+    targetId: 'att-temple-tooth',
+    targetName: 'Temple of the Sacred Tooth Relic',
+    rating: 5.0,
+    title: 'Deeply spiritual and beautifully preserved heritage',
+    comment: 'Beautiful historical place with an amazing cultural experience. The evening Thewawa offering ceremony with traditional drummers is mesmerizing. Remember to dress respectfully with shoulders and knees covered. The golden roof architecture is breathtaking.',
+    date: '3 days ago',
+    helpfulCount: 24,
+    isHelpfulByUser: false,
+    status: 'Published',
+    photos: ['assets/images/destinations/Kandy.jpg'],
+    tags: ['Culture', 'History', 'Spiritual', 'UNESCO'],
+    highlightRating: const HighlightRatings(experience: 5.0, value: 4.8, safety: 4.9, hospitality: 5.0),
+    isCurrentTourist: true, // Demo user review!
+  ),
+  ReviewDetailItem(
+    id: 'rev-003',
+    touristName: 'Julian & Maya Sterling',
+    touristAvatar: 'assets/images/destinations/sigiriya.jpg',
+    touristCountry: 'United Kingdom',
+    travelerType: 'Couple',
+    targetType: 'destination',
+    targetId: 'dest-sigiriya',
+    targetName: 'Sigiriya Ancient Citadel',
+    rating: 5.0,
+    title: 'Climbing the Lion Rock at 6:30 AM was the highlight of our journey',
+    comment: 'Starting at dawn before the midday sun heats up the stone steps is absolute essential advice. The ancient water gardens, fresco gallery, and summit palace ruins left us speechless. The view across the central plains is extraordinary.',
+    date: '4 days ago',
+    helpfulCount: 51,
+    isHelpfulByUser: false,
+    status: 'Published',
+    photos: ['assets/images/destinations/sigiriya.jpg'],
+    tags: ['UNESCO Heritage', 'Archaeology', 'History', 'Sunrise'],
+    highlightRating: const HighlightRatings(experience: 5.0, value: 4.8, safety: 4.9, hospitality: 5.0),
+  ),
+  ReviewDetailItem(
+    id: 'rev-004',
+    touristName: 'Liam Chen',
+    touristAvatar: 'assets/images/destinations/Mirissa.jpg',
+    touristCountry: 'Singapore',
+    travelerType: 'Friends',
+    targetType: 'tour',
+    targetId: 'tour-mirissa-whale',
+    targetName: 'Mirissa Blue Whale Ocean Expedition',
+    rating: 5.0,
+    title: 'Spotted Blue Whales and enjoyed golden beach sunsets',
+    comment: 'The ethical whale-watching catamaran recommended by TravelWise was spotless, respectful to marine life, and had marine biologists on board explaining migratory behaviors. Coconut Tree Hill at sunset afterwards was sensational!',
+    date: '5 days ago',
+    helpfulCount: 38,
+    isHelpfulByUser: false,
+    status: 'Published',
+    photos: ['assets/images/destinations/Mirissa.jpg'],
+    tags: ['Whale Watching', 'Beaches', 'Seafood', 'Marine Life'],
+    highlightRating: const HighlightRatings(experience: 5.0, value: 4.7, safety: 5.0, hospitality: 4.9),
+  ),
+  ReviewDetailItem(
+    id: 'rev-005',
+    touristName: 'Chloe Dubois',
+    touristAvatar: 'assets/images/destinations/Galle.jpg',
+    touristCountry: 'France',
+    travelerType: 'Solo',
+    targetType: 'attraction',
+    targetId: 'att-galle-fort',
+    targetName: 'Galle Dutch Fort Ramparts',
+    rating: 5.0,
+    title: 'Colonial heritage meets ocean breezes and artisan cafes',
+    comment: 'Walking the ramparts from the Portuguese flag rock to the Galle Lighthouse during the late afternoon is unforgettable. The cobblestone streets are filled with charming gelato shops, handmade lace artisans, and historic churches.',
+    date: '1 week ago',
+    helpfulCount: 29,
+    isHelpfulByUser: false,
+    status: 'Published',
+    photos: ['assets/images/destinations/Galle.jpg'],
+    tags: ['Architecture', 'Lighthouse', 'History', 'Coastline'],
+    highlightRating: const HighlightRatings(experience: 5.0, value: 4.9, safety: 5.0, hospitality: 4.8),
+  ),
+  ReviewDetailItem(
+    id: 'rev-006',
+    touristName: 'Marcus & Hannah Vogel',
+    touristAvatar: 'assets/images/destinations/Yala.jpg',
+    touristCountry: 'Switzerland',
+    travelerType: 'Couple',
+    targetType: 'tour',
+    targetId: 'tour-yala-safari',
+    targetName: 'Yala National Park 4x4 Leopard Safari',
+    rating: 4.8,
+    title: 'Witnessed a Sri Lankan leopard resting on granite boulders!',
+    comment: 'Our tracker was phenomenal. Within 90 minutes of the morning game drive, we spotted a female leopard on the rocks at Patanangala. We also saw wild elephant herds taking mud baths and hundreds of painted storks.',
+    date: '1 week ago',
+    helpfulCount: 42,
+    isHelpfulByUser: false,
+    status: 'Published',
+    photos: ['assets/images/destinations/Yala.jpg'],
+    tags: ['Leopards', 'Elephants', 'Safari', 'Wildlife Photography'],
+    highlightRating: const HighlightRatings(experience: 4.8, value: 4.6, safety: 4.9, hospitality: 4.9),
+  ),
+  ReviewDetailItem(
+    id: 'rev-007',
+    touristName: 'Sarah Jenkins',
+    touristAvatar: 'assets/images/destinations/Horton Plains.jpg',
+    touristCountry: 'United Kingdom',
+    travelerType: 'Solo',
+    targetType: 'attraction',
+    targetId: 'att-horton-plains',
+    targetName: 'Horton Plains & World’s End Precipice',
+    rating: 4.9,
+    title: 'The sheer cliff drop at World’s End will take your breath away',
+    comment: 'Start early around 6:00 AM before the fog banks roll in around 9:30 AM. Baker’s Falls along the circular loop is stunning, and the high-altitude cloud forest has such a unique Scottish Highlands feel in tropical Asia!',
+    date: '2 weeks ago',
+    helpfulCount: 19,
+    isHelpfulByUser: false,
+    status: 'Published',
+    photos: ['assets/images/destinations/Horton Plains.jpg'],
+    tags: ['Trekking', 'Cloud Forest', 'Waterfalls', 'Highlands'],
+    highlightRating: const HighlightRatings(experience: 4.9, value: 4.7, safety: 4.9, hospitality: 4.8),
+    isCurrentTourist: true, // Demo user review!
+  ),
+];

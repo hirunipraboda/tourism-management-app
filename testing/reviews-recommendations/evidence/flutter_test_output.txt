@@ -1,0 +1,17 @@
+00:00 +0: loading C:/Users/user/NOVA/mobile/test/reviews/recommendation_test.dart
+00:00 +0: C:/Users/user/NOVA/mobile/test/reviews/recommendation_test.dart: Mobile Recommendation Tests (MOB-REC) MOB-REC-001: Open recommendation section loads recommendations catalog
+00:00 +1: C:/Users/user/NOVA/mobile/test/reviews/recommendation_test.dart: Mobile Recommendation Tests (MOB-REC) MOB-REC-002: Request recommendations with valid preferences filters correctly
+00:00 +2: C:/Users/user/NOVA/mobile/test/reviews/recommendation_test.dart: Mobile Recommendation Tests (MOB-REC) MOB-REC-003: Submit incomplete preferences handles defaults gracefully
+00:00 +3: C:/Users/user/NOVA/mobile/test/reviews/recommendation_test.dart: Mobile Recommendation Tests (MOB-REC) MOB-REC-004: Submit invalid preferences sanitizes boundary values
+00:00 +4: C:/Users/user/NOVA/mobile/test/reviews/recommendation_test.dart: Mobile Recommendation Tests (MOB-REC) MOB-REC-005: Display recommendation results includes transparent suitability score and breakdown
+00:00 +5: C:/Users/user/NOVA/mobile/test/reviews/recommendation_test.dart: Mobile Recommendation Tests (MOB-REC) MOB-REC-006: Handle empty recommendation results returns empty list and clean state
+00:00 +6: C:/Users/user/NOVA/mobile/test/reviews/recommendation_test.dart: Mobile Recommendation Tests (MOB-REC) MOB-REC-007: Handle recommendation service failure falls back safely without crashing
+00:00 +7: C:/Users/user/NOVA/mobile/test/reviews/review_test.dart: Mobile Review Management Tests (MOB-REV) MOB-REV-001: Open reviews section parses and displays review list correctly
+00:00 +8: C:/Users/user/NOVA/mobile/test/reviews/review_test.dart: Mobile Review Management Tests (MOB-REV) MOB-REV-002: View review details displays comprehensive traveler experience
+00:00 +9: C:/Users/user/NOVA/mobile/test/reviews/review_test.dart: Mobile Review Management Tests (MOB-REV) MOB-REV-003: Submit a valid review creates new ReviewDetailItem successfully
+00:00 +10: C:/Users/user/NOVA/mobile/test/reviews/review_test.dart: Mobile Review Management Tests (MOB-REV) MOB-REV-004: Submit invalid/incomplete review triggers validation
+00:00 +11: C:/Users/user/NOVA/mobile/test/reviews/review_test.dart: Mobile Review Management Tests (MOB-REV) MOB-REV-005: Edit own review updates fields and copies state
+00:00 +12: C:/Users/user/NOVA/mobile/test/reviews/review_test.dart: Mobile Review Management Tests (MOB-REV) MOB-REV-006: Delete own review removes item from active list
+00:00 +13: C:/Users/user/NOVA/mobile/test/reviews/review_test.dart: Mobile Review Management Tests (MOB-REV) MOB-REV-007: View My Reviews filters only submissions by current user
+00:00 +14: C:/Users/user/NOVA/mobile/test/reviews/review_test.dart: Mobile Review Management Tests (MOB-REV) MOB-REV-008: Mark a review as helpful toggles helpful count and status
+00:00 +15: All tests passed!

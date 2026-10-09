@@ -44,6 +44,8 @@
     <Compile Include="..\Nova.Api\Controllers\TransportController.cs" />
     <Compile Include="..\Nova.Api\Controllers\AuthController.cs" />
     <Compile Include="..\Nova.Api\Controllers\DestinationsController.cs" />
+    <Compile Include="..\Nova.Api\Controllers\ReviewsController.cs" />
+    <Compile Include="..\Nova.Api\Controllers\RecommendationsController.cs" />
   </ItemGroup>
 
 </Project>

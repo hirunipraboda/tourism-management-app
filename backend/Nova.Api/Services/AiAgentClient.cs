@@ -25,10 +25,10 @@ public class AiAgentClient : IAiAgentClient
     {
         _httpClient = httpClient;
         _logger = logger;
-        _baseUrl = configuration["AiAgentService:BaseUrl"] ?? "http://127.0.0.1:8000";
+        _baseUrl = configuration["AiAgentService:BaseUrl"] ?? "https://nova-agentic-ai-f4im.onrender.com";
         _httpClient.BaseAddress = new Uri(_baseUrl);
         
-        var timeoutSec = int.TryParse(configuration["AiAgentService:TimeoutSeconds"], out var sec) ? sec : 60;
+        var timeoutSec = int.TryParse(configuration["AiAgentService:TimeoutSeconds"], out var sec) ? sec : 120;
         _httpClient.Timeout = TimeSpan.FromSeconds(timeoutSec);
     }
 
@@ -36,7 +36,7 @@ public class AiAgentClient : IAiAgentClient
     {
         try
         {
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
             var response = await _httpClient.GetAsync("/health", cts.Token);
             return response.IsSuccessStatusCode;
         }

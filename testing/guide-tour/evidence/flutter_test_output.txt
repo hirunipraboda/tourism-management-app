@@ -1,0 +1,24 @@
+Command: flutter test test/guides/
+Working Directory: C:\Users\user\NOVA\mobile
+Timestamp: 2026-10-08T14:43:03+05:30
+
+00:00 +0: loading C:/Users/user/NOVA/mobile/test/guides/guide_availability_test.dart
+00:00 +0: C:/Users/user/NOVA/mobile/test/guides/guide_availability_test.dart: Mobile Guide Availability Tests (MOB-AVL) MOB-AVL-001: Open availability slots parses and displays slots correctly
+00:00 +1: C:/Users/user/NOVA/mobile/test/guides/guide_availability_test.dart: Mobile Guide Availability Tests (MOB-AVL) MOB-AVL-002: Filter slots by guide ID and date
+00:00 +2: C:/Users/user/NOVA/mobile/test/guides/guide_availability_test.dart: Mobile Guide Availability Tests (MOB-AVL) MOB-AVL-003: Create an availability slot with valid date and times
+00:00 +3: C:/Users/user/NOVA/mobile/test/guides/guide_availability_test.dart: Mobile Guide Availability Tests (MOB-AVL) MOB-AVL-004: Delete an availability slot removes slot from list
+00:00 +4: C:/Users/user/NOVA/mobile/test/guides/guide_availability_test.dart: Mobile Guide Availability Tests (MOB-AVL) MOB-AVL-005: Submit invalid availability details validates times and dates
+00:00 +5: C:/Users/user/NOVA/mobile/test/guides/guide_test.dart: Mobile Guide Management Tests (MOB-GUI) MOB-GUI-001: Guide Management screen initial data structure parses correctly
+00:00 +6: C:/Users/user/NOVA/mobile/test/guides/guide_test.dart: Mobile Guide Management Tests (MOB-GUI) MOB-GUI-002: Display list of guides with ratings, status, and specialties
+00:00 +7: C:/Users/user/NOVA/mobile/test/guides/guide_test.dart: Mobile Guide Management Tests (MOB-GUI) MOB-GUI-003: Search and filter guides by query and specialty
+00:00 +8: C:/Users/user/NOVA/mobile/test/guides/guide_test.dart: Mobile Guide Management Tests (MOB-GUI) MOB-GUI-004: View guide profile and detailed information
+00:00 +9: C:/Users/user/NOVA/mobile/test/guides/guide_test.dart: Mobile Guide Management Tests (MOB-GUI) MOB-GUI-005: Register a new guide with valid information
+00:00 +10: C:/Users/user/NOVA/mobile/test/guides/guide_test.dart: Mobile Guide Management Tests (MOB-GUI) MOB-GUI-006: Edit guide information updates fields accurately
+00:00 +11: C:/Users/user/NOVA/mobile/test/guides/guide_test.dart: Mobile Guide Management Tests (MOB-GUI) MOB-GUI-007: Verify a guide updates verification and availability status
+00:00 +12: C:/Users/user/NOVA/mobile/test/guides/guide_test.dart: Mobile Guide Management Tests (MOB-GUI) MOB-GUI-008: Delete/deactivate a guide removes guide from active list
+00:00 +13: C:/Users/user/NOVA/mobile/test/guides/tour_operation_test.dart: Mobile Tour Operation Management Tests (MOB-TOP) MOB-TOP-001..003: Tour Operation Mobile Management is NOT IMPLEMENTED in Flutter client
+  Skip: Tour Package/Tour Operation mobile management is not currently implemented/wired in the Flutter application.
+00:00 +13 ~1: C:/Users/user/NOVA/mobile/test/guides/tour_package_test.dart: Mobile Tour Package Management Tests (MOB-TPK) MOB-TPK-001..005: Tour Package Mobile Management is NOT IMPLEMENTED in Flutter client
+  Skip: Tour Package/Tour Operation mobile management is not currently implemented/wired in the Flutter application.
+00:00 +13 ~2: All tests passed!
+Result: SUCCESS (13 executed tests passed, 2 documented architectural boundaries, 0 failed)

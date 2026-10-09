@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import {
   User as UserIcon,
   Camera,
@@ -18,11 +18,13 @@ import {
   Upload,
   Lock,
   Loader2,
+  Calendar,
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { authService } from '../services/authService';
 import { LandingNavbar } from '../components/navigation/LandingNavbar';
 import { Footer } from '../components/navigation/Footer';
+import { MyGuideBookingsSection } from '../components/guide/MyGuideBookingsSection';
 
 const PRESET_AVATARS = [
   'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
@@ -35,8 +37,12 @@ const PRESET_AVATARS = [
 
 export const ProfilePage: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user, updateUser, logout } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const initialTab = searchParams.get('tab') === 'guide-bookings' ? 'guide-bookings' : 'profile';
+  const [activeTab, setActiveTab] = useState<'profile' | 'guide-bookings'>(initialTab);
 
   const [name,      setName]      = useState(user?.name     || '');
   const [phone,     setPhone]     = useState(user?.phone    || '');
@@ -91,7 +97,7 @@ export const ProfilePage: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-800 antialiased">
       <LandingNavbar />
-      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-8 py-8 space-y-8">
+      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-8 py-8 space-y-6">
 
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/80 pb-6">
@@ -99,29 +105,61 @@ export const ProfilePage: React.FC = () => {
             <button onClick={() => navigate(-1)} className="inline-flex items-center gap-2 text-xs font-bold text-[#146C86] hover:text-[#0B3A53] transition-colors mb-2 cursor-pointer">
               <ArrowLeft className="w-4 h-4" /><span>Back</span>
             </button>
-            <h1 className="text-3xl font-black text-[#0B3A53] font-heading tracking-tight">My Profile</h1>
+            <h1 className="text-3xl font-black text-[#0B3A53] font-heading tracking-tight">My Account</h1>
             <p className="text-xs sm:text-sm text-slate-500 font-medium">
-              Update your personal information and profile photo. Password changes require using Reset Password.
+              Manage your personal information, profile photo, and tour guide bookings.
             </p>
           </div>
-          <button onClick={handleSave} disabled={isSaving} className="bg-[#16A6A1] hover:bg-[#146C86] text-white text-xs font-black uppercase tracking-wider px-6 py-3 rounded-full shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center gap-2 disabled:opacity-50">
-            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            <span>Save Changes</span>
+          {activeTab === 'profile' && (
+            <button onClick={handleSave} disabled={isSaving} className="bg-[#16A6A1] hover:bg-[#146C86] text-white text-xs font-black uppercase tracking-wider px-6 py-3 rounded-full shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center gap-2 disabled:opacity-50">
+              {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              <span>Save Changes</span>
+            </button>
+          )}
+        </div>
+
+        {/* Tab Controls */}
+        <div className="flex items-center gap-3 border-b border-slate-200 pb-3">
+          <button
+            onClick={() => { setActiveTab('profile'); setSearchParams({}); }}
+            className={`px-5 py-2.5 rounded-full font-extrabold text-xs transition-all flex items-center gap-2 cursor-pointer ${
+              activeTab === 'profile'
+                ? 'bg-[#0B3A53] text-white shadow-sm'
+                : 'text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            <UserIcon className="w-3.5 h-3.5" />
+            <span>Profile Details</span>
+          </button>
+          <button
+            onClick={() => { setActiveTab('guide-bookings'); setSearchParams({ tab: 'guide-bookings' }); }}
+            className={`px-5 py-2.5 rounded-full font-extrabold text-xs transition-all flex items-center gap-2 cursor-pointer ${
+              activeTab === 'guide-bookings'
+                ? 'bg-[#0B3A53] text-white shadow-sm'
+                : 'text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            <Calendar className="w-3.5 h-3.5" />
+            <span>My Tour Guide Bookings</span>
           </button>
         </div>
 
-        {saveSuccess && (
-          <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-3 animate-in fade-in duration-200">
-            <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" /><span>Profile updated successfully!</span>
-          </div>
-        )}
-        {saveError && (
-          <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold flex items-center gap-3 animate-in fade-in duration-200">
-            <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0" /><span>{saveError}</span>
-          </div>
-        )}
+        {activeTab === 'guide-bookings' ? (
+          <MyGuideBookingsSection />
+        ) : (
+          <>
+            {saveSuccess && (
+              <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-3 animate-in fade-in duration-200">
+                <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" /><span>Profile updated successfully!</span>
+              </div>
+            )}
+            {saveError && (
+              <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold flex items-center gap-3 animate-in fade-in duration-200">
+                <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0" /><span>{saveError}</span>
+              </div>
+            )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
           {/* LEFT column */}
           <div className="space-y-6">
@@ -263,6 +301,8 @@ export const ProfilePage: React.FC = () => {
             </form>
           </div>
         </div>
+      </>
+    )}
       </main>
       <Footer />
     </div>

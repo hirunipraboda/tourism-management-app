@@ -314,6 +314,14 @@ export const ToursPage: React.FC = () => {
             </button>
 
             <button
+              onClick={() => navigate('/guides')}
+              className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-teal-500 hover:bg-teal-400 text-slate-950 text-sm font-black transition-all duration-300 shadow-2xl hover:scale-105 flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <Users className="w-4 h-4 text-slate-950" />
+              <span>Hire Licensed Tour Guides</span>
+            </button>
+
+            <button
               onClick={scrollToGuide}
               className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-slate-900/60 hover:bg-slate-900/80 text-white border border-white/40 hover:border-white/60 text-sm font-black transition-all duration-300 backdrop-blur-md shadow-xl flex items-center justify-center gap-2 cursor-pointer"
             >
@@ -617,6 +625,13 @@ export const ToursPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate('/guides')}
+              className="px-4 py-2.5 rounded-xl bg-teal-50 hover:bg-teal-100 text-teal-900 border border-teal-200/80 text-xs font-extrabold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
+            >
+              <Users className="w-4 h-4 text-teal-600" />
+              <span>Browse Private Guides →</span>
+            </button>
             <button
               onClick={() => scrollPackages('left')}
               className="p-2.5 rounded-xl bg-white border border-slate-200/80 shadow-xs hover:bg-[#0B3A53] hover:text-white text-slate-700 transition-all cursor-pointer hover:shadow-md"

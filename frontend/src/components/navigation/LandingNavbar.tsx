@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { Compass, Shield, LogOut, User as UserIcon, Menu, X } from 'lucide-react';
+import { Compass, Shield, LogOut, User as UserIcon, Menu, X, Calendar } from 'lucide-react';
 import { BRAND } from '../../constants/brand';
 import { Avatar } from '../ui/Avatar';
 import { Dropdown } from '../ui/Dropdown';
@@ -20,7 +20,7 @@ export const LandingNavbar: React.FC = () => {
     const path = location.pathname;
     if (path.startsWith('/destinations')) return 'destinations';
     if (path.startsWith('/trips') || path.startsWith('/plan-trip') || path.startsWith('/manual-planner')) return 'trips';
-    if (path.startsWith('/tours')) return 'tours';
+    if (path.startsWith('/guides') || path.startsWith('/tours') || path.startsWith('/my-guide-bookings')) return 'tours';
     if (path.startsWith('/ai-guide')) return 'guide';
     if (path.startsWith('/ai-workflows') || path.startsWith('/planner')) return 'ai';
     if (path.startsWith('/recommendations') || path.startsWith('/reviews') || path.startsWith('/operator')) return 'reviews';
@@ -68,6 +68,18 @@ export const LandingNavbar: React.FC = () => {
       label: 'My Profile',
       icon: <UserIcon className="w-4 h-4 text-[#16A6A1]" />,
       onClick: () => navigate('/profile'),
+    },
+    {
+      id: 'my-guide-bookings',
+      label: 'My Guide Bookings',
+      icon: <Calendar className="w-4 h-4 text-[#16A6A1]" />,
+      onClick: () => navigate('/guides?tab=my-bookings'),
+    },
+    {
+      id: 'find-guides',
+      label: 'Hire Tour Guide',
+      icon: <Compass className="w-4 h-4 text-[#16A6A1]" />,
+      onClick: () => navigate('/guides'),
     },
     {
       id: 'admin-console',

@@ -48,6 +48,7 @@ import { AdminAIGuidePage } from '../pages/admin/AdminAIGuidePage';
 import { AdminReviewsPage } from '../pages/admin/AdminReviewsPage';
 import { AdminSettingsPage } from '../pages/admin/AdminSettingsPage';
 import { AdminGuideToursPage } from '../pages/admin/AdminGuideToursPage';
+import { TourGuidesPage } from '../pages/TourGuidesPage';
 import { ProtectedRoute } from './ProtectedRoute';
 
 export const AppRoutes: React.FC = () => {
@@ -63,6 +64,9 @@ export const AppRoutes: React.FC = () => {
       <Route path="/destinations/:id" element={<DestinationDetailsPage />} />
       <Route path="/destination/:id" element={<DestinationDetailsPage />} />
       <Route path="/tours" element={<ToursPage />} />
+      <Route path="/guides" element={<TourGuidesPage />} />
+      <Route path="/tour-guides" element={<TourGuidesPage />} />
+      <Route path="/my-guide-bookings" element={<TourGuidesPage />} />
       <Route path="/ai-guide" element={<AIGuidePage />} />
       <Route path="/booking" element={<BookingPage />} />
       <Route path="/payment" element={<PaymentPage />} />

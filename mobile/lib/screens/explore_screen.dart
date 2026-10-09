@@ -6,6 +6,7 @@ import '../services/api_service.dart';
 import '../theme/app_theme.dart';
 import 'destination_detail_screen.dart';
 import 'destinations_screen.dart';
+import 'guide_management_screen.dart';
 
 class ExploreScreen extends StatefulWidget {
   final Function(int)? onNavigateTab;
@@ -290,6 +291,11 @@ class _ExploreScreenState extends State<ExploreScreen> {
 
             // 3. "PLACES WORTH DISCOVERING"
             _buildPlacesWorthDiscoveringSection(),
+
+            const SizedBox(height: 32),
+
+            // CERTIFIED TOUR GUIDES SPOTLIGHT
+            _buildCertifiedTourGuidesSection(),
 
             const SizedBox(height: 32),
 
@@ -1083,6 +1089,129 @@ class _ExploreScreenState extends State<ExploreScreen> {
                   const Icon(Icons.arrow_forward, size: 12, color: Colors.white),
                 ],
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // SECTION: CERTIFIED LOCAL TOUR GUIDES (SLTDA LICENSED)
+  // ---------------------------------------------------------------------------
+  Widget _buildCertifiedTourGuidesSection() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF0B3A53), Color(0xFF146C86)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF0B3A53).withValues(alpha: 0.22),
+              blurRadius: 18,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF14B8A6).withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFF14B8A6).withValues(alpha: 0.4)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.verified_user_rounded, color: Color(0xFF5EEAD4), size: 13),
+                      const SizedBox(width: 4),
+                      Text(
+                        '100% SLTDA LICENSED',
+                        style: GoogleFonts.inter(
+                          color: const Color(0xFF5EEAD4),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '★ 4.95 Rating',
+                    style: GoogleFonts.inter(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Hire Licensed Sri Lanka Tour Guides',
+              style: GoogleFonts.outfit(
+                fontSize: 18,
+                fontWeight: FontWeight.w900,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Multilingual local specialists in cultural heritage, UNESCO kingdoms, wildlife safaris & mountain trails with upfront daily rates.',
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                color: const Color(0xFFE2E8F0),
+                height: 1.35,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const GuideManagementScreen(initialTabIndex: 0)),
+                      );
+                    },
+                    icon: const Icon(Icons.person_search_rounded, size: 16, color: Color(0xFF14B8A6)),
+                    label: Text(
+                      'Browse Certified Guides',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Color(0xFF14B8A6), width: 1.5),
+                      padding: const EdgeInsets.symmetric(vertical: 11),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

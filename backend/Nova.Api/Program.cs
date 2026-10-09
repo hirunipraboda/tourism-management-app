@@ -151,11 +151,12 @@ using (var scope = app.Services.CreateScope())
     try
     {
         var db = scope.ServiceProvider.GetRequiredService<NovaDbContext>();
+        await db.Database.EnsureCreatedAsync();
         await DbInitializer.SeedAsync(db);
     }
-    catch
+    catch (Exception ex)
     {
-        // Ignore in testing environments if db not reachable
+        app.Logger.LogWarning("Db initialization/seeding warning: {Message}", ex.Message);
     }
 }
 
@@ -176,20 +177,18 @@ app.Use(async (context, next) =>
 });
 
 // Configure the HTTP request pipeline
-if (app.Environment.IsDevelopment())
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "NOVA Trip & Itinerary API v1");
-        c.RoutePrefix = "swagger";
-    });
-}
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "NOVA Trip & Itinerary API v1");
+    c.RoutePrefix = "swagger";
+});
 
 app.UseCors("AllowFrontend");
 
 app.UseAuthentication();
 app.UseAuthorization();
+
 
 app.MapControllers();
 

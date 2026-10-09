@@ -5,7 +5,8 @@ public enum UserRole
     Tourist,
     TourismOperator,
     Admin,
-    User
+    User,
+    Guide
 }
 
 public enum TripStatus

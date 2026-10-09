@@ -43,6 +43,16 @@ public class NovaDbContext : DbContext
     public DbSet<TourPackage> TourPackages => Set<TourPackage>();
     public DbSet<TourOperation> TourOperations => Set<TourOperation>();
     public DbSet<GuideAvailability> GuideAvailabilities => Set<GuideAvailability>();
+    public DbSet<GuideDestination> GuideDestinations => Set<GuideDestination>();
+    public DbSet<GuideWorkingHours> GuideWorkingHours => Set<GuideWorkingHours>();
+    public DbSet<GuideBlockedDate> GuideBlockedDates => Set<GuideBlockedDate>();
+    public DbSet<GuideBooking> GuideBookings => Set<GuideBooking>();
+    public DbSet<GuideBookingDestination> GuideBookingDestinations => Set<GuideBookingDestination>();
+    public DbSet<GuidePayment> GuidePayments => Set<GuidePayment>();
+    public DbSet<GuidePayout> GuidePayouts => Set<GuidePayout>();
+    public DbSet<GuideBookingEvent> GuideBookingEvents => Set<GuideBookingEvent>();
+    public DbSet<PaymentWebhookEvent> PaymentWebhookEvents => Set<PaymentWebhookEvent>();
+    public DbSet<Notification> Notifications => Set<Notification>();
 
     // Reviews & Recommendations Extended Entities
     public DbSet<ReviewHelpfulVote> ReviewHelpfulVotes => Set<ReviewHelpfulVote>();
@@ -229,6 +239,90 @@ public class NovaDbContext : DbContext
         modelBuilder.Entity<TourOperation>()
             .Property(to => to.Status)
             .HasConversion<string>();
+
+        // ── Guide Booking System Relationships & Keys ───────────────────────────
+        modelBuilder.Entity<GuideDestination>()
+            .HasKey(gd => new { gd.GuideId, gd.DestinationId });
+
+        modelBuilder.Entity<GuideDestination>()
+            .HasOne(gd => gd.Guide)
+            .WithMany(g => g.CoveredDestinations)
+            .HasForeignKey(gd => gd.GuideId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<GuideWorkingHours>()
+            .HasOne(gwh => gwh.Guide)
+            .WithMany(g => g.WorkingHours)
+            .HasForeignKey(gwh => gwh.GuideId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<GuideBlockedDate>()
+            .HasOne(gbd => gbd.Guide)
+            .WithMany(g => g.BlockedDates)
+            .HasForeignKey(gbd => gbd.GuideId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<GuideBooking>()
+            .Property(b => b.Status)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<GuideBooking>()
+            .Property(b => b.RefundStatus)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<GuideBooking>()
+            .HasOne(b => b.Guide)
+            .WithMany()
+            .HasForeignKey(b => b.GuideId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<GuideBooking>()
+            .HasOne(b => b.Customer)
+            .WithMany()
+            .HasForeignKey(b => b.CustomerId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<GuideBooking>()
+            .HasIndex(b => new { b.GuideId, b.StartDate, b.EndDate });
+
+        modelBuilder.Entity<GuideBooking>()
+            .HasIndex(b => b.CustomerId);
+
+        modelBuilder.Entity<GuideBooking>()
+            .HasIndex(b => b.Status);
+
+        modelBuilder.Entity<GuideBookingDestination>()
+            .HasKey(gbd => new { gbd.BookingId, gbd.DestinationId });
+
+        modelBuilder.Entity<GuideBookingDestination>()
+            .HasOne(gbd => gbd.Booking)
+            .WithMany(b => b.Destinations)
+            .HasForeignKey(gbd => gbd.BookingId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<GuidePayment>()
+            .Property(p => p.Status)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<GuidePayment>()
+            .HasOne(p => p.Booking)
+            .WithMany(b => b.Payments)
+            .HasForeignKey(p => p.BookingId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<GuidePayout>()
+            .Property(p => p.Status)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<GuidePayout>()
+            .HasOne(p => p.Booking)
+            .WithOne(b => b.Payout)
+            .HasForeignKey<GuidePayout>(p => p.BookingId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<PaymentWebhookEvent>()
+            .HasIndex(w => new { w.Provider, w.ProviderEventId })
+            .IsUnique();
 
         // ── Reviews & Recommendations Relationships ────────────────────────────
 

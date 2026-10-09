@@ -3,6 +3,7 @@ import 'package:nova_mobile/theme/app_fonts.dart';
 import '../services/api_service.dart';
 import 'register_screen.dart';
 import 'reset_password_screen.dart';
+import 'guide_management_screen.dart';
 import '../main.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -62,15 +63,31 @@ class _LoginScreenState extends State<LoginScreen>
     if (mounted) {
       setState(() => _isLoading = false);
       if (res['success'] == true) {
-        Navigator.of(context).pushReplacement(
-          PageRouteBuilder(
-            pageBuilder: (_, animation, __) => const MainNavigationScreen(),
-            transitionsBuilder: (_, animation, __, child) {
-              return FadeTransition(opacity: animation, child: child);
-            },
-            transitionDuration: const Duration(milliseconds: 500),
-          ),
-        );
+        final role = (res['user'] != null && res['user']['role'] != null)
+            ? res['user']['role'].toString().toUpperCase()
+            : '';
+
+        if (role == 'GUIDE') {
+          Navigator.of(context).pushReplacement(
+            PageRouteBuilder(
+              pageBuilder: (_, animation, __) => const GuideManagementScreen(),
+              transitionsBuilder: (_, animation, __, child) {
+                return FadeTransition(opacity: animation, child: child);
+              },
+              transitionDuration: const Duration(milliseconds: 500),
+            ),
+          );
+        } else {
+          Navigator.of(context).pushReplacement(
+            PageRouteBuilder(
+              pageBuilder: (_, animation, __) => const MainNavigationScreen(),
+              transitionsBuilder: (_, animation, __, child) {
+                return FadeTransition(opacity: animation, child: child);
+              },
+              transitionDuration: const Duration(milliseconds: 500),
+            ),
+          );
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -356,9 +373,44 @@ class _LoginScreenState extends State<LoginScreen>
                                           ),
                                   ),
                                 ),
+                                const SizedBox(height: 14),
+
+                                // Dedicated Guide Portal Quick Sign-In Option
+                                SizedBox(
+                                  width: double.infinity,
+                                  height: 48,
+                                  child: OutlinedButton.icon(
+                                    onPressed: _isLoading
+                                        ? null
+                                        : () {
+                                            setState(() {
+                                              _emailController.text = 'guide@tourlink.com';
+                                              _passwordController.text = 'guide123';
+                                            });
+                                            _handleLogin();
+                                          },
+                                    icon: const Icon(Icons.badge_rounded, color: Color(0xFF2DD4BF), size: 18),
+                                    label: Text(
+                                      'Guide Portal Sign-In (guide@tourlink.com)',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                        color: const Color(0xFF2DD4BF),
+                                      ),
+                                    ),
+                                    style: OutlinedButton.styleFrom(
+                                      side: const BorderSide(color: Color(0xFF14B8A6), width: 1.5),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(14),
+                                      ),
+                                      backgroundColor: const Color(0xFF14B8A6).withValues(alpha: 0.12),
+                                    ),
+                                  ),
+                                ),
                                 const SizedBox(height: 12),
                                 Center(
                                   child: TextButton.icon(
+
                                     onPressed: () {
                                       Navigator.of(context).pushReplacement(
                                         MaterialPageRoute(

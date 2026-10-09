@@ -49,6 +49,9 @@
     <Compile Include="..\Nova.Api\Controllers\AdminController.cs" />
     <Compile Include="..\Nova.Api\Controllers\AuthController.cs" />
     <Compile Include="..\Nova.Api\Controllers\DestinationsController.cs" />
+    <Compile Include="..\Nova.Api\Controllers\GuideBookingsController.cs" />
+    <Compile Include="..\Nova.Api\Controllers\GuidePortalController.cs" />
+    <Compile Include="..\Nova.Api\Controllers\AdminGuidesController.cs" />
   </ItemGroup>
 
 </Project>

@@ -39,9 +39,27 @@ public class Guide
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
+    // ── Guide booking system extensions ────────────────────────────────────
+    public DateOnly? DateOfBirth { get; set; }
+    public string? Gender { get; set; }
+    /// <summary>Guide consent to show age on the public directory.</summary>
+    public bool ShowAgePublicly { get; set; }
+    public string? Qualifications { get; set; }
+    [Column(TypeName = "numeric(12,2)")] public decimal HourlyRate { get; set; }
+    [Column(TypeName = "numeric(12,2)")] public decimal HalfDayRate { get; set; }
+    [Column(TypeName = "numeric(12,2)")] public decimal FullDayRate { get; set; }
+    public bool AcceptingBookings { get; set; } = true;
+    public bool IsArchived { get; set; }
+    public DateTime? ArchivedAt { get; set; }
+    /// <summary>Bank / payout instructions. Administrator-only; never exposed publicly.</summary>
+    public string? PayoutAccountNote { get; set; }
+
     public ICollection<TourPackage> TourPackages { get; set; } = new List<TourPackage>();
     public ICollection<GuideAvailability> Availabilities { get; set; } = new List<GuideAvailability>();
     public ICollection<TourOperation> TourOperations { get; set; } = new List<TourOperation>();
+    public ICollection<GuideDestination> CoveredDestinations { get; set; } = new List<GuideDestination>();
+    public ICollection<GuideWorkingHours> WorkingHours { get; set; } = new List<GuideWorkingHours>();
+    public ICollection<GuideBlockedDate> BlockedDates { get; set; } = new List<GuideBlockedDate>();
 }
 
 [Table("tour_packages")]

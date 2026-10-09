@@ -345,9 +345,48 @@ public class AuthController : ControllerBase
         });
     }
 
+    /// <summary>
+    /// Changes password for the currently authenticated user (clears MustChangePassword flag).
+    /// </summary>
+    [HttpPost("change-password")]
+    [Authorize]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.CurrentPassword) || string.IsNullOrWhiteSpace(request.NewPassword))
+        {
+            return BadRequest(new { success = false, message = "Current password and new password are required." });
+        }
+
+        if (request.NewPassword.Length < 6)
+        {
+            return BadRequest(new { success = false, message = "New password must be at least 6 characters long." });
+        }
+
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user == null) return Unauthorized(new { success = false, message = "User not found." });
+
+        if (!BCrypt.Net.BCrypt.Verify(request.CurrentPassword, user.PasswordHash))
+        {
+            return BadRequest(new { success = false, message = "Incorrect current password." });
+        }
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+        user.MustChangePassword = false;
+        user.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+
+        return Ok(new
+        {
+            success = true,
+            message = "Password changed successfully.",
+            user = FormatUserResponse(user)
+        });
+    }
+
     private static object FormatUserResponse(User user)
     {
-        var roleStr = user.Role == UserRole.Admin ? "ADMIN" : "USER";
+        var roleStr = user.Role == UserRole.Admin ? "ADMIN" : user.Role == UserRole.Guide ? "GUIDE" : "USER";
         return new
         {
             id = user.Id,
@@ -355,6 +394,7 @@ public class AuthController : ControllerBase
             email = user.Email,
             role = roleStr,
             status = user.Status,
+            mustChangePassword = user.MustChangePassword,
             profileImage = user.ProfileImage,
             phone = user.Phone,
             bio = user.Bio,
@@ -370,7 +410,7 @@ public class AuthController : ControllerBase
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-        var roleStr = user.Role == UserRole.Admin ? "ADMIN" : "USER";
+        var roleStr = user.Role == UserRole.Admin ? "ADMIN" : user.Role == UserRole.Guide ? "GUIDE" : "USER";
 
         var claims = new List<Claim>
         {
@@ -466,5 +506,11 @@ public class ResetPasswordRequest
 public class ForgotPasswordRequest
 {
     public string Email { get; set; } = string.Empty;
+}
+
+public class ChangePasswordRequest
+{
+    public string CurrentPassword { get; set; } = string.Empty;
+    public string NewPassword { get; set; } = string.Empty;
 }
 

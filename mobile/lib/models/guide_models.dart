@@ -12,6 +12,11 @@ class GuideModel {
   final String avatarUrl;
   final String bio;
   final int yearsExperience;
+  final double hourlyRate;
+  final double halfDayRate;
+  final double fullDayRate;
+  final bool acceptingBookings;
+  final List<String> coveredDestinations;
 
   GuideModel({
     required this.id,
@@ -27,6 +32,11 @@ class GuideModel {
     this.avatarUrl = '',
     this.bio = '',
     this.yearsExperience = 0,
+    this.hourlyRate = 15.0,
+    this.halfDayRate = 50.0,
+    this.fullDayRate = 90.0,
+    this.acceptingBookings = true,
+    this.coveredDestinations = const [],
   });
 
   factory GuideModel.fromJson(Map<String, dynamic> json) {
@@ -37,6 +47,14 @@ class GuideModel {
       parsedId = int.tryParse(json['id'].toString()) ?? 0;
     }
 
+    List<String> destinations = [];
+    if (json['coveredDestinations'] is List) {
+      destinations = (json['coveredDestinations'] as List).map((d) {
+        if (d is Map) return d['destinationName']?.toString() ?? '';
+        return d.toString();
+      }).where((s) => s.isNotEmpty).toList();
+    }
+
     return GuideModel(
       id: parsedId,
       name: json['name']?.toString() ?? 'Licensed Guide',
@@ -44,13 +62,22 @@ class GuideModel {
       phone: json['phone']?.toString() ?? '',
       languages: (json['languages'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
       specialties: (json['specialties'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
-      rating: (json['rating'] is num) ? (json['rating'] as num).toDouble() : (double.tryParse(json['rating']?.toString() ?? '0') ?? 0.0),
+      rating: (json['rating'] is num)
+          ? (json['rating'] as num).toDouble()
+          : (json['ratingAvg'] is num)
+              ? (json['ratingAvg'] as num).toDouble()
+              : (double.tryParse(json['rating']?.toString() ?? json['ratingAvg']?.toString() ?? '0') ?? 0.0),
       toursCompleted: (json['toursCompleted'] is num) ? (json['toursCompleted'] as num).toInt() : (int.tryParse(json['toursCompleted']?.toString() ?? '0') ?? 0),
-      status: json['status']?.toString() ?? 'Available',
-      verificationStatus: json['verificationStatus']?.toString() ?? 'Pending',
+      status: json['status']?.toString() ?? (json['isActive'] == false ? 'Inactive' : 'Available'),
+      verificationStatus: json['verificationStatus']?.toString() ?? 'Verified',
       avatarUrl: json['avatarUrl']?.toString() ?? '',
       bio: json['bio']?.toString() ?? '',
       yearsExperience: (json['yearsExperience'] is num) ? (json['yearsExperience'] as num).toInt() : (int.tryParse(json['yearsExperience']?.toString() ?? '0') ?? 0),
+      hourlyRate: (json['hourlyRate'] is num) ? (json['hourlyRate'] as num).toDouble() : (double.tryParse(json['hourlyRate']?.toString() ?? '15') ?? 15.0),
+      halfDayRate: (json['halfDayRate'] is num) ? (json['halfDayRate'] as num).toDouble() : (double.tryParse(json['halfDayRate']?.toString() ?? '50') ?? 50.0),
+      fullDayRate: (json['fullDayRate'] is num) ? (json['fullDayRate'] as num).toDouble() : (double.tryParse(json['fullDayRate']?.toString() ?? '90') ?? 90.0),
+      acceptingBookings: json['acceptingBookings'] != false,
+      coveredDestinations: destinations,
     );
   }
 
@@ -69,6 +96,11 @@ class GuideModel {
       'avatarUrl': avatarUrl,
       'bio': bio,
       'yearsExperience': yearsExperience,
+      'hourlyRate': hourlyRate,
+      'halfDayRate': halfDayRate,
+      'fullDayRate': fullDayRate,
+      'acceptingBookings': acceptingBookings,
+      'coveredDestinations': coveredDestinations,
     };
   }
 
@@ -86,6 +118,11 @@ class GuideModel {
     String? avatarUrl,
     String? bio,
     int? yearsExperience,
+    double? hourlyRate,
+    double? halfDayRate,
+    double? fullDayRate,
+    bool? acceptingBookings,
+    List<String>? coveredDestinations,
   }) {
     return GuideModel(
       id: id ?? this.id,
@@ -101,6 +138,11 @@ class GuideModel {
       avatarUrl: avatarUrl ?? this.avatarUrl,
       bio: bio ?? this.bio,
       yearsExperience: yearsExperience ?? this.yearsExperience,
+      hourlyRate: hourlyRate ?? this.hourlyRate,
+      halfDayRate: halfDayRate ?? this.halfDayRate,
+      fullDayRate: fullDayRate ?? this.fullDayRate,
+      acceptingBookings: acceptingBookings ?? this.acceptingBookings,
+      coveredDestinations: coveredDestinations ?? this.coveredDestinations,
     );
   }
 }
@@ -153,81 +195,330 @@ class GuideAvailabilitySlot {
   }
 }
 
+class GuideBookingModel {
+  final String id;
+  final int guideId;
+  final String guideName;
+  final String guideEmail;
+  final String guidePhone;
+  final String guideAvatarUrl;
+  final String customerId;
+  final String customerName;
+  final String customerEmail;
+  final String customerPhone;
+  final String startDate;
+  final String endDate;
+  final String startTime;
+  final String endTime;
+  final int travelers;
+  final String? pickupLocation;
+  final String? preferredLanguage;
+  final String? specialRequests;
+  final String status;
+  final double subtotal;
+  final double serviceFee;
+  final double totalAmount;
+  final double commissionAmount;
+  final double guideNetAmount;
+  final String currency;
+  final int billableDays;
+  final String paymentStatus;
+  final String payoutStatus;
+  final String? payoutReference;
+  final List<String> destinations;
+
+  GuideBookingModel({
+    required this.id,
+    required this.guideId,
+    required this.guideName,
+    required this.guideEmail,
+    this.guidePhone = '',
+    this.guideAvatarUrl = '',
+    required this.customerId,
+    required this.customerName,
+    required this.customerEmail,
+    this.customerPhone = '',
+    required this.startDate,
+    required this.endDate,
+    required this.startTime,
+    required this.endTime,
+    required this.travelers,
+    this.pickupLocation,
+    this.preferredLanguage,
+    this.specialRequests,
+    required this.status,
+    required this.subtotal,
+    required this.serviceFee,
+    required this.totalAmount,
+    required this.commissionAmount,
+    required this.guideNetAmount,
+    this.currency = 'USD',
+    this.billableDays = 1,
+    this.paymentStatus = 'Pending',
+    this.payoutStatus = 'Pending',
+    this.payoutReference,
+    this.destinations = const [],
+  });
+
+  factory GuideBookingModel.fromJson(Map<String, dynamic> json) {
+    List<String> dests = [];
+    if (json['destinations'] is List) {
+      dests = (json['destinations'] as List).map((d) {
+        if (d is Map) return d['destinationName']?.toString() ?? '';
+        return d.toString();
+      }).where((s) => s.isNotEmpty).toList();
+    }
+
+    String payStatus = 'Pending';
+    if (json['payment'] is Map) {
+      payStatus = json['payment']['status']?.toString() ?? 'Pending';
+    }
+
+    String outStatus = 'Pending';
+    String? outRef;
+    if (json['payout'] is Map) {
+      outStatus = json['payout']['status']?.toString() ?? 'Pending';
+      outRef = json['payout']['payoutReference']?.toString();
+    }
+
+    return GuideBookingModel(
+      id: json['id']?.toString() ?? '',
+      guideId: (json['guideId'] is num) ? (json['guideId'] as num).toInt() : (int.tryParse(json['guideId']?.toString() ?? '0') ?? 0),
+      guideName: json['guideName']?.toString() ?? 'Guide',
+      guideEmail: json['guideEmail']?.toString() ?? '',
+      guidePhone: json['guidePhone']?.toString() ?? '',
+      guideAvatarUrl: json['guideAvatarUrl']?.toString() ?? '',
+      customerId: json['customerId']?.toString() ?? '',
+      customerName: json['customerName']?.toString() ?? 'Guest',
+      customerEmail: json['customerEmail']?.toString() ?? '',
+      customerPhone: json['customerPhone']?.toString() ?? '',
+      startDate: json['startDate']?.toString() ?? '',
+      endDate: json['endDate']?.toString() ?? '',
+      startTime: json['startTime']?.toString() ?? '',
+      endTime: json['endTime']?.toString() ?? '',
+      travelers: (json['travelers'] is num) ? (json['travelers'] as num).toInt() : 1,
+      pickupLocation: json['pickupLocation']?.toString(),
+      preferredLanguage: json['preferredLanguage']?.toString(),
+      specialRequests: json['specialRequests']?.toString(),
+      status: json['status']?.toString() ?? 'PendingPayment',
+      subtotal: (json['subtotal'] is num) ? (json['subtotal'] as num).toDouble() : 0.0,
+      serviceFee: (json['serviceFee'] is num) ? (json['serviceFee'] as num).toDouble() : 0.0,
+      totalAmount: (json['totalAmount'] is num) ? (json['totalAmount'] as num).toDouble() : 0.0,
+      commissionAmount: (json['commissionAmount'] is num) ? (json['commissionAmount'] as num).toDouble() : 0.0,
+      guideNetAmount: (json['guideNetAmount'] is num) ? (json['guideNetAmount'] as num).toDouble() : 0.0,
+      currency: json['currency']?.toString() ?? 'USD',
+      billableDays: (json['billableDays'] is num) ? (json['billableDays'] as num).toInt() : 1,
+      paymentStatus: payStatus,
+      payoutStatus: outStatus,
+      payoutReference: outRef,
+      destinations: dests,
+    );
+  }
+}
+
+class GuideQuoteModel {
+  final int guideId;
+  final String guideName;
+  final String rateTypeApplied;
+  final double hourlyRate;
+  final double halfDayRate;
+  final double fullDayRate;
+  final int billableDays;
+  final double subtotal;
+  final double serviceFee;
+  final double totalAmount;
+  final double commissionAmount;
+  final double guideNetAmount;
+  final String currency;
+  final bool isAvailable;
+  final String? unavailabilityReason;
+
+  GuideQuoteModel({
+    required this.guideId,
+    required this.guideName,
+    required this.rateTypeApplied,
+    required this.hourlyRate,
+    required this.halfDayRate,
+    required this.fullDayRate,
+    required this.billableDays,
+    required this.subtotal,
+    required this.serviceFee,
+    required this.totalAmount,
+    required this.commissionAmount,
+    required this.guideNetAmount,
+    this.currency = 'USD',
+    required this.isAvailable,
+    this.unavailabilityReason,
+  });
+
+  factory GuideQuoteModel.fromJson(Map<String, dynamic> json) {
+    return GuideQuoteModel(
+      guideId: (json['guideId'] is num) ? (json['guideId'] as num).toInt() : 0,
+      guideName: json['guideName']?.toString() ?? 'Guide',
+      rateTypeApplied: json['rateTypeApplied']?.toString() ?? 'FullDay',
+      hourlyRate: (json['hourlyRate'] is num) ? (json['hourlyRate'] as num).toDouble() : 0.0,
+      halfDayRate: (json['halfDayRate'] is num) ? (json['halfDayRate'] as num).toDouble() : 0.0,
+      fullDayRate: (json['fullDayRate'] is num) ? (json['fullDayRate'] as num).toDouble() : 0.0,
+      billableDays: (json['billableDays'] is num) ? (json['billableDays'] as num).toInt() : 1,
+      subtotal: (json['subtotal'] is num) ? (json['subtotal'] as num).toDouble() : 0.0,
+      serviceFee: (json['serviceFee'] is num) ? (json['serviceFee'] as num).toDouble() : 0.0,
+      totalAmount: (json['totalAmount'] is num) ? (json['totalAmount'] as num).toDouble() : 0.0,
+      commissionAmount: (json['commissionAmount'] is num) ? (json['commissionAmount'] as num).toDouble() : 0.0,
+      guideNetAmount: (json['guideNetAmount'] is num) ? (json['guideNetAmount'] as num).toDouble() : 0.0,
+      currency: json['currency']?.toString() ?? 'USD',
+      isAvailable: json['isAvailable'] == true,
+      unavailabilityReason: json['unavailabilityReason']?.toString(),
+    );
+  }
+}
+
+class GuideDashboardMetricsModel {
+  final int upcomingBookings;
+  final int pendingApprovalBookings;
+  final int todayBookings;
+  final int completedBookings;
+  final double pendingEarnings;
+  final double totalEarnings;
+  final double completedPayouts;
+  final double ratingAvg;
+  final int ratingCount;
+
+  GuideDashboardMetricsModel({
+    required this.upcomingBookings,
+    required this.pendingApprovalBookings,
+    required this.todayBookings,
+    required this.completedBookings,
+    required this.pendingEarnings,
+    required this.totalEarnings,
+    required this.completedPayouts,
+    required this.ratingAvg,
+    required this.ratingCount,
+  });
+
+  factory GuideDashboardMetricsModel.fromJson(Map<String, dynamic> json) {
+    return GuideDashboardMetricsModel(
+      upcomingBookings: (json['upcomingBookings'] is num) ? (json['upcomingBookings'] as num).toInt() : 0,
+      pendingApprovalBookings: (json['pendingApprovalBookings'] is num) ? (json['pendingApprovalBookings'] as num).toInt() : 0,
+      todayBookings: (json['todayBookings'] is num) ? (json['todayBookings'] as num).toInt() : 0,
+      completedBookings: (json['completedBookings'] is num) ? (json['completedBookings'] as num).toInt() : 0,
+      pendingEarnings: (json['pendingEarnings'] is num) ? (json['pendingEarnings'] as num).toDouble() : 0.0,
+      totalEarnings: (json['totalEarnings'] is num) ? (json['totalEarnings'] as num).toDouble() : 0.0,
+      completedPayouts: (json['completedPayouts'] is num) ? (json['completedPayouts'] as num).toDouble() : 0.0,
+      ratingAvg: (json['ratingAvg'] is num) ? (json['ratingAvg'] as num).toDouble() : 0.0,
+      ratingCount: (json['ratingCount'] is num) ? (json['ratingCount'] as num).toInt() : 0,
+    );
+  }
+}
+
+class WorkingHourModel {
+  final int dayOfWeek;
+  final String startTime;
+  final String endTime;
+
+  WorkingHourModel({
+    required this.dayOfWeek,
+    required this.startTime,
+    required this.endTime,
+  });
+
+  factory WorkingHourModel.fromJson(Map<String, dynamic> json) {
+    return WorkingHourModel(
+      dayOfWeek: (json['dayOfWeek'] is num) ? (json['dayOfWeek'] as num).toInt() : 1,
+      startTime: json['startTime']?.toString() ?? '08:00',
+      endTime: json['endTime']?.toString() ?? '18:00',
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'dayOfWeek': dayOfWeek,
+    'startTime': startTime,
+    'endTime': endTime,
+  };
+}
+
+class BlockedDateModel {
+  final int id;
+  final String startDate;
+  final String endDate;
+  final String? reason;
+
+  BlockedDateModel({
+    required this.id,
+    required this.startDate,
+    required this.endDate,
+    this.reason,
+  });
+
+  factory BlockedDateModel.fromJson(Map<String, dynamic> json) {
+    return BlockedDateModel(
+      id: (json['id'] is num) ? (json['id'] as num).toInt() : 0,
+      startDate: json['startDate']?.toString() ?? '',
+      endDate: json['endDate']?.toString() ?? '',
+      reason: json['reason']?.toString(),
+    );
+  }
+}
+
 final List<GuideModel> kInitialMockGuides = [
   GuideModel(
     id: 1,
-    name: 'Kasun Perera',
-    email: 'kasun.perera@novatourism.lk',
+    name: 'Samantha Perera',
+    email: 'guide@tourlink.com',
     phone: '+94 77 123 4567',
     languages: ['English', 'Sinhala', 'Tamil'],
-    specialties: ['Cultural Heritage', 'Kandy Temples', 'Colonial History'],
-    rating: 4.9,
-    toursCompleted: 312,
+    specialties: ['Cultural Heritage', 'Ancient Cities', 'Temple History'],
+    rating: 4.95,
+    toursCompleted: 284,
     status: 'Available',
     verificationStatus: 'Verified',
-    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200',
-    bio: 'Native Kandyan cultural historian with Peradeniya University archaeology credentials.',
-    yearsExperience: 8,
+    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200',
+    bio: 'Licensed national tourist guide specializing in UNESCO World Heritage sites, Sigiriya, Polonnaruwa, and Kandy Sacred Tooth Relic Temple.',
+    yearsExperience: 7,
+    hourlyRate: 15.0,
+    halfDayRate: 50.0,
+    fullDayRate: 90.0,
+    acceptingBookings: true,
+    coveredDestinations: ['Sigiriya Ancient Rock Fortress', 'Temple of the Sacred Tooth Relic', 'Dambulla Cave Temple'],
   ),
   GuideModel(
     id: 2,
-    name: 'Suresh Kumar',
-    email: 'suresh.kumar@novatourism.lk',
-    phone: '+94 76 234 5678',
+    name: 'Dinesh Jayawardena',
+    email: 'dinesh.guide@tourlink.com',
+    phone: '+94 71 890 1234',
     languages: ['English', 'Sinhala'],
     specialties: ['Mountain Hiking', 'Ella Rock', 'Tea Country'],
-    rating: 4.95,
-    toursCompleted: 218,
+    rating: 4.88,
+    toursCompleted: 196,
     status: 'Available',
     verificationStatus: 'Verified',
-    avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200',
-    bio: 'Certified wilderness mountain ranger specializing in Ella high country trails.',
-    yearsExperience: 6,
+    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200',
+    bio: 'Certified wilderness guide and birding specialist with profound knowledge of Ella Rock, Little Adams Peak, and Horton Plains.',
+    yearsExperience: 5,
+    hourlyRate: 14.0,
+    halfDayRate: 45.0,
+    fullDayRate: 80.0,
+    acceptingBookings: true,
+    coveredDestinations: ['Nine Arches Bridge', 'Ella Rock & Little Adams Peak', 'Horton Plains National Park'],
   ),
   GuideModel(
     id: 3,
-    name: 'Fatima Nazeer',
-    email: 'fatima.nazeer@novatourism.lk',
-    phone: '+94 71 345 6789',
-    languages: ['English', 'Sinhala', 'Arabic'],
-    specialties: ['Galle Fort', 'Dutch Ramparts', 'Coastal Gems'],
-    rating: 4.88,
-    toursCompleted: 176,
+    name: 'Ruwan Silva',
+    email: 'ruwan.silva@tourlink.com',
+    phone: '+94 76 456 7890',
+    languages: ['English', 'German', 'Sinhala'],
+    specialties: ['Wildlife Safari', 'Leopard Tracking', 'Bird Watching'],
+    rating: 4.92,
+    toursCompleted: 340,
     status: 'Available',
     verificationStatus: 'Verified',
-    avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200',
-    bio: 'Local Galle Fort resident with profound knowledge of Portuguese & Dutch maritime trade.',
-    yearsExperience: 5,
-  ),
-  GuideModel(
-    id: 4,
-    name: 'Dr. Jayatilleke',
-    email: 'jaya.tilleke@novatourism.lk',
-    phone: '+94 72 456 7890',
-    languages: ['English', 'Sinhala', 'French'],
-    specialties: ['Ancient Kingdoms', 'Sigiriya Rock', 'Anuradhapura'],
-    rating: 4.96,
-    toursCompleted: 490,
-    status: 'Assigned',
-    verificationStatus: 'Verified',
-    avatarUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200',
-    bio: 'Archaeologist with 12 years of UNESCO Cultural Triangle field research.',
-    yearsExperience: 12,
-  ),
-  GuideModel(
-    id: 5,
-    name: 'Bandara Herath',
-    email: 'bandara.herath@novatourism.lk',
-    phone: '+94 75 567 8901',
-    languages: ['English', 'Sinhala'],
-    specialties: ['Wildlife Safari', 'Leopard Tracking', 'Yala Park'],
-    rating: 4.91,
-    toursCompleted: 384,
-    status: 'Available',
-    verificationStatus: 'Verified',
-    avatarUrl: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=200',
-    bio: 'Yala wildlife safari master tracker with deep expertise in leopard habits.',
-    yearsExperience: 10,
+    avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200',
+    bio: 'Veteran naturalist guide registered with Sri Lanka Department of Wildlife Conservation, active across Yala, Udawalawe, and Bundala.',
+    yearsExperience: 9,
+    hourlyRate: 18.0,
+    halfDayRate: 60.0,
+    fullDayRate: 110.0,
+    acceptingBookings: true,
+    coveredDestinations: ['Yala National Park', 'Udawalawe National Park', 'Mirissa Coast'],
   ),
 ];
 
@@ -235,7 +526,7 @@ final List<GuideAvailabilitySlot> kInitialMockAvailabilitySlots = [
   GuideAvailabilitySlot(
     availabilityId: 101,
     guideId: 1,
-    guideName: 'Kasun Perera',
+    guideName: 'Samantha Perera',
     availableDate: '2026-10-15',
     startTime: '08:30:00',
     endTime: '16:30:00',
@@ -244,7 +535,7 @@ final List<GuideAvailabilitySlot> kInitialMockAvailabilitySlots = [
   GuideAvailabilitySlot(
     availabilityId: 102,
     guideId: 1,
-    guideName: 'Kasun Perera',
+    guideName: 'Samantha Perera',
     availableDate: '2026-10-16',
     startTime: '09:00:00',
     endTime: '17:00:00',
@@ -253,28 +544,10 @@ final List<GuideAvailabilitySlot> kInitialMockAvailabilitySlots = [
   GuideAvailabilitySlot(
     availabilityId: 103,
     guideId: 2,
-    guideName: 'Suresh Kumar',
+    guideName: 'Dinesh Jayawardena',
     availableDate: '2026-10-17',
     startTime: '07:00:00',
     endTime: '15:00:00',
     isBooked: false,
-  ),
-  GuideAvailabilitySlot(
-    availabilityId: 104,
-    guideId: 3,
-    guideName: 'Fatima Nazeer',
-    availableDate: '2026-10-18',
-    startTime: '10:00:00',
-    endTime: '18:00:00',
-    isBooked: false,
-  ),
-  GuideAvailabilitySlot(
-    availabilityId: 105,
-    guideId: 4,
-    guideName: 'Dr. Jayatilleke',
-    availableDate: '2026-10-19',
-    startTime: '08:00:00',
-    endTime: '14:00:00',
-    isBooked: true,
   ),
 ];

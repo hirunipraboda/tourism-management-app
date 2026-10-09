@@ -21,7 +21,8 @@ public static class DbInitializer
             new() { Id = "user-tourist-3", Name = "Elena Rostova", Email = "elena@example.com", PasswordHash = BCrypt.Net.BCrypt.HashPassword("Password123!"), Role = UserRole.Tourist, CreatedAt = DateTime.UtcNow.AddDays(-15) },
             new() { Id = "user-operator-1", Name = "Bob Operator", Email = "operator@example.com", PasswordHash = BCrypt.Net.BCrypt.HashPassword("Password123!"), Role = UserRole.TourismOperator, CreatedAt = DateTime.UtcNow.AddDays(-40) },
             new() { Id = "user-admin-1", Name = "Charlie Admin", Email = "admin@example.com", PasswordHash = BCrypt.Net.BCrypt.HashPassword("Password123!"), Role = UserRole.Admin, CreatedAt = DateTime.UtcNow.AddDays(-60) },
-            new() { Id = "admin-travellink-01", Name = "TravelLink Administrator", Email = "admin@travellink.com", PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin123"), Role = UserRole.Admin, IsActive = true, CreatedAt = DateTime.UtcNow.AddDays(-90) }
+            new() { Id = "admin-travellink-01", Name = "TravelLink Administrator", Email = "admin@travellink.com", PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin123"), Role = UserRole.Admin, IsActive = true, CreatedAt = DateTime.UtcNow.AddDays(-90) },
+            new() { Id = "guide-tourlink-01", Name = "Samantha Perera", Email = "guide@tourlink.com", PasswordHash = BCrypt.Net.BCrypt.HashPassword("guide123"), Role = UserRole.Guide, MustChangePassword = true, IsActive = true, CreatedAt = DateTime.UtcNow.AddDays(-60) }
         };
 
         foreach (var u in usersToEnsure)
@@ -34,6 +35,12 @@ public static class DbInitializer
             else if (u.Email == "admin@travellink.com")
             {
                 existing.Role = UserRole.Admin;
+                existing.IsActive = true;
+                existing.PasswordHash = u.PasswordHash;
+            }
+            else if (u.Email == "guide@tourlink.com")
+            {
+                existing.Role = UserRole.Guide;
                 existing.IsActive = true;
                 existing.PasswordHash = u.PasswordHash;
             }
@@ -1524,6 +1531,272 @@ public static class DbInitializer
                     Notes = "Handcrafted moonstone jewelry, Ceylon cinnamon, and colonial cafe lunch."
                 }
             );
+
+            await db.SaveChangesAsync();
+        }
+
+        // 10. Seed Guides, Working Hours, Bookings, Payments & Payouts
+        if (!await db.Guides.AnyAsync())
+        {
+            var guide1 = new Guide
+            {
+                Id = 1,
+                UserId = "guide-tourlink-01",
+                Name = "Samantha Perera",
+                Email = "guide@tourlink.com",
+                Phone = "+94 77 123 4567",
+                Bio = "National tour guide licensed by SLTDA with 8+ years experience specializing in cultural heritage, ancient kingdoms, and wildlife trails across Sri Lanka.",
+                Languages = ["English", "Sinhala", "French"],
+                Specialties = ["Cultural Heritage", "Ancient Kingdoms", "Wildlife Safari"],
+                YearsExperience = 8,
+                HourlyRate = 20.0m,
+                HalfDayRate = 65.0m,
+                FullDayRate = 110.0m,
+                RatingAvg = 4.95m,
+                RatingCount = 38,
+                ToursCompleted = 142,
+                VerificationStatus = GuideVerificationStatus.Verified,
+                IsActive = true,
+                AcceptingBookings = true,
+                DateOfBirth = new DateOnly(1991, 5, 14),
+                Gender = "Female",
+                ShowAgePublicly = true,
+                Qualifications = "SLTDA National Guide License #NG-2016-084, Advanced First Aid Certified, Wilderness Navigator",
+                AvatarUrl = "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80",
+                CreatedAt = DateTime.UtcNow.AddDays(-60),
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            var guide2 = new Guide
+            {
+                Id = 2,
+                UserId = "user-kasun",
+                Name = "Dinesh Jayawardena",
+                Email = "dinesh.guide@example.com",
+                Phone = "+94 71 456 7890",
+                Bio = "Wildlife specialist & conservationist guide. Expert naturalist for Yala, Wilpattu, and Sinharaja rainforest expeditions.",
+                Languages = ["English", "Sinhala", "German"],
+                Specialties = ["Wildlife Safari", "Bird Watching", "Rainforest Trekking"],
+                YearsExperience = 6,
+                HourlyRate = 22.0m,
+                HalfDayRate = 75.0m,
+                FullDayRate = 125.0m,
+                RatingAvg = 4.88m,
+                RatingCount = 29,
+                ToursCompleted = 98,
+                VerificationStatus = GuideVerificationStatus.Verified,
+                IsActive = true,
+                AcceptingBookings = true,
+                DateOfBirth = new DateOnly(1988, 10, 22),
+                Gender = "Male",
+                ShowAgePublicly = true,
+                Qualifications = "Field Ornithology Dipl., SLTDA Chauffeur Guide #CG-2018-112, 4x4 Offroad Specialist",
+                AvatarUrl = "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80",
+                CreatedAt = DateTime.UtcNow.AddDays(-55),
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            var guide3 = new Guide
+            {
+                Id = 3,
+                UserId = "user-nimal",
+                Name = "Ruwan Silva",
+                Email = "ruwan.guide@example.com",
+                Phone = "+94 76 890 1234",
+                Bio = "Adventure hiking and mountain trail guide. Certified climber with in-depth knowledge of Central Highlands and Knuckles range.",
+                Languages = ["English", "Sinhala", "Japanese"],
+                Specialties = ["Mountain Hiking", "Tea Plantations", "Rock Climbing"],
+                YearsExperience = 5,
+                HourlyRate = 18.0m,
+                HalfDayRate = 55.0m,
+                FullDayRate = 95.0m,
+                RatingAvg = 4.92m,
+                RatingCount = 22,
+                ToursCompleted = 75,
+                VerificationStatus = GuideVerificationStatus.Verified,
+                IsActive = true,
+                AcceptingBookings = true,
+                DateOfBirth = new DateOnly(1994, 2, 8),
+                Gender = "Male",
+                ShowAgePublicly = false,
+                Qualifications = "Sri Lanka Mountaineering Assoc. Certified Lead Guide, Wilderness First Responder",
+                AvatarUrl = "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80",
+                CreatedAt = DateTime.UtcNow.AddDays(-45),
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            var guide4 = new Guide
+            {
+                Id = 4,
+                UserId = "user-tourist-3",
+                Name = "Malini Fernando",
+                Email = "malini.guide@example.com",
+                Phone = "+94 72 345 6789",
+                Bio = "Archaeological historian specializing in Anuradhapura, Polonnaruwa, and Sigiriya ancient engineering marvels.",
+                Languages = ["English", "Sinhala", "Tamil", "Mandarin"],
+                Specialties = ["Ancient Architecture", "Archaeological Sites", "Culinary Tours"],
+                YearsExperience = 10,
+                HourlyRate = 25.0m,
+                HalfDayRate = 85.0m,
+                FullDayRate = 140.0m,
+                RatingAvg = 4.98m,
+                RatingCount = 54,
+                ToursCompleted = 180,
+                VerificationStatus = GuideVerificationStatus.Verified,
+                IsActive = true,
+                AcceptingBookings = true,
+                DateOfBirth = new DateOnly(1985, 8, 19),
+                Gender = "Female",
+                ShowAgePublicly = true,
+                Qualifications = "BA Archaeology (Uni of Peradeniya), Senior SLTDA National Lecturer Guide #NL-2014-023",
+                AvatarUrl = "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=400&q=80",
+                CreatedAt = DateTime.UtcNow.AddDays(-70),
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            db.Guides.AddRange(guide1, guide2, guide3, guide4);
+            await db.SaveChangesAsync();
+
+            // Covered Destinations
+            var dests = await db.Destinations.Take(4).ToListAsync();
+            foreach (var g in new[] { guide1, guide2, guide3, guide4 })
+            {
+                foreach (var d in dests)
+                {
+                    db.GuideDestinations.Add(new GuideDestination { GuideId = g.Id, DestinationId = d.Id });
+                }
+                for (int dow = 1; dow <= 6; dow++)
+                {
+                    db.GuideWorkingHours.Add(new GuideWorkingHours
+                    {
+                        GuideId = g.Id,
+                        DayOfWeek = dow,
+                        StartTime = new TimeOnly(8, 0),
+                        EndTime = new TimeOnly(18, 0)
+                    });
+                }
+            }
+            await db.SaveChangesAsync();
+
+            // Seed sample bookings & payments & payouts
+            var booking1 = new GuideBooking
+            {
+                Id = "GB-7K2M9QXA",
+                GuideId = guide1.Id,
+                CustomerId = "user-tourist-1",
+                CustomerName = "Hiruni Praboda",
+                CustomerEmail = "hiruni@example.com",
+                CustomerPhone = "+94 77 987 6543",
+                StartDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(3)),
+                EndDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(4)),
+                StartTime = new TimeOnly(8, 30),
+                EndTime = new TimeOnly(17, 30),
+                Travelers = 2,
+                PickupLocation = "Heritance Kandalama Hotel",
+                PreferredLanguage = "English",
+                SpecialRequests = "Photography focus at sunrise near Sigiriya rock fortress",
+                Status = GuideBookingStatus.Confirmed,
+                Subtotal = 220.0m,
+                ServiceFee = 15.0m,
+                TotalAmount = 235.0m,
+                CommissionAmount = 33.0m,
+                GuideNetAmount = 187.0m,
+                Currency = "USD",
+                BillableDays = 2,
+                ConfirmedAt = DateTime.UtcNow.AddHours(-12),
+                CreatedAt = DateTime.UtcNow.AddHours(-14)
+            };
+
+            var booking2 = new GuideBooking
+            {
+                Id = "GB-3V8X1PLR",
+                GuideId = guide1.Id,
+                CustomerId = "U003",
+                CustomerName = "David Miller",
+                CustomerEmail = "david.u003@example.com",
+                CustomerPhone = "+1 415 555 2671",
+                StartDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-10)),
+                EndDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-9)),
+                StartTime = new TimeOnly(9, 0),
+                EndTime = new TimeOnly(17, 0),
+                Travelers = 3,
+                PickupLocation = "Galle Heritage Villa",
+                PreferredLanguage = "English",
+                Status = GuideBookingStatus.Completed,
+                Subtotal = 220.0m,
+                ServiceFee = 15.0m,
+                TotalAmount = 235.0m,
+                CommissionAmount = 33.0m,
+                GuideNetAmount = 187.0m,
+                Currency = "USD",
+                BillableDays = 2,
+                ConfirmedAt = DateTime.UtcNow.AddDays(-12),
+                CompletedAt = DateTime.UtcNow.AddDays(-9),
+                CreatedAt = DateTime.UtcNow.AddDays(-14)
+            };
+
+            db.GuideBookings.AddRange(booking1, booking2);
+            await db.SaveChangesAsync();
+
+            if (dests.Count > 0)
+            {
+                db.GuideBookingDestinations.Add(new GuideBookingDestination { BookingId = booking1.Id, DestinationId = dests[0].Id, DestinationName = dests[0].Name });
+                db.GuideBookingDestinations.Add(new GuideBookingDestination { BookingId = booking2.Id, DestinationId = dests.Count > 1 ? dests[1].Id : dests[0].Id, DestinationName = dests.Count > 1 ? dests[1].Name : dests[0].Name });
+            }
+
+            db.GuidePayments.Add(new GuidePayment
+            {
+                BookingId = booking1.Id,
+                Provider = "Stripe",
+                TransactionReference = "pi_3MtzTest_LiveCard8841",
+                PaymentMethod = "Visa / Credit Card",
+                Amount = 235.0m,
+                Currency = "USD",
+                Status = GuidePaymentStatus.Succeeded,
+                PaidAt = DateTime.UtcNow.AddHours(-12),
+                CreatedAt = DateTime.UtcNow.AddHours(-14)
+            });
+
+            db.GuidePayments.Add(new GuidePayment
+            {
+                BookingId = booking2.Id,
+                Provider = "Stripe",
+                TransactionReference = "pi_3MtzTest_Completed9912",
+                PaymentMethod = "Mastercard",
+                Amount = 235.0m,
+                Currency = "USD",
+                Status = GuidePaymentStatus.Succeeded,
+                PaidAt = DateTime.UtcNow.AddDays(-12),
+                CreatedAt = DateTime.UtcNow.AddDays(-14)
+            });
+
+            db.GuidePayouts.Add(new GuidePayout
+            {
+                BookingId = booking1.Id,
+                GuideId = guide1.Id,
+                GrossAmount = 220.0m,
+                CommissionAmount = 33.0m,
+                NetAmount = 187.0m,
+                Currency = "USD",
+                Status = GuidePayoutStatus.Pending,
+                CreatedAt = DateTime.UtcNow.AddHours(-12)
+            });
+
+            db.GuidePayouts.Add(new GuidePayout
+            {
+                BookingId = booking2.Id,
+                GuideId = guide1.Id,
+                GrossAmount = 220.0m,
+                CommissionAmount = 33.0m,
+                NetAmount = 187.0m,
+                Currency = "USD",
+                Status = GuidePayoutStatus.Paid,
+                PayoutReference = "PO-2026-10-00892",
+                PayoutMethod = "Commercial Bank Transfer",
+                ProcessedByUserId = "user-admin-1",
+                PaidAt = DateTime.UtcNow.AddDays(-8),
+                CreatedAt = DateTime.UtcNow.AddDays(-9)
+            });
 
             await db.SaveChangesAsync();
         }

@@ -1638,4 +1638,403 @@ class ApiService {
     _inMemoryAvailabilitySlots.removeWhere((s) => s.availabilityId == availabilityId);
     return true;
   }
+
+  // =========================================================================
+  // 9. LIVE GUIDE BOOKING & PAYMENT SYSTEM (CUSTOMER)
+  // =========================================================================
+
+  static Future<List<GuideModel>> browseLiveGuides({
+    String? destinationId,
+    String? travelDate,
+    String? language,
+    double? maxPrice,
+    String? specialty,
+  }) async {
+    try {
+      final queryParams = <String, String>{};
+      if (destinationId != null && destinationId.isNotEmpty) queryParams['destinationId'] = destinationId;
+      if (travelDate != null && travelDate.isNotEmpty) queryParams['travelDate'] = travelDate;
+      if (language != null && language.isNotEmpty) queryParams['language'] = language;
+      if (maxPrice != null) queryParams['maxPrice'] = maxPrice.toString();
+      if (specialty != null && specialty.isNotEmpty) queryParams['specialty'] = specialty;
+
+      final uri = Uri.parse('$baseUrl/v1/guide-bookings/browse').replace(queryParameters: queryParams.isNotEmpty ? queryParams : null);
+      final res = await http.get(uri, headers: _headers(needsAuth: false)).timeout(const Duration(seconds: 4));
+      if (res.statusCode == 200) {
+        final dynamic body = jsonDecode(res.body);
+        final dynamic list = body is Map<String, dynamic> ? (body['data'] ?? body) : body;
+        if (list is List) {
+          final parsed = list.map((g) => GuideModel.fromJson(g as Map<String, dynamic>)).toList();
+          if (parsed.isNotEmpty) return parsed;
+        }
+      }
+    } catch (e) {
+      debugPrint('[ApiService] browseLiveGuides error: $e');
+    }
+    return kInitialMockGuides;
+  }
+
+  static Future<GuideModel?> getLiveGuideProfile(int guideId) async {
+    try {
+      final res = await http.get(
+        Uri.parse('$baseUrl/v1/guide-bookings/guides/$guideId'),
+        headers: _headers(needsAuth: false),
+      ).timeout(const Duration(seconds: 4));
+      if (res.statusCode == 200) {
+        final dynamic body = jsonDecode(res.body);
+        final dynamic data = body is Map<String, dynamic> ? (body['data'] ?? body) : body;
+        return GuideModel.fromJson(data as Map<String, dynamic>);
+      }
+    } catch (e) {
+      debugPrint('[ApiService] getLiveGuideProfile error: $e');
+    }
+    return kInitialMockGuides.firstWhere((g) => g.id == guideId, orElse: () => kInitialMockGuides.first);
+  }
+
+  static Future<GuideQuoteModel?> calculateGuideQuote({
+    required int guideId,
+    required String startDate,
+    required String endDate,
+    required String startTime,
+    required String endTime,
+    required int travelers,
+  }) async {
+    final payload = {
+      'guideId': guideId,
+      'startDate': startDate,
+      'endDate': endDate,
+      'startTime': startTime.length == 5 ? '$startTime:00' : startTime,
+      'endTime': endTime.length == 5 ? '$endTime:00' : endTime,
+      'travelers': travelers,
+    };
+
+    try {
+      final res = await http.post(
+        Uri.parse('$baseUrl/v1/guide-bookings/quote'),
+        headers: _headers(needsAuth: false),
+        body: jsonEncode(payload),
+      ).timeout(const Duration(seconds: 4));
+      if (res.statusCode == 200) {
+        final dynamic body = jsonDecode(res.body);
+        final dynamic data = body is Map<String, dynamic> ? (body['data'] ?? body) : body;
+        return GuideQuoteModel.fromJson(data as Map<String, dynamic>);
+      }
+    } catch (e) {
+      debugPrint('[ApiService] calculateGuideQuote error: $e');
+    }
+
+    // Client-side fallback calculation if offline
+    const isFullDay = true;
+    const rate = 90.0;
+    final subtotal = rate;
+    final fee = subtotal * 0.05;
+    final total = subtotal + fee;
+    final comm = subtotal * 0.15;
+    final net = total - comm;
+    return GuideQuoteModel(
+      guideId: guideId,
+      guideName: 'Guide',
+      rateTypeApplied: 'FullDay',
+      hourlyRate: 15.0,
+      halfDayRate: 50.0,
+      fullDayRate: 90.0,
+      billableDays: 1,
+      subtotal: subtotal,
+      serviceFee: fee,
+      totalAmount: total,
+      commissionAmount: comm,
+      guideNetAmount: net,
+      isAvailable: true,
+    );
+  }
+
+  static Future<Map<String, dynamic>> createGuideBooking({
+    required int guideId,
+    required String customerName,
+    required String customerEmail,
+    String? customerPhone,
+    required String startDate,
+    required String endDate,
+    required String startTime,
+    required String endTime,
+    required int travelers,
+    String? pickupLocation,
+    String? preferredLanguage,
+    String? specialRequests,
+    List<String>? destinationIds,
+  }) async {
+    final payload = {
+      'guideId': guideId,
+      'customerName': customerName,
+      'customerEmail': customerEmail,
+      'customerPhone': customerPhone ?? '',
+      'startDate': startDate,
+      'endDate': endDate,
+      'startTime': startTime.length == 5 ? '$startTime:00' : startTime,
+      'endTime': endTime.length == 5 ? '$endTime:00' : endTime,
+      'travelers': travelers,
+      if (pickupLocation != null) 'pickupLocation': pickupLocation,
+      if (preferredLanguage != null) 'preferredLanguage': preferredLanguage,
+      if (specialRequests != null) 'specialRequests': specialRequests,
+      if (destinationIds != null) 'destinationIds': destinationIds,
+    };
+
+    try {
+      final res = await http.post(
+        Uri.parse('$baseUrl/v1/guide-bookings'),
+        headers: _headers(),
+        body: jsonEncode(payload),
+      ).timeout(const Duration(seconds: 4));
+      final dynamic body = jsonDecode(res.body);
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        final dynamic data = body is Map<String, dynamic> ? (body['data'] ?? body) : body;
+        return {'success': true, 'booking': GuideBookingModel.fromJson(data as Map<String, dynamic>)};
+      } else {
+        return {'success': false, 'message': body['message'] ?? 'Booking creation failed'};
+      }
+    } catch (e) {
+      debugPrint('[ApiService] createGuideBooking error: $e');
+      return {'success': false, 'message': 'Connection error: $e'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> payGuideBooking({
+    required String bookingId,
+    String? paymentMethod,
+    String? cardHolderName,
+    String? maskedCardNumber,
+  }) async {
+    final payload = {
+      'paymentMethod': paymentMethod ?? 'Card (Visa)',
+      'cardHolderName': cardHolderName ?? 'Traveler Client',
+      'maskedCardNumber': maskedCardNumber ?? '•••• 4242',
+    };
+
+    try {
+      final res = await http.post(
+        Uri.parse('$baseUrl/v1/guide-bookings/$bookingId/pay'),
+        headers: _headers(),
+        body: jsonEncode(payload),
+      ).timeout(const Duration(seconds: 5));
+      final dynamic body = jsonDecode(res.body);
+      if (res.statusCode == 200) {
+        return {'success': true, 'data': body['data'] ?? body};
+      } else {
+        return {'success': false, 'message': body['message'] ?? 'Payment failed'};
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Payment error: $e'};
+    }
+  }
+
+  static Future<List<GuideBookingModel>> getCustomerGuideBookings() async {
+    try {
+      final res = await http.get(
+        Uri.parse('$baseUrl/v1/guide-bookings/my-bookings'),
+        headers: _headers(),
+      ).timeout(const Duration(seconds: 4));
+      if (res.statusCode == 200) {
+        final dynamic body = jsonDecode(res.body);
+        final dynamic list = body is Map<String, dynamic> ? (body['data'] ?? body) : body;
+        if (list is List) {
+          return list.map((b) => GuideBookingModel.fromJson(b as Map<String, dynamic>)).toList();
+        }
+      }
+    } catch (e) {
+      debugPrint('[ApiService] getCustomerGuideBookings error: $e');
+    }
+    return [];
+  }
+
+  static Future<Map<String, dynamic>> cancelGuideBooking(String bookingId, {String? reason}) async {
+    try {
+      final res = await http.post(
+        Uri.parse('$baseUrl/v1/guide-bookings/$bookingId/cancel'),
+        headers: _headers(),
+        body: jsonEncode({'reason': reason ?? 'Customer requested cancellation'}),
+      ).timeout(const Duration(seconds: 4));
+      final dynamic body = jsonDecode(res.body);
+      if (res.statusCode == 200) {
+        return {'success': true, 'message': 'Booking cancelled successfully'};
+      }
+      return {'success': false, 'message': body['message'] ?? 'Cancellation failed'};
+    } catch (e) {
+      return {'success': false, 'message': 'Network error: $e'};
+    }
+  }
+
+  // =========================================================================
+  // 10. DEDICATED GUIDE PORTAL (MOBILE APP)
+  // =========================================================================
+
+  static Future<GuideModel?> getGuidePortalProfile() async {
+    try {
+      final res = await http.get(
+        Uri.parse('$baseUrl/v1/guide-portal/me'),
+        headers: _headers(),
+      ).timeout(const Duration(seconds: 4));
+      if (res.statusCode == 200) {
+        final dynamic body = jsonDecode(res.body);
+        final dynamic data = body is Map<String, dynamic> ? (body['data'] ?? body) : body;
+        return GuideModel.fromJson(data as Map<String, dynamic>);
+      }
+    } catch (e) {
+      debugPrint('[ApiService] getGuidePortalProfile error: $e');
+    }
+    return null;
+  }
+
+  static Future<GuideDashboardMetricsModel?> getGuidePortalDashboard() async {
+    try {
+      final res = await http.get(
+        Uri.parse('$baseUrl/v1/guide-portal/dashboard'),
+        headers: _headers(),
+      ).timeout(const Duration(seconds: 4));
+      if (res.statusCode == 200) {
+        final dynamic body = jsonDecode(res.body);
+        final dynamic data = body is Map<String, dynamic> ? (body['data'] ?? body) : body;
+        return GuideDashboardMetricsModel.fromJson(data as Map<String, dynamic>);
+      }
+    } catch (e) {
+      debugPrint('[ApiService] getGuidePortalDashboard error: $e');
+    }
+    return null;
+  }
+
+  static Future<List<GuideBookingModel>> getGuidePortalBookings({String? status}) async {
+    try {
+      final uri = Uri.parse('$baseUrl/v1/guide-portal/bookings').replace(
+        queryParameters: status != null && status.isNotEmpty && status != 'All' ? {'status': status} : null,
+      );
+      final res = await http.get(uri, headers: _headers()).timeout(const Duration(seconds: 4));
+      if (res.statusCode == 200) {
+        final dynamic body = jsonDecode(res.body);
+        final dynamic list = body is Map<String, dynamic> ? (body['data'] ?? body) : body;
+        if (list is List) {
+          return list.map((b) => GuideBookingModel.fromJson(b as Map<String, dynamic>)).toList();
+        }
+      }
+    } catch (e) {
+      debugPrint('[ApiService] getGuidePortalBookings error: $e');
+    }
+    return [];
+  }
+
+  static Future<Map<String, dynamic>> respondToGuideBooking({
+    required String bookingId,
+    required bool accept,
+    String? reason,
+  }) async {
+    try {
+      final res = await http.post(
+        Uri.parse('$baseUrl/v1/guide-portal/bookings/$bookingId/respond'),
+        headers: _headers(),
+        body: jsonEncode({
+          'accept': accept,
+          if (reason != null) 'reason': reason,
+        }),
+      ).timeout(const Duration(seconds: 4));
+      final dynamic body = jsonDecode(res.body);
+      if (res.statusCode == 200) {
+        return {'success': true, 'message': body['message'] ?? (accept ? 'Booking accepted' : 'Booking declined')};
+      }
+      return {'success': false, 'message': body['message'] ?? 'Response failed'};
+    } catch (e) {
+      return {'success': false, 'message': 'Network error: $e'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> updateGuidePortalProfile({
+    String? bio,
+    String? phone,
+    List<String>? languages,
+    List<String>? specialties,
+    String? avatarUrl,
+    double? hourlyRate,
+    double? halfDayRate,
+    double? fullDayRate,
+    bool? acceptingBookings,
+    String? payoutAccountNote,
+  }) async {
+    final payload = {
+      if (bio != null) 'bio': bio,
+      if (phone != null) 'phone': phone,
+      if (languages != null) 'languages': languages,
+      if (specialties != null) 'specialties': specialties,
+      if (avatarUrl != null) 'avatarUrl': avatarUrl,
+      if (hourlyRate != null) 'hourlyRate': hourlyRate,
+      if (halfDayRate != null) 'halfDayRate': halfDayRate,
+      if (fullDayRate != null) 'fullDayRate': fullDayRate,
+      if (acceptingBookings != null) 'acceptingBookings': acceptingBookings,
+      if (payoutAccountNote != null) 'payoutAccountNote': payoutAccountNote,
+    };
+
+    try {
+      final res = await http.put(
+        Uri.parse('$baseUrl/v1/guide-portal/profile'),
+        headers: _headers(),
+        body: jsonEncode(payload),
+      ).timeout(const Duration(seconds: 4));
+      final dynamic body = jsonDecode(res.body);
+      if (res.statusCode == 200) {
+        return {'success': true, 'message': 'Profile updated successfully'};
+      }
+      return {'success': false, 'message': body['message'] ?? 'Update failed'};
+    } catch (e) {
+      return {'success': false, 'message': 'Network error: $e'};
+    }
+  }
+
+  static Future<bool> setGuideWorkingHours(List<Map<String, dynamic>> hours) async {
+    try {
+      final res = await http.put(
+        Uri.parse('$baseUrl/v1/guide-portal/working-hours'),
+        headers: _headers(),
+        body: jsonEncode({'workingHours': hours}),
+      ).timeout(const Duration(seconds: 4));
+      return res.statusCode == 200;
+    } catch (e) {
+      debugPrint('[ApiService] setGuideWorkingHours error: $e');
+      return false;
+    }
+  }
+
+  static Future<Map<String, dynamic>> addGuideBlockedDate({
+    required String startDate,
+    required String endDate,
+    String? reason,
+  }) async {
+    try {
+      final res = await http.post(
+        Uri.parse('$baseUrl/v1/guide-portal/blocked-dates'),
+        headers: _headers(),
+        body: jsonEncode({
+          'startDate': startDate,
+          'endDate': endDate,
+          if (reason != null) 'reason': reason,
+        }),
+      ).timeout(const Duration(seconds: 4));
+      final dynamic body = jsonDecode(res.body);
+      if (res.statusCode == 200) {
+        return {'success': true, 'message': 'Dates blocked successfully'};
+      }
+      return {'success': false, 'message': body['message'] ?? 'Failed to block dates'};
+    } catch (e) {
+      return {'success': false, 'message': 'Network error: $e'};
+    }
+  }
+
+  static Future<bool> removeGuideBlockedDate(int blockedDateId) async {
+    try {
+      final res = await http.delete(
+        Uri.parse('$baseUrl/v1/guide-portal/blocked-dates/$blockedDateId'),
+        headers: _headers(),
+      ).timeout(const Duration(seconds: 4));
+      return res.statusCode == 200;
+    } catch (e) {
+      debugPrint('[ApiService] removeGuideBlockedDate error: $e');
+      return false;
+    }
+  }
 }
+

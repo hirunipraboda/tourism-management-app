@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:nova_mobile/theme/app_fonts.dart';
 import '../models/user_trip_models.dart';
+import '../models/guide_models.dart';
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
 
@@ -19,12 +20,29 @@ class BookingsScreen extends StatefulWidget {
 
 class _BookingsScreenState extends State<BookingsScreen> {
   List<_HotelStay> _hotelStays = [];
+  List<GuideBookingModel> _guideBookings = [];
   bool _loadingHotels = true;
+  bool _loadingGuideBookings = true;
 
   @override
   void initState() {
     super.initState();
     _loadHotels();
+    _loadGuideBookings();
+  }
+
+  Future<void> _loadGuideBookings() async {
+    try {
+      final list = await ApiService.getCustomerGuideBookings();
+      if (mounted) {
+        setState(() {
+          _guideBookings = list;
+          _loadingGuideBookings = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loadingGuideBookings = false);
+    }
   }
 
   Future<void> _loadHotels() async {
@@ -45,6 +63,152 @@ class _BookingsScreenState extends State<BookingsScreen> {
       _hotelStays = stays;
       _loadingHotels = false;
     });
+  }
+
+  Widget _buildGuideBookingsSection() {
+    final header = Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Text(
+        'Tour Guide Bookings',
+        style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w800, color: NovaBrand.primary),
+      ),
+    );
+
+    if (_loadingGuideBookings) {
+      return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        header,
+        const Padding(padding: EdgeInsets.symmetric(vertical: 16), child: Center(child: CircularProgressIndicator())),
+      ]);
+    }
+
+    if (_guideBookings.isEmpty) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          header,
+          Container(
+            width: double.infinity,
+            margin: const EdgeInsets.only(bottom: 20),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: NovaBrand.cardBorder),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.badge_outlined, color: NovaBrand.secondary, size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'No private tour guides booked yet. Browse our licensed guides for personalized trips.',
+                    style: GoogleFonts.inter(fontSize: 12, color: NovaBrand.slateMuted),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        header,
+        ..._guideBookings.map(_buildGuideBookingCard),
+        const SizedBox(height: 10),
+      ],
+    );
+  }
+
+  Widget _buildGuideBookingCard(GuideBookingModel b) {
+    final isConfirmed = b.status.toLowerCase() == 'confirmed' || b.status.toLowerCase() == 'completed';
+    final statusColor = isConfirmed ? const Color(0xFF059669) : NovaBrand.accentAmber;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: NovaBrand.cardBorder),
+        boxShadow: NovaBrand.softShadow,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: NovaBrand.slateLight,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: NovaBrand.cardBorderSoft),
+                ),
+                child: Text(
+                  '#${b.id}',
+                  style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: NovaBrand.primary, fontSize: 11),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  b.status.toUpperCase(),
+                  style: GoogleFonts.inter(color: statusColor, fontWeight: FontWeight.w800, fontSize: 10),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              const Icon(Icons.badge_rounded, size: 18, color: NovaBrand.secondary),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  b.guideName,
+                  style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w800, color: NovaBrand.slateDark),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(color: NovaBrand.slateLight, borderRadius: BorderRadius.circular(14)),
+            child: Column(
+              children: [
+                _hotelRow(Icons.calendar_today, '${b.startDate} to ${b.endDate} (${b.startTime} - ${b.endTime})'),
+                const SizedBox(height: 4),
+                _hotelRow(Icons.people_alt_outlined, '${b.travelers} Guests · ${b.billableDays} Billable Day(s)'),
+                if (b.pickupLocation != null && b.pickupLocation!.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  _hotelRow(Icons.location_on_outlined, 'Pickup: ${b.pickupLocation}'),
+                ],
+              ],
+            ),
+          ),
+          const Divider(height: 20, color: NovaBrand.cardBorderSoft),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Total Paid', style: GoogleFonts.inter(fontSize: 11, color: NovaBrand.slateMuted, fontWeight: FontWeight.w600)),
+              Text(
+                '\$${b.totalAmount.toStringAsFixed(2)}',
+                style: GoogleFonts.outfit(fontWeight: FontWeight.w900, color: NovaBrand.primary, fontSize: 18),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildHotelSection() {
@@ -243,10 +407,11 @@ class _BookingsScreenState extends State<BookingsScreen> {
       ),
       body: ListView.builder(
         padding: const EdgeInsets.all(16),
-        itemCount: bookings.length + 1,
+        itemCount: bookings.length + 2,
         itemBuilder: (context, index) {
-          if (index == 0) return _buildHotelSection();
-          final b = bookings[index - 1];
+          if (index == 0) return _buildGuideBookingsSection();
+          if (index == 1) return _buildHotelSection();
+          final b = bookings[index - 2];
           return Container(
             margin: const EdgeInsets.only(bottom: 16),
             decoration: BoxDecoration(

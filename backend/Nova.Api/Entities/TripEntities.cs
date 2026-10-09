@@ -17,6 +17,8 @@ public class User
     public string? Phone { get; set; }
     public string? Bio { get; set; }
     public string? Location { get; set; }
+    /// <summary>Set for provisioned accounts (e.g. guides) that must replace their initial password.</summary>
+    public bool MustChangePassword { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
@@ -28,7 +30,7 @@ public class User
     }
 
     [NotMapped]
-    public string NormalizedRole => Role == UserRole.Admin ? "ADMIN" : "USER";
+    public string NormalizedRole => Role == UserRole.Admin ? "ADMIN" : Role == UserRole.Guide ? "GUIDE" : "USER";
 
     public List<Trip> Trips { get; set; } = [];
 }

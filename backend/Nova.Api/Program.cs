@@ -65,6 +65,8 @@ builder.Services.AddScoped<IItineraryGenerationService, ItineraryGenerationServi
 
 // 6. Register Reviews & Guide Services (merged from sub-projects)
 builder.Services.AddScoped<IReviewService, ReviewService>();
+builder.Services.AddScoped<IGuideBookingService, GuideBookingService>();
+
 
 
 // 7. JWT Authentication & Role-Based Authorization
@@ -124,6 +126,8 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("OperatorOrAdmin", policy => policy.RequireRole("TourismOperator", "Admin", "ADMIN", "ROLE_ADMIN"));
     options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin", "ADMIN", "ROLE_ADMIN"));
     options.AddPolicy("UserOnly", policy => policy.RequireRole("Tourist", "USER", "User"));
+    options.AddPolicy("GuideOnly", policy => policy.RequireRole("Guide", "GUIDE"));
+    options.AddPolicy("GuideOrAdmin", policy => policy.RequireRole("Guide", "GUIDE", "Admin", "ADMIN", "ROLE_ADMIN"));
 });
 
 // 8. CORS Policy
@@ -290,6 +294,158 @@ using (var scope = app.Services.CreateScope())
                     discount_description text NOT NULL,
                     is_active boolean NOT NULL DEFAULT true,
                     CONSTRAINT pk_transport_partners PRIMARY KEY (id)
+                );
+
+                -- Guide booking system tables & columns
+                ALTER TABLE guides ADD COLUMN IF NOT EXISTS date_of_birth date;
+                ALTER TABLE guides ADD COLUMN IF NOT EXISTS gender text;
+                ALTER TABLE guides ADD COLUMN IF NOT EXISTS show_age_publicly boolean DEFAULT false;
+                ALTER TABLE guides ADD COLUMN IF NOT EXISTS qualifications text;
+                ALTER TABLE guides ADD COLUMN IF NOT EXISTS hourly_rate numeric(12,2) DEFAULT 0.0;
+                ALTER TABLE guides ADD COLUMN IF NOT EXISTS half_day_rate numeric(12,2) DEFAULT 0.0;
+                ALTER TABLE guides ADD COLUMN IF NOT EXISTS full_day_rate numeric(12,2) DEFAULT 0.0;
+                ALTER TABLE guides ADD COLUMN IF NOT EXISTS accepting_bookings boolean DEFAULT true;
+                ALTER TABLE guides ADD COLUMN IF NOT EXISTS is_archived boolean DEFAULT false;
+                ALTER TABLE guides ADD COLUMN IF NOT EXISTS archived_at timestamp with time zone;
+                ALTER TABLE guides ADD COLUMN IF NOT EXISTS payout_account_note text;
+
+                ALTER TABLE users ADD COLUMN IF NOT EXISTS must_change_password boolean DEFAULT false;
+
+                CREATE TABLE IF NOT EXISTS guide_destinations (
+                    guide_id integer NOT NULL,
+                    destination_id text NOT NULL,
+                    CONSTRAINT pk_guide_destinations PRIMARY KEY (guide_id, destination_id)
+                );
+
+                CREATE TABLE IF NOT EXISTS guide_working_hours (
+                    id serial PRIMARY KEY,
+                    guide_id integer NOT NULL,
+                    day_of_week integer NOT NULL,
+                    start_time time without time zone NOT NULL,
+                    end_time time without time zone NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS guide_blocked_dates (
+                    id serial PRIMARY KEY,
+                    guide_id integer NOT NULL,
+                    start_date date NOT NULL,
+                    end_date date NOT NULL,
+                    reason text,
+                    created_at timestamp with time zone DEFAULT NOW()
+                );
+
+                CREATE TABLE IF NOT EXISTS guide_bookings (
+                    id character varying(20) PRIMARY KEY,
+                    guide_id integer NOT NULL,
+                    customer_id text NOT NULL,
+                    customer_name text NOT NULL,
+                    customer_email text NOT NULL,
+                    customer_phone text,
+                    start_date date NOT NULL,
+                    end_date date NOT NULL,
+                    start_time time without time zone NOT NULL,
+                    end_time time without time zone NOT NULL,
+                    travelers integer NOT NULL DEFAULT 1,
+                    pickup_location text,
+                    preferred_language text,
+                    special_requests text,
+                    status text NOT NULL DEFAULT 'PendingPayment',
+                    subtotal numeric(12,2) NOT NULL DEFAULT 0.0,
+                    service_fee numeric(12,2) NOT NULL DEFAULT 0.0,
+                    total_amount numeric(12,2) NOT NULL DEFAULT 0.0,
+                    commission_amount numeric(12,2) NOT NULL DEFAULT 0.0,
+                    guide_net_amount numeric(12,2) NOT NULL DEFAULT 0.0,
+                    currency character varying(3) NOT NULL DEFAULT 'USD',
+                    billable_days integer NOT NULL DEFAULT 1,
+                    pricing_breakdown text,
+                    hold_expires_at timestamp with time zone,
+                    confirmed_at timestamp with time zone,
+                    guide_decision_at timestamp with time zone,
+                    completed_at timestamp with time zone,
+                    cancelled_at timestamp with time zone,
+                    cancelled_by text,
+                    cancellation_reason text,
+                    reminder_sent_at timestamp with time zone,
+                    refund_status text NOT NULL DEFAULT 'None',
+                    refund_amount numeric(12,2) NOT NULL DEFAULT 0.0,
+                    idempotency_key text,
+                    created_at timestamp with time zone DEFAULT NOW(),
+                    updated_at timestamp with time zone DEFAULT NOW()
+                );
+
+                CREATE TABLE IF NOT EXISTS guide_booking_destinations (
+                    booking_id character varying(20) NOT NULL,
+                    destination_id text NOT NULL,
+                    destination_name text NOT NULL,
+                    CONSTRAINT pk_guide_booking_destinations PRIMARY KEY (booking_id, destination_id)
+                );
+
+                CREATE TABLE IF NOT EXISTS guide_payments (
+                    id text PRIMARY KEY,
+                    booking_id character varying(20) NOT NULL,
+                    provider character varying(30) NOT NULL DEFAULT 'Stripe',
+                    provider_session_id text,
+                    provider_payment_intent_id text,
+                    transaction_reference text,
+                    payment_method text,
+                    checkout_url text,
+                    amount numeric(12,2) NOT NULL DEFAULT 0.0,
+                    currency character varying(3) NOT NULL DEFAULT 'USD',
+                    status text NOT NULL DEFAULT 'Initiated',
+                    failure_reason text,
+                    created_at timestamp with time zone DEFAULT NOW(),
+                    paid_at timestamp with time zone,
+                    refunded_at timestamp with time zone,
+                    refund_reference text,
+                    refunded_amount numeric(12,2) NOT NULL DEFAULT 0.0
+                );
+
+                CREATE TABLE IF NOT EXISTS guide_payouts (
+                    id text PRIMARY KEY,
+                    booking_id character varying(20) NOT NULL,
+                    guide_id integer NOT NULL,
+                    gross_amount numeric(12,2) NOT NULL DEFAULT 0.0,
+                    commission_amount numeric(12,2) NOT NULL DEFAULT 0.0,
+                    net_amount numeric(12,2) NOT NULL DEFAULT 0.0,
+                    currency character varying(3) NOT NULL DEFAULT 'USD',
+                    status text NOT NULL DEFAULT 'Pending',
+                    payout_reference text,
+                    payout_method text,
+                    processed_by_user_id text,
+                    notes text,
+                    paid_at timestamp with time zone,
+                    created_at timestamp with time zone DEFAULT NOW(),
+                    updated_at timestamp with time zone DEFAULT NOW()
+                );
+
+                CREATE TABLE IF NOT EXISTS guide_booking_events (
+                    id bigserial PRIMARY KEY,
+                    booking_id character varying(20),
+                    guide_id integer,
+                    actor_id text,
+                    actor_role text NOT NULL DEFAULT 'System',
+                    event_type text NOT NULL,
+                    details text,
+                    created_at timestamp with time zone DEFAULT NOW()
+                );
+
+                CREATE TABLE IF NOT EXISTS payment_webhook_events (
+                    id bigserial PRIMARY KEY,
+                    provider character varying(30) NOT NULL,
+                    provider_event_id text NOT NULL,
+                    event_type text NOT NULL,
+                    processed_at timestamp with time zone DEFAULT NOW()
+                );
+
+                CREATE TABLE IF NOT EXISTS notifications (
+                    id text PRIMARY KEY,
+                    user_id text NOT NULL,
+                    type character varying(50) NOT NULL,
+                    title character varying(200) NOT NULL,
+                    message character varying(1000) NOT NULL,
+                    related_booking_id text,
+                    is_read boolean NOT NULL DEFAULT false,
+                    created_at timestamp with time zone DEFAULT NOW()
                 );
             ");
         }

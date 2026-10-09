@@ -1724,11 +1724,10 @@ class ApiService {
     }
 
     // Client-side fallback calculation if offline
-    const isFullDay = true;
     const rate = 90.0;
-    final subtotal = rate;
-    final fee = subtotal * 0.05;
-    final total = subtotal + fee;
+    const subtotal = rate;
+    const fee = subtotal * 0.05;
+    const total = subtotal + fee;
     final comm = subtotal * 0.15;
     final net = total - comm;
     return GuideQuoteModel(

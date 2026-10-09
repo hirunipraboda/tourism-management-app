@@ -13,6 +13,9 @@ class _AppPalette {
   static const slate500 = Color(0xFF64748B);
   static const slate600 = Color(0xFF475569);
   static const slate700 = Color(0xFF334155);
+  static const slate800 = Color(0xFF1E293B);
+  static const skyAccent = Color(0xFF38BDF8);
+  static const emeraldAccent = Color(0xFF34D399);
   static const emerald50 = Color(0xFFECFDF5);
   static const emerald200 = Color(0xFFA7F3D0);
   static const emerald700 = Color(0xFF047857);
@@ -866,11 +869,11 @@ class _GuideManagementScreenState extends State<GuideManagementScreen>
         // Metrics Grid
         Row(
           children: [
-            Expanded(child: _metricCard('Upcoming', '${_guideMetrics?.upcomingBookings ?? 0}', Icons.schedule_rounded, Colors.skyAccent)),
+            Expanded(child: _metricCard('Upcoming', '${_guideMetrics?.upcomingBookings ?? 0}', Icons.schedule_rounded, _AppPalette.skyAccent)),
             const SizedBox(width: 10),
             Expanded(child: _metricCard('Pending', '${_guideMetrics?.pendingApprovalBookings ?? 0}', Icons.hourglass_top_rounded, Colors.amberAccent)),
             const SizedBox(width: 10),
-            Expanded(child: _metricCard('Net Earned', '\$${_guideMetrics?.totalEarnings.toStringAsFixed(0) ?? "0"}', Icons.monetization_on_rounded, Colors.emeraldAccent)),
+            Expanded(child: _metricCard('Net Earned', '\$${_guideMetrics?.totalEarnings.toStringAsFixed(0) ?? "0"}', Icons.monetization_on_rounded, _AppPalette.emeraldAccent)),
           ],
         ),
         const SizedBox(height: 20),

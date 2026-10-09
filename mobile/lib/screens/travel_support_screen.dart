@@ -52,7 +52,7 @@ class _TravelSupportScreenState extends State<TravelSupportScreen> {
   @override
   Widget build(BuildContext context) {
     final q = _query.trim().toLowerCase();
-    final faqs = _faqs.where((f) => q.isEmpty || (f[0] as String).toLowerCase().contains(q) || (f[1] as String).toLowerCase().contains(q)).toList();
+    final faqs = _faqs.where((f) => q.isEmpty || f[0].toLowerCase().contains(q) || f[1].toLowerCase().contains(q)).toList();
 
     return Scaffold(
       backgroundColor: NovaBrand.slateLight,

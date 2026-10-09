@@ -16,7 +16,7 @@ public interface IGuideBookingService
     Task<GuideBookingResponse> CancelBookingAsync(string bookingId, string userId, bool isAdmin, string? reason);
 
     // Dedicated Guide Portal
-    Task<GuideProfileDetailDto?> GetGuideForUserAsync(string guideUserId);
+    Task<GuideProfileDetailDto?> GetGuideForUserAsync(string guideUserId, string? guideEmail = null);
     Task<GuideDashboardMetrics> GetGuideDashboardMetricsAsync(int guideId);
     Task<List<GuideBookingResponse>> GetGuideBookingsAsync(int guideId, string? statusFilter);
     Task<GuideBookingResponse> RespondToBookingAsync(string bookingId, int guideId, bool accept, string? reason);

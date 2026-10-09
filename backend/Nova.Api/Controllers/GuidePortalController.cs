@@ -29,7 +29,8 @@ public class GuidePortalController : ControllerBase
     private async Task<GuideProfileDetailDto?> ResolveCurrentGuideAsync()
     {
         var userId = GetCurrentUserId();
-        return await _guideBookingService.GetGuideForUserAsync(userId);
+        var email = User.FindFirstValue(ClaimTypes.Email) ?? User.FindFirstValue("email");
+        return await _guideBookingService.GetGuideForUserAsync(userId, email);
     }
 
     // GET /api/v1/guide-portal/me

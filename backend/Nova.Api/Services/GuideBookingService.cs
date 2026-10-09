@@ -542,14 +542,16 @@ public class GuideBookingService : IGuideBookingService
     // Dedicated Guide Portal
     // ─────────────────────────────────────────────────────────────────────────
 
-    public async Task<GuideProfileDetailDto?> GetGuideForUserAsync(string guideUserId)
+    public async Task<GuideProfileDetailDto?> GetGuideForUserAsync(string guideUserId, string? guideEmail = null)
     {
         var guide = await _db.Guides
             .Include(g => g.CoveredDestinations)
                 .ThenInclude(cd => cd.Destination)
             .Include(g => g.WorkingHours)
             .Include(g => g.BlockedDates)
-            .FirstOrDefaultAsync(g => g.UserId == guideUserId || g.Email.ToLower() == guideUserId.ToLower());
+            .FirstOrDefaultAsync(g => g.UserId == guideUserId 
+                || g.Email.ToLower() == guideUserId.ToLower()
+                || (!string.IsNullOrEmpty(guideEmail) && g.Email.ToLower() == guideEmail.ToLower()));
 
         return guide != null ? MapToProfileDto(guide) : null;
     }

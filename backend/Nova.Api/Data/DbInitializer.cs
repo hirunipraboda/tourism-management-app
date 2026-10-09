@@ -1536,11 +1536,10 @@ public static class DbInitializer
         }
 
         // 10. Seed Guides, Working Hours, Bookings, Payments & Payouts
-        if (!await db.Guides.AnyAsync())
+        if (!await db.Guides.AnyAsync(g => g.Email == "guide@tourlink.com"))
         {
             var guide1 = new Guide
             {
-                Id = 1,
                 UserId = "guide-tourlink-01",
                 Name = "Samantha Perera",
                 Email = "guide@tourlink.com",
@@ -1569,7 +1568,6 @@ public static class DbInitializer
 
             var guide2 = new Guide
             {
-                Id = 2,
                 UserId = "user-kasun",
                 Name = "Dinesh Jayawardena",
                 Email = "dinesh.guide@example.com",
@@ -1598,7 +1596,6 @@ public static class DbInitializer
 
             var guide3 = new Guide
             {
-                Id = 3,
                 UserId = "user-nimal",
                 Name = "Ruwan Silva",
                 Email = "ruwan.guide@example.com",
@@ -1627,7 +1624,6 @@ public static class DbInitializer
 
             var guide4 = new Guide
             {
-                Id = 4,
                 UserId = "user-tourist-3",
                 Name = "Malini Fernando",
                 Email = "malini.guide@example.com",

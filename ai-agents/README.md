@@ -111,3 +111,30 @@ result = agent.run(ResearchRequest(
 
 print(result["result"])
 ```
+
+---
+
+## 5. Cloud Deployment on Render
+
+The microservice is configured for immediate deployment on Render as either a **Native Python Web Service** or a **Docker Web Service**.
+
+### Recommended Render Settings (Native Python)
+| Setting | Recommended Value |
+|---|---|
+| **Environment** | `Python 3` |
+| **Root Directory** | `ai-agents` |
+| **Build Command** | `./build.sh` *(or `pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu && pip install -r requirements.txt`)* |
+| **Start Command** | `uvicorn main:app --host 0.0.0.0 --port $PORT` |
+| **Health Check Path** | `/health` *(both `/` and `/health` return 200 OK)* |
+
+### Environment Variables on Render
+| Variable | Value | Purpose |
+|---|---|---|
+| `PORT` | Auto-provided by Render (e.g., `10000` or defaults to `8000`) | Port binding |
+| `PYTHONUNBUFFERED` | `1` | Stream logs immediately to Render dashboard |
+| `GOOGLE_API_KEY` | *(Your Gemini API key)* | LLM reasoning & tool loop |
+| `GEMINI_MODEL` | `gemini-3.5-flash-lite` | Target model |
+
+### Using Render Blueprint (`render.yaml`)
+A `render.yaml` blueprint is included in both the repository root and `ai-agents/render.yaml` for 1-click declarative deployments.
+

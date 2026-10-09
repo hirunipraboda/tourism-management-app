@@ -137,7 +137,21 @@ class RecommendationApiRequest(BaseModel):
 # ---------------------------------------------------------------------------
 # Endpoints
 # ---------------------------------------------------------------------------
+@app.get("/")
+@app.head("/")
+def root_status():
+    return {
+        "status": "online",
+        "service": "Nova.AiAgents.FastAPI",
+        "timestamp": datetime.datetime.utcnow().isoformat() + "Z",
+        "message": "NOVA Agentic AI service running and healthy",
+        "health": "/health",
+        "docs": "/docs"
+    }
+
+
 @app.get("/health")
+@app.head("/health")
 def health_check():
     return {
         "status": "healthy",
@@ -151,6 +165,7 @@ def health_check():
             "RecommendationFeedbackAgent"
         ]
     }
+
 
 
 @app.post("/agents/destination-research")

@@ -45,7 +45,7 @@ public class ItineraryGenerationService : IItineraryGenerationService
         var trip = await _db.Trips.FirstOrDefaultAsync(t => t.Id == tripId);
         if (trip == null) return ApiResponse<GenerateItineraryResponse>.Fail("Trip not found.");
 
-        if (userRole.Equals(UserRole.Tourist.ToString(), StringComparison.OrdinalIgnoreCase) && trip.UserId != userId)
+        if (IsRestrictedUser(userRole) && trip.UserId != userId)
         {
             return ApiResponse<GenerateItineraryResponse>.Fail("You are not authorized to generate itineraries for this trip.");
         }
@@ -301,7 +301,7 @@ public class ItineraryGenerationService : IItineraryGenerationService
 
         if (workflow == null) return ApiResponse<WorkflowStatusResponse>.Fail("Workflow not found.");
 
-        if (userRole.Equals(UserRole.Tourist.ToString(), StringComparison.OrdinalIgnoreCase) && workflow.Trip?.UserId != userId)
+        if (IsRestrictedUser(userRole) && workflow.Trip?.UserId != userId)
         {
             return ApiResponse<WorkflowStatusResponse>.Fail("You are not authorized to view this workflow.");
         }
@@ -338,7 +338,7 @@ public class ItineraryGenerationService : IItineraryGenerationService
         var workflow = await _db.Workflows.Include(w => w.Trip).FirstOrDefaultAsync(w => w.Id == workflowId);
         if (workflow == null) return ApiResponse<List<WorkflowAuditLogResponse>>.Fail("Workflow not found.");
 
-        if (userRole.Equals(UserRole.Tourist.ToString(), StringComparison.OrdinalIgnoreCase) && workflow.Trip?.UserId != userId)
+        if (IsRestrictedUser(userRole) && workflow.Trip?.UserId != userId)
         {
             return ApiResponse<List<WorkflowAuditLogResponse>>.Fail("You are not authorized to view these logs.");
         }
@@ -363,4 +363,8 @@ public class ItineraryGenerationService : IItineraryGenerationService
 
     private static int durationDays(DateTime start, DateTime end) =>
         Math.Max(1, (int)Math.Ceiling((end - start).TotalDays));
+
+    private static bool IsRestrictedUser(string userRole) =>
+        !userRole.Equals(UserRole.Admin.ToString(), StringComparison.OrdinalIgnoreCase) &&
+        !userRole.Equals("ADMIN", StringComparison.OrdinalIgnoreCase);
 }

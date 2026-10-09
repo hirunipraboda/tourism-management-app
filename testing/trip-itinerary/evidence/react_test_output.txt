@@ -1,0 +1,42 @@
+✔ Frontend configuration: API endpoint resolution (0.9749ms)
+✔ Tourism data structure integrity (0.2348ms)
+✔ Reviews and recommendations data structure integrity (0.1314ms)
+✔ Customer Satisfaction Analytics integrity (0.1175ms)
+✔ Multi-Destination and Day-by-Day Transport Leg integrity (0.1797ms)
+✔ Itinerary-derived Travel Legs: Yala -> Colombo -> Kandy automatic generation (1.19ms)
+✔ Specific Bus & Train Selection per route leg with fares and timetables (0.1651ms)
+✔ Transportation Flow: Choose Public (From->To Search on Itinerary Places) vs Private (Vehicle Selection) (1.5372ms)
+✔ Multi-Leg Sequential Transport Selection: displays all selected options relevant to origin to destination (0.2784ms)
+✔ Staycation Booking Confirmation Receipt: Verification code and receipt breakdown integrity (0.2509ms)
+✔ Trips Search Functionality: Filters trips by name, destination, and staycation booking (0.2817ms)
+✔ Real Calendar Trip Timeline Engine: Trip Statuses and Relative Countdown Logic (30.9461ms)
+✔ ITN-001 & ITN-002: Itinerary Multi-Day Hierarchy and Date Tracking (0.848ms)
+✔ ITN-003, ITN-004, ITN-005: Itinerary Days CRUD Operations (0.1722ms)
+✔ ITN-006, ITN-007, ITN-008: Itinerary Activities Cost and Timing Management (0.1913ms)
+✔ ITN-009 & ITN-010: Transport Leg Selection and Transit Times (0.2041ms)
+✔ ITN-011 to ITN-015: Approval Lifecycle and Operator Authorization Verification (0.1379ms)
+✔ GEN-001 to GEN-004: Generation Workflow Audit Logging and Fallbacks (0.1294ms)
+✔ TRP-001: Valid Trip Creation Payload Structure (0.9134ms)
+✔ TRP-002: Optional Fields Defaulting (2.1653ms)
+✔ TRP-003: Validation - End Date Precedes Start Date (0.9023ms)
+✔ TRP-004: Validation - Negative Budget and Zero Travelers (0.1812ms)
+✔ TRP-005 & TRP-006: Trip Filtering and Pagination Parameters (0.2095ms)
+✔ TRP-007 & TRP-011: Trip Timeline Calculator and Status Engine (29.9119ms)
+✔ TRP-008: Multi-user Ownership and Access Isolation (1.0326ms)
+✔ TRP-009 & TRP-010: Trip Update and Dependent Day Date Shifting (0.3631ms)
+✔ TRP-012: Trip Deletion Flow (0.201ms)
+✔ ATP-001: AI Trip Plan Generation Request and Response Schema (1.735ms)
+✔ ATP-002: Validation - Missing Destination or Negative Travelers (0.1693ms)
+✔ ATP-003: Save Generated Plan Payload Construction (0.1242ms)
+✔ ATP-004: Targeted Day Regeneration in Plan (0.1556ms)
+✔ ATP-005: Targeted Activity Replacement within Day (0.1311ms)
+✔ ATP-006 & ATP-007: Plan Retrieval and Plan Deletion (0.1183ms)
+✔ ATP-008: AI Engine Service Unavailable Fallback Handling (0.135ms)
+ℹ tests 34
+ℹ suites 0
+ℹ pass 34
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 335.9237

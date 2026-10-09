@@ -33,18 +33,26 @@ export const getTrips = async (req: AuthenticatedRequest, res: Response) => {
       return {
         id: t.id,
         title: t.title,
+        tripName: t.title,
         travelerName: t.user?.name || 'Explorer',
         travelerEmail: t.user?.email || '',
         destinationName: destNames,
+        destination: destNames,
         startDate: t.startDate.toISOString().split('T')[0],
         endDate: t.endDate.toISOString().split('T')[0],
         durationDays,
         budget: t.budget,
         paxCount: t.numberOfTravelers,
-        status: t.status === 'PLANNED' ? 'Planning' : t.status === 'COMPLETED' ? 'Completed' : t.status === 'CANCELLED' ? 'Cancelled' : 'In Progress',
+        numberOfTravelers: t.numberOfTravelers,
+        status: t.status === 'PLANNED' ? 'Planning'
+          : t.status === 'IN_PROGRESS' ? 'Ongoing'
+          : t.status === 'COMPLETED' ? 'Completed'
+          : t.status === 'CANCELLED' ? 'Cancelled'
+          : 'Planning',
         aiScore: t.aiScore,
         transportRequired: t.transportRequired,
         itinerary: t.itineraries,
+        itineraries: t.itineraries,
         destinations: t.destinations.map((td) => td.destination),
       };
     });
@@ -106,11 +114,17 @@ export const getTripById = async (req: AuthenticatedRequest, res: Response) => {
       travelerName: trip.user?.name,
       travelerEmail: trip.user?.email,
       destinationName: destNames,
+      destination: destNames,
       startDate: trip.startDate.toISOString().split('T')[0],
       endDate: trip.endDate.toISOString().split('T')[0],
       durationDays,
       paxCount: trip.numberOfTravelers,
-      status: trip.status === 'PLANNED' ? 'Planning' : trip.status === 'COMPLETED' ? 'Completed' : trip.status === 'CANCELLED' ? 'Cancelled' : 'In Progress',
+      numberOfTravelers: trip.numberOfTravelers,
+      status: trip.status === 'PLANNED' ? 'Planning'
+        : trip.status === 'IN_PROGRESS' ? 'Ongoing'
+        : trip.status === 'COMPLETED' ? 'Completed'
+        : trip.status === 'CANCELLED' ? 'Cancelled'
+        : 'Planning',
       destinations: trip.destinations.map((td) => td.destination),
     };
 

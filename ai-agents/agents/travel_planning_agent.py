@@ -692,7 +692,8 @@ class TravelPlanningAgent:
         errors = list(state.get("errors", []))
 
         # Check for simulated failure flag in context (for Test 7)
-        simulate_failure = trip_req.get("constraints") and any("simulate_research_failure" in c for c in trip_req.get("constraints", []))
+        raw_query = str(state.get("raw_user_query") or "")
+        simulate_failure = ("simulate_research_failure" in raw_query) or (trip_req.get("constraints") and any("simulate_research_failure" in str(c) for c in trip_req.get("constraints", [])))
 
         all_attractions = []
         limitations = []
@@ -707,8 +708,8 @@ class TravelPlanningAgent:
             
             res = self.adapters.call_destination_research(dest, interests, simulate_failure=simulate_failure)
             if res.get("status") == "FAILED" or "ERROR" in str(res.get("information_limitations", "")):
-                errors.append(f"Destination Research Agent unavailable for {dest}.")
-                limitations.append(f"Destination research for {dest} was unavailable.")
+                errors.append(f"Destination Research Agent failure for {dest}.")
+                limitations.append(f"Destination research failure: service was unavailable for {dest}.")
             else:
                 attractions = res.get("attractions", [])
                 all_attractions.extend(attractions)

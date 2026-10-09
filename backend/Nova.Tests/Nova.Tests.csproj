@@ -15,6 +15,8 @@
     <PackageReference Include="xunit" Version="2.5.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.11" />
+    <PackageReference Include="Moq" Version="4.20.72" />
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="8.0.11" />
   </ItemGroup>
 
   <ItemGroup>
@@ -33,6 +35,15 @@
     <Compile Include="..\Nova.Api\DTOs\**\*.cs" />
     <Compile Include="..\Nova.Api\Data\**\*.cs" />
     <Compile Include="..\Nova.Api\Services\**\*.cs" />
+    <!-- Trip & Itinerary controllers compiled from production source for HTTP-level tests -->
+    <Compile Include="..\Nova.Api\Controllers\TripsController.cs" />
+    <Compile Include="..\Nova.Api\Controllers\TripPlannerController.cs" />
+    <Compile Include="..\Nova.Api\Controllers\ItinerariesController.cs" />
+    <Compile Include="..\Nova.Api\Controllers\ItineraryItemsController.cs" />
+    <Compile Include="..\Nova.Api\Controllers\ItineraryGenerationController.cs" />
+    <Compile Include="..\Nova.Api\Controllers\TransportController.cs" />
+    <Compile Include="..\Nova.Api\Controllers\AuthController.cs" />
+    <Compile Include="..\Nova.Api\Controllers\DestinationsController.cs" />
   </ItemGroup>
 
 </Project>

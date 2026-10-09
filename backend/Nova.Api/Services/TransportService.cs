@@ -223,7 +223,7 @@ public class TransportService : ITransportService
         }
 
         // Authorization check: Only trip owner or Admin/Operator
-        if (userRole.Equals(UserRole.Tourist.ToString(), StringComparison.OrdinalIgnoreCase) && trip.UserId != userId)
+        if (IsRestrictedUser(userRole) && trip.UserId != userId)
         {
             return ApiResponse<SelectedTransportResponse>.Fail(
                 "You are not authorized to modify transport for this itinerary.", 
@@ -297,10 +297,12 @@ public class TransportService : ITransportService
             transportEntity = CreateEntityFromRequest(request, trip.Id, item.Id, requestedDate);
         }
 
-        // If item already has a transport option, replace it
-        if (item.SelectedTransport != null)
+        // If item/trip already has a selected transport option for this day, replace it
+        var existingSelected = await _db.TransportOptions
+            .FirstOrDefaultAsync(t => t.TripId == trip.Id && t.IsSelected && t.TravelDate.Date == itemDayDate.Date);
+        if (existingSelected != null)
         {
-            _db.TransportOptions.Remove(item.SelectedTransport);
+            _db.TransportOptions.Remove(existingSelected);
         }
 
         _db.TransportOptions.Add(transportEntity);
@@ -339,16 +341,16 @@ public class TransportService : ITransportService
         }
 
         var trip = item.ItineraryDay?.Itinerary?.Trip;
-        if (userRole.Equals(UserRole.Tourist.ToString(), StringComparison.OrdinalIgnoreCase) && trip != null && trip.UserId != userId)
+        if (IsRestrictedUser(userRole) && trip != null && trip.UserId != userId)
         {
             return ApiResponse<SelectedTransportResponse>.Fail(
                 "You are not authorized to view this itinerary item's transport.", 
                 ["UNAUTHORIZED_ACCESS"]);
         }
 
-        var selectedTransport = trip != null 
-            ? await _db.TransportOptions.FirstOrDefaultAsync(t => t.TripId == trip.Id && t.IsSelected)
-            : null;
+        var itemDayDate = DateTime.SpecifyKind(item.ItineraryDay!.Date.Date, DateTimeKind.Utc);
+        var selectedTransport = await _db.TransportOptions
+            .FirstOrDefaultAsync(t => t.TripId == trip!.Id && t.IsSelected && t.TravelDate.Date == itemDayDate.Date);
 
         if (selectedTransport == null)
         {
@@ -387,16 +389,16 @@ public class TransportService : ITransportService
         }
 
         var trip = item.ItineraryDay?.Itinerary?.Trip;
-        if (userRole.Equals(UserRole.Tourist.ToString(), StringComparison.OrdinalIgnoreCase) && trip != null && trip.UserId != userId)
+        if (IsRestrictedUser(userRole) && trip != null && trip.UserId != userId)
         {
             return ApiResponse<bool>.Fail(
                 "You are not authorized to modify this itinerary item.", 
                 ["UNAUTHORIZED_ACCESS"]);
         }
 
-        var selectedTransport = trip != null 
-            ? await _db.TransportOptions.FirstOrDefaultAsync(t => t.TripId == trip.Id && t.IsSelected)
-            : null;
+        var itemDayDate = DateTime.SpecifyKind(item.ItineraryDay!.Date.Date, DateTimeKind.Utc);
+        var selectedTransport = await _db.TransportOptions
+            .FirstOrDefaultAsync(t => t.TripId == trip!.Id && t.IsSelected && t.TravelDate.Date == itemDayDate.Date);
 
         if (selectedTransport != null)
         {
@@ -582,4 +584,8 @@ public class TransportService : ITransportService
             IsSelected = entity.IsSelected
         };
     }
+
+    private static bool IsRestrictedUser(string userRole) =>
+        !userRole.Equals(UserRole.Admin.ToString(), StringComparison.OrdinalIgnoreCase) &&
+        !userRole.Equals("ADMIN", StringComparison.OrdinalIgnoreCase);
 }

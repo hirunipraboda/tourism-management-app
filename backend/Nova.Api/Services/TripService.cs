@@ -28,6 +28,11 @@ public class TripService : ITripService
     public async Task<ApiResponse<TripResponse>> CreateTripAsync(string userId, CreateTripRequest request)
     {
         // Validation rules
+        if (request.StartDate == default || request.EndDate == default)
+        {
+            return ApiResponse<TripResponse>.Fail("Trip start date and end date are required.");
+        }
+
         if (request.StartDate > request.EndDate)
         {
             return ApiResponse<TripResponse>.Fail("Trip start date cannot be after end date.");
@@ -95,8 +100,8 @@ public class TripService : ITripService
             .Include(t => t.Bookings)
             .AsQueryable();
 
-        // RBAC: Tourists can only see their own trips
-        if (userRole.Equals(UserRole.Tourist.ToString(), StringComparison.OrdinalIgnoreCase))
+        // RBAC: Tourists/regular users can only see their own trips
+        if (IsRestrictedUser(userRole))
         {
             query = query.Where(t => t.UserId == userId);
         }
@@ -164,7 +169,7 @@ public class TripService : ITripService
         }
 
         // Ownership check
-        if (userRole.Equals(UserRole.Tourist.ToString(), StringComparison.OrdinalIgnoreCase) && trip.UserId != userId)
+        if (IsRestrictedUser(userRole) && trip.UserId != userId)
         {
             return ApiResponse<TripResponse>.Fail("You are not authorized to access this trip.");
         }
@@ -204,7 +209,7 @@ public class TripService : ITripService
             return ApiResponse<TripResponse>.Fail("Trip not found.");
         }
 
-        if (userRole.Equals(UserRole.Tourist.ToString(), StringComparison.OrdinalIgnoreCase) && trip.UserId != userId)
+        if (IsRestrictedUser(userRole) && trip.UserId != userId)
         {
             return ApiResponse<TripResponse>.Fail("You are not authorized to modify this trip.");
         }
@@ -276,7 +281,7 @@ public class TripService : ITripService
             return ApiResponse<bool>.Fail("Trip not found.");
         }
 
-        if (userRole.Equals(UserRole.Tourist.ToString(), StringComparison.OrdinalIgnoreCase) && trip.UserId != userId)
+        if (IsRestrictedUser(userRole) && trip.UserId != userId)
         {
             return ApiResponse<bool>.Fail("You are not authorized to delete this trip.");
         }
@@ -286,6 +291,10 @@ public class TripService : ITripService
 
         return ApiResponse<bool>.Ok(true, "Trip deleted successfully.");
     }
+
+    private static bool IsRestrictedUser(string userRole) =>
+        !userRole.Equals(UserRole.Admin.ToString(), StringComparison.OrdinalIgnoreCase) &&
+        !userRole.Equals("ADMIN", StringComparison.OrdinalIgnoreCase);
 
     private static TripResponse MapToResponse(Trip trip)
     {

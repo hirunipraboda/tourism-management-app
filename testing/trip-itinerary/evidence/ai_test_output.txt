@@ -1,0 +1,24 @@
+============================= test session starts =============================
+platform win32 -- Python 3.11.9, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\user\AppData\Local\Programs\Python\Python311\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\user\NOVA\ai-agents
+plugins: anyio-4.15.1, langsmith-0.12.6
+collecting ... collected 4 items
+
+tests/test_itinerary_generation.py::test_generate_itinerary_structure_and_schema_atp001 PASSED [ 25%]
+tests/test_day_regeneration.py::test_regenerate_single_day_isolation_atp004 PASSED [ 50%]
+tests/test_activity_regeneration.py::test_regenerate_single_activity_isolation_atp005 PASSED [ 75%]
+tests/test_generation_failure.py::test_specialist_agent_failure_handled_safely_atp008_gen004 PASSED [100%]
+
+============================== warnings summary ===============================
+tools\tourism_search_tool.py:27
+  C:\Users\user\NOVA\ai-agents\tools\tourism_search_tool.py:27: DeprecationWarning: `langchain-community` is being sunset and is no longer actively maintained. See https://github.com/langchain-ai/langchain-community/issues/674 for details and migration guidance toward standalone integration packages.
+    from langchain_community.vectorstores import FAISS
+
+tests/test_itinerary_generation.py: 7 warnings
+tests/test_generation_failure.py: 4 warnings
+  C:\Users\user\AppData\Local\Programs\Python\Python311\Lib\site-packages\langchain_google_genai\chat_models.py:3908: UserWarning: Model 'gemini-3.5-flash-lite' uses fixed sampling defaults; the sampling parameter(s) temperature will be ignored.
+    request = self._build_request_config(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================== 4 passed, 12 warnings in 71.13s (0:01:11) ==================

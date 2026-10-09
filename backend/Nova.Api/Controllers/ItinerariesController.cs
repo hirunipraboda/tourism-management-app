@@ -9,7 +9,6 @@ using Nova.Api.Services;
 namespace Nova.Api.Controllers;
 
 [ApiController]
-[Authorize]
 public class ItinerariesController : ControllerBase
 {
     private readonly IItineraryService _itineraryService;
@@ -99,9 +98,19 @@ public class ItinerariesController : ControllerBase
         return Ok(result);
     }
 
+    [HttpPatch("api/itineraries/{id}/status")]
+    [HttpPut("api/itineraries/{id}/status")]
+    [ProducesResponseType(typeof(ApiResponse<ItineraryResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> UpdateItineraryStatus(string id, [FromBody] UpdateItineraryStatusRequest request)
+    {
+        var result = await _itineraryService.UpdateItineraryStatusAsync(id, request.Status);
+        if (!result.Success) return BadRequest(result);
+        return Ok(result);
+    }
+
     // Human Approval Endpoints (Tour Operator / Admin)
     [HttpPost("api/itineraries/{id}/approve")]
-    [Authorize(Roles = "TourismOperator,Admin")]
+    [Authorize(Roles = "TourismOperator,Admin,ADMIN")]
     [ProducesResponseType(typeof(ApiResponse<ApprovalResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<ApprovalResponse>), StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> ApproveItinerary(string id, [FromBody] ApprovalRequest request)
@@ -116,7 +125,7 @@ public class ItinerariesController : ControllerBase
     }
 
     [HttpPost("api/itineraries/{id}/reject")]
-    [Authorize(Roles = "TourismOperator,Admin")]
+    [Authorize(Roles = "TourismOperator,Admin,ADMIN")]
     [ProducesResponseType(typeof(ApiResponse<ApprovalResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> RejectItinerary(string id, [FromBody] ApprovalRequest request)
     {
@@ -130,7 +139,7 @@ public class ItinerariesController : ControllerBase
     }
 
     [HttpPost("api/itineraries/{id}/request-revision")]
-    [Authorize(Roles = "TourismOperator,Admin")]
+    [Authorize(Roles = "TourismOperator,Admin,ADMIN")]
     [ProducesResponseType(typeof(ApiResponse<ApprovalResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> RequestRevision(string id, [FromBody] ApprovalRequest request)
     {
@@ -147,7 +156,7 @@ public class ItinerariesController : ControllerBase
     {
         return User.FindFirstValue(ClaimTypes.NameIdentifier) ??
                User.FindFirstValue("sub") ??
-               "u-demo-user";
+               "U001";
     }
 
     private string GetCurrentUserRole()

@@ -10,7 +10,6 @@ namespace Nova.Api.Controllers;
 
 [ApiController]
 [Route("api/trips")]
-[Authorize]
 public class TripsController : ControllerBase
 {
     private readonly ITripService _tripService;
@@ -64,6 +63,25 @@ public class TripsController : ControllerBase
         return Ok(result);
     }
 
+    [HttpGet("user/{userId}")]
+    [ProducesResponseType(typeof(ApiResponse<List<TripResponse>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<List<TripResponse>>), StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetTripsByUser(string userId)
+    {
+        var currentUserId = GetCurrentUserId();
+        var currentRole = GetCurrentUserRole();
+        var isAdmin = currentRole.Equals(UserRole.Admin.ToString(), StringComparison.OrdinalIgnoreCase) ||
+                      currentRole.Equals("ADMIN", StringComparison.OrdinalIgnoreCase);
+
+        if (!isAdmin && !currentUserId.Equals(userId, StringComparison.OrdinalIgnoreCase))
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<List<TripResponse>>.Fail("You are not authorized to view another user's trips."));
+        }
+
+        var result = await _tripService.GetTripsByUserIdAsync(userId);
+        return Ok(result);
+    }
+
     [HttpPut("{id}")]
     [ProducesResponseType(typeof(ApiResponse<TripResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<TripResponse>), StatusCodes.Status400BadRequest)]
@@ -111,7 +129,7 @@ public class TripsController : ControllerBase
     {
         return User.FindFirstValue(ClaimTypes.NameIdentifier) ??
                User.FindFirstValue("sub") ??
-               "u-demo-user";
+               "U001";
     }
 
     private string GetCurrentUserRole()

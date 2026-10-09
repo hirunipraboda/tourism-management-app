@@ -1,0 +1,18 @@
+00:00 +0: loading C:/Users/user/NOVA/mobile/test/trips/itinerary_test.dart
+00:00 +0: C:/Users/user/NOVA/mobile/test/trips/trip_model_test.dart: Trip & Itinerary Mobile Tests - TRP Suite UserTripDetail model creates and serializes correctly (TRP-001, TRP-002)
+00:00 +1: C:/Users/user/NOVA/mobile/test/trips/trip_model_test.dart: Trip & Itinerary Mobile Tests - TRP Suite UserTripDetail model creates and serializes correctly (TRP-001, TRP-002)
+00:00 +2: C:/Users/user/NOVA/mobile/test/trips/trip_planner_test.dart: Trip Planner Mobile Tests - ATP Suite TripPlan generates, parses JSON, and matches expected schema (ATP-001)
+00:00 +3: C:/Users/user/NOVA/mobile/test/trips/itinerary_test.dart: Itinerary & Workflow Mobile Tests - ITN & GEN Suite Itinerary activity sequence and cost computation (ITN-006, ITN-007)
+00:00 +4: C:/Users/user/NOVA/mobile/test/trips/trip_model_test.dart: Trip & Itinerary Mobile Tests - TRP Suite Trip date range and traveler validation (TRP-003, TRP-004)
+00:00 +5: C:/Users/user/NOVA/mobile/test/trips/trip_model_test.dart: Trip & Itinerary Mobile Tests - TRP Suite Trip date range and traveler validation (TRP-003, TRP-004)
+00:00 +6: C:/Users/user/NOVA/mobile/test/trips/itinerary_test.dart: Itinerary & Workflow Mobile Tests - ITN & GEN Suite Removing activity updates day list correctly (ITN-008)
+00:00 +7: C:/Users/user/NOVA/mobile/test/trips/trip_planner_test.dart: Trip Planner Mobile Tests - ATP Suite Save plan payload structures trip and days correctly (ATP-003)
+00:00 +8: C:/Users/user/NOVA/mobile/test/trips/trip_model_test.dart: Trip & Itinerary Mobile Tests - TRP Suite Trips filtering by destination, status, and interest (TRP-005, TRP-006)
+00:00 +9: C:/Users/user/NOVA/mobile/test/trips/trip_model_test.dart: Trip & Itinerary Mobile Tests - TRP Suite Trips filtering by destination, status, and interest (TRP-005, TRP-006)
+00:00 +10: C:/Users/user/NOVA/mobile/test/trips/trip_planner_test.dart: Trip Planner Mobile Tests - ATP Suite Regenerating day updates only target day activities (ATP-004)
+00:00 +11: C:/Users/user/NOVA/mobile/test/trips/trip_model_test.dart: Trip & Itinerary Mobile Tests - TRP Suite Trip detail modification updates name, travelers, and status (TRP-009, TRP-010)
+00:00 +12: C:/Users/user/NOVA/mobile/test/trips/trip_model_test.dart: Trip & Itinerary Mobile Tests - TRP Suite Trip detail modification updates name, travelers, and status (TRP-009, TRP-010)
+00:00 +13: C:/Users/user/NOVA/mobile/test/trips/trip_planner_test.dart: Trip Planner Mobile Tests - ATP Suite Regenerating activity replaces only targeted activity in day (ATP-005)
+00:00 +14: C:/Users/user/NOVA/mobile/test/trips/itinerary_test.dart: Itinerary & Workflow Mobile Tests - ITN & GEN Suite Generation workflow lifecycle and audit log tracking (GEN-001, GEN-002, GEN-003, GEN-004)
+00:00 +15: C:/Users/user/NOVA/mobile/test/trips/itinerary_test.dart: Itinerary & Workflow Mobile Tests - ITN & GEN Suite Generation workflow lifecycle and audit log tracking (GEN-001, GEN-002, GEN-003, GEN-004)
+00:00 +16: All tests passed!

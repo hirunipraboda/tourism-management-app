@@ -91,7 +91,7 @@ test('NFR-ACC-005: Guide & tour page accessibility - Rating badges and interacti
   ];
 
   const rating = tourElements.find(e => e.type === 'rating');
-  assert.ok(rating?.ariaLabel.includes('out of 5 stars'), 'Rating visual must provide textual screen reader explanation');
+  assert.ok(rating?.ariaLabel?.includes('out of 5 stars'), 'Rating visual must provide textual screen reader explanation');
 
   const cta = tourElements.find(e => e.type === 'cta');
   assert.equal(typeof cta?.ariaExpanded, 'boolean', 'Collapsible availability CTA must specify aria-expanded state');

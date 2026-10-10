@@ -315,6 +315,4 @@ AI tools were used during development where applicable. All AI-assisted code, do
 
 ---
 
-## 📄 License and Acknowledgements
 
-Add the project license, third-party API acknowledgements, external libraries, and other resources used by the project where applicable.

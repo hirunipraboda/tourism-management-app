@@ -138,6 +138,14 @@ class _GuideManagementScreenState extends State<GuideManagementScreen>
     ),
   ];
 
+  // Weekly Working Schedule State (Editable by Driver/Guide)
+  String _weekdayHours = '08:00 AM - 06:00 PM';
+  String _saturdayHours = '08:30 AM - 05:30 PM';
+  String _sundayHours = '09:00 AM - 04:00 PM';
+  bool _weekdayActive = true;
+  bool _saturdayActive = true;
+  bool _sundayActive = true;
+
   // Tourist Discovery state (when user role is Tourist / Guest)
   List<GuideModel> _browsedGuides = [];
   String _searchQuery = '';
@@ -722,6 +730,474 @@ class _GuideManagementScreenState extends State<GuideManagementScreen>
             },
             child: const Text('Unblock'),
           ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _syncWeeklyWorkingHours() async {
+    String to24h(String timeStr) {
+      try {
+        final parts = timeStr.trim().split(' ');
+        if (parts.isEmpty) return '08:00';
+        final hm = parts[0].split(':');
+        int hour = int.parse(hm[0]);
+        final min = hm.length > 1 ? hm[1] : '00';
+        if (parts.length > 1) {
+          final ampm = parts[1].toUpperCase();
+          if (ampm == 'PM' && hour < 12) hour += 12;
+          if (ampm == 'AM' && hour == 12) hour = 0;
+        }
+        return '${hour.toString().padLeft(2, '0')}:$min';
+      } catch (_) {
+        return '08:00';
+      }
+    }
+
+    final List<Map<String, dynamic>> hoursList = [];
+    if (_weekdayActive) {
+      final range = _weekdayHours.split('-');
+      final s = range.isNotEmpty ? to24h(range[0]) : '08:00';
+      final e = range.length > 1 ? to24h(range[1]) : '18:00';
+      for (int dow = 1; dow <= 5; dow++) {
+        hoursList.add({'dayOfWeek': dow, 'startTime': s, 'endTime': e});
+      }
+    }
+    if (_saturdayActive) {
+      final range = _saturdayHours.split('-');
+      final s = range.isNotEmpty ? to24h(range[0]) : '08:30';
+      final e = range.length > 1 ? to24h(range[1]) : '17:30';
+      hoursList.add({'dayOfWeek': 6, 'startTime': s, 'endTime': e});
+    }
+    if (_sundayActive) {
+      final range = _sundayHours.split('-');
+      final s = range.isNotEmpty ? to24h(range[0]) : '09:00';
+      final e = range.length > 1 ? to24h(range[1]) : '16:00';
+      hoursList.add({'dayOfWeek': 0, 'startTime': s, 'endTime': e});
+    }
+
+    await ApiService.setGuideWorkingHours(hoursList);
+  }
+
+  void _showEditDayScheduleDialog({
+    required String dayLabel,
+    required String currentHours,
+    required bool isActive,
+    required Function(String newHours, bool newActive) onSave,
+  }) {
+    bool active = isActive;
+    final parts = currentHours.split('-');
+    final startCtrl = TextEditingController(text: parts.isNotEmpty ? parts[0].trim() : '08:00 AM');
+    final endCtrl = TextEditingController(text: parts.length > 1 ? parts[1].trim() : '06:00 PM');
+
+    final presets = [
+      {'label': '8:00 AM - 5:00 PM', 'start': '08:00 AM', 'end': '05:00 PM'},
+      {'label': '8:00 AM - 6:00 PM', 'start': '08:00 AM', 'end': '06:00 PM'},
+      {'label': '8:30 AM - 5:30 PM', 'start': '08:30 AM', 'end': '05:30 PM'},
+      {'label': '9:00 AM - 4:00 PM', 'start': '09:00 AM', 'end': '04:00 PM'},
+      {'label': '7:00 AM - 7:00 PM (Full Day)', 'start': '07:00 AM', 'end': '07:00 PM'},
+      {'label': '8:00 AM - 1:00 PM (Morning)', 'start': '08:00 AM', 'end': '01:00 PM'},
+    ];
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+          contentPadding: const EdgeInsets.fromLTRB(20, 14, 20, 16),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(color: _AppPalette.tealDark.withOpacity(0.12), borderRadius: BorderRadius.circular(12)),
+                child: const Icon(Icons.access_time_filled_rounded, color: _AppPalette.tealDark, size: 20),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Edit Operating Hours', style: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 16, color: _AppPalette.primaryNavy)),
+                    Text(dayLabel, style: GoogleFonts.inter(fontSize: 11, color: _AppPalette.slate500)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Active Switch
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: active ? _AppPalette.emerald50 : _AppPalette.slate100,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: active ? _AppPalette.emerald200 : _AppPalette.slate200),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            active ? Icons.check_circle_rounded : Icons.block_rounded,
+                            size: 16,
+                            color: active ? _AppPalette.emerald700 : _AppPalette.slate500,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            active ? 'Available for Tours' : 'Off-Duty (Day Off)',
+                            style: GoogleFonts.inter(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 12,
+                              color: active ? _AppPalette.emerald700 : _AppPalette.slate600,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Switch.adaptive(
+                        value: active,
+                        activeColor: _AppPalette.tealDark,
+                        onChanged: (val) => setDialogState(() => active = val),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+
+                if (active) ...[
+                  Text('Operating Hours Window', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: _AppPalette.slate700)),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: startCtrl,
+                          decoration: InputDecoration(
+                            labelText: 'Start Time',
+                            labelStyle: GoogleFonts.inter(fontSize: 11),
+                            prefixIcon: const Icon(Icons.wb_sunny_outlined, size: 16, color: _AppPalette.tealDark),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: TextField(
+                          controller: endCtrl,
+                          decoration: InputDecoration(
+                            labelText: 'End Time',
+                            labelStyle: GoogleFonts.inter(fontSize: 11),
+                            prefixIcon: const Icon(Icons.nights_stay_outlined, size: 16, color: _AppPalette.tealDark),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+
+                  Text('Quick Presets', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: _AppPalette.slate500)),
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: presets.map((p) => InkWell(
+                      borderRadius: BorderRadius.circular(8),
+                      onTap: () {
+                        setDialogState(() {
+                          startCtrl.text = p['start']!;
+                          endCtrl.text = p['end']!;
+                        });
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: _AppPalette.slate100,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: _AppPalette.slate300),
+                        ),
+                        child: Text(
+                          p['label']!,
+                          style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: _AppPalette.slate700),
+                        ),
+                      ),
+                    )).toList(),
+                  ),
+                ] else ...[
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: Text(
+                      'Driver will be marked as unavailable on $dayLabel. Tourists cannot book tours on these days unless custom dates are added.',
+                      style: GoogleFonts.inter(fontSize: 11, color: _AppPalette.slate500, height: 1.4),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: _AppPalette.tealDark, foregroundColor: Colors.white),
+              onPressed: () {
+                final s = startCtrl.text.trim();
+                final e = endCtrl.text.trim();
+                final formatted = active ? '$s - $e' : 'Off-duty / Closed';
+                Navigator.pop(ctx);
+                onSave(formatted, active);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('$dayLabel schedule updated: $formatted'),
+                    backgroundColor: _AppPalette.tealDark,
+                  ),
+                );
+              },
+              child: const Text('Save Hours'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showEditWeeklyScheduleDialog() {
+    bool wActive = _weekdayActive;
+    bool satActive = _saturdayActive;
+    bool sunActive = _sundayActive;
+
+    final wParts = _weekdayHours.split('-');
+    final satParts = _saturdayHours.split('-');
+    final sunParts = _sundayHours.split('-');
+
+    final wStartCtrl = TextEditingController(text: wParts.isNotEmpty ? wParts[0].trim() : '08:00 AM');
+    final wEndCtrl = TextEditingController(text: wParts.length > 1 ? wParts[1].trim() : '06:00 PM');
+
+    final satStartCtrl = TextEditingController(text: satParts.isNotEmpty ? satParts[0].trim() : '08:30 AM');
+    final satEndCtrl = TextEditingController(text: satParts.length > 1 ? satParts[1].trim() : '05:30 PM');
+
+    final sunStartCtrl = TextEditingController(text: sunParts.isNotEmpty ? sunParts[0].trim() : '09:00 AM');
+    final sunEndCtrl = TextEditingController(text: sunParts.length > 1 ? sunParts[1].trim() : '04:00 PM');
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+          contentPadding: const EdgeInsets.fromLTRB(20, 14, 20, 16),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(color: _AppPalette.tealDark.withOpacity(0.12), borderRadius: BorderRadius.circular(12)),
+                child: const Icon(Icons.edit_calendar_rounded, color: _AppPalette.tealDark, size: 20),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Edit Weekly Operating Hours', style: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 16, color: _AppPalette.primaryNavy)),
+                    Text('Configure standard weekly availability for driver bookings', style: GoogleFonts.inter(fontSize: 10, color: _AppPalette.slate500)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Quick Full Schedule Presets
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+                          side: const BorderSide(color: _AppPalette.tealDark),
+                        ),
+                        onPressed: () {
+                          setDialogState(() {
+                            wActive = true;
+                            satActive = true;
+                            sunActive = false;
+                            wStartCtrl.text = '08:00 AM';
+                            wEndCtrl.text = '06:00 PM';
+                            satStartCtrl.text = '08:30 AM';
+                            satEndCtrl.text = '05:30 PM';
+                          });
+                        },
+                        child: Text('Mon-Sat (Sun Off)', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: _AppPalette.tealDark)),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+                          side: const BorderSide(color: _AppPalette.tealDark),
+                        ),
+                        onPressed: () {
+                          setDialogState(() {
+                            wActive = true;
+                            satActive = true;
+                            sunActive = true;
+                            wStartCtrl.text = '08:00 AM';
+                            wEndCtrl.text = '06:00 PM';
+                            satStartCtrl.text = '08:00 AM';
+                            satEndCtrl.text = '06:00 PM';
+                            sunStartCtrl.text = '09:00 AM';
+                            sunEndCtrl.text = '04:00 PM';
+                          });
+                        },
+                        child: Text('All 7 Days Active', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: _AppPalette.tealDark)),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+
+                // Monday - Friday
+                _buildDayConfigBlock(
+                  dayTitle: 'Monday - Friday',
+                  isActive: wActive,
+                  onToggle: (v) => setDialogState(() => wActive = v),
+                  startCtrl: wStartCtrl,
+                  endCtrl: wEndCtrl,
+                ),
+                const SizedBox(height: 12),
+
+                // Saturday
+                _buildDayConfigBlock(
+                  dayTitle: 'Saturday',
+                  isActive: satActive,
+                  onToggle: (v) => setDialogState(() => satActive = v),
+                  startCtrl: satStartCtrl,
+                  endCtrl: satEndCtrl,
+                ),
+                const SizedBox(height: 12),
+
+                // Sunday
+                _buildDayConfigBlock(
+                  dayTitle: 'Sunday',
+                  isActive: sunActive,
+                  onToggle: (v) => setDialogState(() => sunActive = v),
+                  startCtrl: sunStartCtrl,
+                  endCtrl: sunEndCtrl,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: _AppPalette.primaryNavy, foregroundColor: Colors.white),
+              onPressed: () {
+                Navigator.pop(ctx);
+                setState(() {
+                  _weekdayActive = wActive;
+                  _weekdayHours = wActive ? '${wStartCtrl.text.trim()} - ${wEndCtrl.text.trim()}' : 'Off-duty / Closed';
+                  _saturdayActive = satActive;
+                  _saturdayHours = satActive ? '${satStartCtrl.text.trim()} - ${satEndCtrl.text.trim()}' : 'Off-duty / Closed';
+                  _sundayActive = sunActive;
+                  _sundayHours = sunActive ? '${sunStartCtrl.text.trim()} - ${sunEndCtrl.text.trim()}' : 'Off-duty / Closed';
+                });
+                _syncWeeklyWorkingHours();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Weekly operating schedule saved successfully.'),
+                    backgroundColor: _AppPalette.tealDark,
+                  ),
+                );
+              },
+              child: const Text('Save All Hours'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDayConfigBlock({
+    required String dayTitle,
+    required bool isActive,
+    required Function(bool) onToggle,
+    required TextEditingController startCtrl,
+    required TextEditingController endCtrl,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isActive ? Colors.white : _AppPalette.slate50,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: isActive ? _AppPalette.slate300 : _AppPalette.slate200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(dayTitle, style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 12, color: _AppPalette.slate800)),
+              Switch.adaptive(
+                value: isActive,
+                activeColor: _AppPalette.tealDark,
+                onChanged: onToggle,
+              ),
+            ],
+          ),
+          if (isActive) ...[
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: startCtrl,
+                    style: const TextStyle(fontSize: 11),
+                    decoration: InputDecoration(
+                      labelText: 'Start',
+                      labelStyle: const TextStyle(fontSize: 10),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                    ),
+                  ),
+                ),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 6),
+                  child: Text('-', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+                Expanded(
+                  child: TextField(
+                    controller: endCtrl,
+                    style: const TextStyle(fontSize: 11),
+                    decoration: InputDecoration(
+                      labelText: 'End',
+                      labelStyle: const TextStyle(fontSize: 10),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ] else ...[
+            Text('Marked as Day Off', style: GoogleFonts.inter(fontSize: 10, color: _AppPalette.slate400, fontStyle: FontStyle.italic)),
+          ],
         ],
       ),
     );
@@ -1746,28 +2222,123 @@ class _GuideManagementScreenState extends State<GuideManagementScreen>
 
         const SizedBox(height: 16),
 
-        // Working schedule card
+        // Working schedule card (Editable by Driver)
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: _AppPalette.slate200),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 6, offset: const Offset(0, 2)),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Icon(Icons.access_time_filled_rounded, size: 16, color: _AppPalette.primaryNavy),
-                  const SizedBox(width: 6),
-                  Text('Standard Weekly Operating Hours', style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 13, color: _AppPalette.slate800)),
+                  Row(
+                    children: [
+                      const Icon(Icons.access_time_filled_rounded, size: 16, color: _AppPalette.primaryNavy),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Standard Weekly Operating Hours',
+                        style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 13, color: _AppPalette.slate800),
+                      ),
+                    ],
+                  ),
+                  InkWell(
+                    borderRadius: BorderRadius.circular(8),
+                    onTap: _showEditWeeklyScheduleDialog,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: _AppPalette.tealDark.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: _AppPalette.tealDark.withOpacity(0.3)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.edit_outlined, size: 13, color: _AppPalette.tealDark),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Edit',
+                            style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: _AppPalette.tealDark),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 10),
-              _scheduleRow('Monday - Friday', '08:00 AM - 06:00 PM', true),
-              _scheduleRow('Saturday', '08:30 AM - 05:30 PM', true),
-              _scheduleRow('Sunday', '09:00 AM - 04:00 PM', true),
+              _scheduleRow(
+                'Monday - Friday',
+                _weekdayActive ? _weekdayHours : 'Off-duty / Closed',
+                _weekdayActive,
+                () => _showEditDayScheduleDialog(
+                  dayLabel: 'Monday - Friday',
+                  currentHours: _weekdayHours,
+                  isActive: _weekdayActive,
+                  onSave: (newHours, active) {
+                    setState(() {
+                      _weekdayHours = newHours;
+                      _weekdayActive = active;
+                    });
+                    _syncWeeklyWorkingHours();
+                  },
+                ),
+              ),
+              const Divider(height: 12, thickness: 0.7, color: _AppPalette.slate100),
+              _scheduleRow(
+                'Saturday',
+                _saturdayActive ? _saturdayHours : 'Off-duty / Closed',
+                _saturdayActive,
+                () => _showEditDayScheduleDialog(
+                  dayLabel: 'Saturday',
+                  currentHours: _saturdayHours,
+                  isActive: _saturdayActive,
+                  onSave: (newHours, active) {
+                    setState(() {
+                      _saturdayHours = newHours;
+                      _saturdayActive = active;
+                    });
+                    _syncWeeklyWorkingHours();
+                  },
+                ),
+              ),
+              const Divider(height: 12, thickness: 0.7, color: _AppPalette.slate100),
+              _scheduleRow(
+                'Sunday',
+                _sundayActive ? _sundayHours : 'Off-duty / Closed',
+                _sundayActive,
+                () => _showEditDayScheduleDialog(
+                  dayLabel: 'Sunday',
+                  currentHours: _sundayHours,
+                  isActive: _sundayActive,
+                  onSave: (newHours, active) {
+                    setState(() {
+                      _sundayHours = newHours;
+                      _sundayActive = active;
+                    });
+                    _syncWeeklyWorkingHours();
+                  },
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  const Icon(Icons.touch_app_outlined, size: 12, color: _AppPalette.slate400),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Tap any day or "Edit" to adjust recurring work hours',
+                    style: GoogleFonts.inter(fontSize: 10, color: _AppPalette.slate400, fontStyle: FontStyle.italic),
+                  ),
+                ],
+              ),
             ],
           ),
         ),
@@ -1984,15 +2555,49 @@ class _GuideManagementScreenState extends State<GuideManagementScreen>
     );
   }
 
-  Widget _scheduleRow(String day, String hours, bool isActive) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(day, style: GoogleFonts.inter(fontSize: 12, color: _AppPalette.slate600)),
-          Text(hours, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: _AppPalette.tealDark)),
-        ],
+  Widget _scheduleRow(String day, String hours, bool isActive, VoidCallback onEdit) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: onEdit,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  isActive ? Icons.check_circle_outline_rounded : Icons.pause_circle_outline_rounded,
+                  size: 14,
+                  color: isActive ? _AppPalette.tealDark : _AppPalette.slate400,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  day,
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: isActive ? _AppPalette.slate700 : _AppPalette.slate400,
+                  ),
+                ),
+              ],
+            ),
+            Row(
+              children: [
+                Text(
+                  hours,
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: isActive ? _AppPalette.tealDark : _AppPalette.rose500,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                const Icon(Icons.mode_edit_outline_outlined, size: 12, color: _AppPalette.slate400),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

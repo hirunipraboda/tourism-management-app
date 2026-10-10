@@ -12,16 +12,87 @@ class ApiService {
   static String? authToken;
   static Map<String, dynamic>? currentUser;
 
-  static const String _defaultUrl = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'https://tourism-planner-api.onrender.com/api',
-  );
+  static List<String> get candidateUrls {
+    if (customBaseUrl != null && customBaseUrl!.isNotEmpty) {
+      return [customBaseUrl!];
+    }
+    const envUrl = String.fromEnvironment('API_BASE_URL', defaultValue: '');
+    if (envUrl.isNotEmpty) {
+      return [envUrl];
+    }
+    return [
+      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) ...[
+        'http://10.0.2.2:5000/api',
+        'http://127.0.0.1:5000/api',
+      ],
+      'https://tourism-planner-api.onrender.com/api',
+      'http://localhost:5000/api',
+    ];
+  }
 
   static String get baseUrl {
     if (customBaseUrl != null && customBaseUrl!.isNotEmpty) {
       return customBaseUrl!;
     }
-    return _defaultUrl;
+    const envUrl = String.fromEnvironment('API_BASE_URL', defaultValue: '');
+    if (envUrl.isNotEmpty) {
+      return envUrl;
+    }
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      return 'http://10.0.2.2:5000/api';
+    }
+    return 'https://tourism-planner-api.onrender.com/api';
+  }
+
+  static Future<http.Response> postWithFallback(
+    String endpoint, {
+    Map<String, String>? headers,
+    Object? body,
+    Duration timeout = const Duration(seconds: 8),
+  }) async {
+    final candidates = [
+      baseUrl,
+      ...candidateUrls.where((u) => u != baseUrl),
+    ];
+
+    dynamic lastError;
+    for (final base in candidates) {
+      try {
+        final cleanEndpoint = endpoint.startsWith('/') ? endpoint : '/$endpoint';
+        final uri = Uri.parse('$base$cleanEndpoint');
+        final res = await http.post(uri, headers: headers, body: body).timeout(timeout);
+        customBaseUrl = base;
+        return res;
+      } catch (e) {
+        lastError = e;
+      }
+    }
+    throw lastError ?? Exception('Failed to connect to any server endpoint');
+  }
+
+  static Future<http.Response> getWithFallback(
+    String endpoint, {
+    Map<String, String>? headers,
+    Duration timeout = const Duration(seconds: 8),
+  }) async {
+    final candidates = [
+      baseUrl,
+      ...candidateUrls.where((u) => u != baseUrl),
+    ];
+
+    dynamic lastError;
+    for (final base in candidates) {
+      try {
+        final cleanEndpoint = endpoint.startsWith('/') ? endpoint : '/$endpoint';
+        final uri = Uri.parse('$base$cleanEndpoint');
+        final res = await http.get(uri, headers: headers).timeout(timeout);
+        customBaseUrl = base;
+        return res;
+      } catch (e) {
+        lastError = e;
+      }
+    }
+    throw lastError ?? Exception('Failed to connect to any server endpoint');
   }
 
   static Map<String, String> _headers({bool needsAuth = true, bool isJson = true}) {
@@ -46,8 +117,8 @@ class ApiService {
     String? phone,
   }) async {
     try {
-      final res = await http.post(
-        Uri.parse('$baseUrl/auth/register'),
+      final res = await postWithFallback(
+        '/auth/register',
         headers: _headers(needsAuth: false),
         body: jsonEncode({
           'name': name.trim(),
@@ -86,8 +157,8 @@ class ApiService {
     required String password,
   }) async {
     try {
-      final res = await http.post(
-        Uri.parse('$baseUrl/auth/login'),
+      final res = await postWithFallback(
+        '/auth/login',
         headers: _headers(needsAuth: false),
         body: jsonEncode({
           'email': email.trim(),

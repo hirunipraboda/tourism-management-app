@@ -32,6 +32,38 @@ class _AppPalette {
   static const tealDark = Color(0xFF0D9488);
 }
 
+class DriverAvailableDate {
+  final int id;
+  final String date;
+  final String startTime;
+  final String endTime;
+  final String vehicleType;
+  final String note;
+
+  DriverAvailableDate({
+    required this.id,
+    required this.date,
+    this.startTime = '08:00 AM',
+    this.endTime = '06:00 PM',
+    this.vehicleType = 'Toyota KDH Luxury Van',
+    this.note = 'Full Day Tour & Transport Ready',
+  });
+}
+
+class DriverBlockedDate {
+  final int id;
+  final String startDate;
+  final String endDate;
+  final String reason;
+
+  DriverBlockedDate({
+    required this.id,
+    required this.startDate,
+    required this.endDate,
+    required this.reason,
+  });
+}
+
 class GuideManagementScreen extends StatefulWidget {
   final int initialTabIndex;
 
@@ -53,6 +85,58 @@ class _GuideManagementScreenState extends State<GuideManagementScreen>
   List<GuideBookingModel> _guideBookings = [];
   List<BlockedDateModel> _blockedDates = [];
   String _guideBookingFilter = 'All';
+
+  // Availability Management State (Driver / Guide)
+  int _availabilityMode = 0; // 0: Available Dates, 1: Unavailable (Blocked) Dates
+  final List<DriverAvailableDate> _driverAvailableDates = [
+    DriverAvailableDate(
+      id: 1,
+      date: '2026-10-14',
+      startTime: '08:00 AM',
+      endTime: '06:00 PM',
+      vehicleType: 'Toyota KDH Luxury Van',
+      note: 'Kandy & Cultural Triangle Day Tour Available',
+    ),
+    DriverAvailableDate(
+      id: 2,
+      date: '2026-10-15',
+      startTime: '07:30 AM',
+      endTime: '07:00 PM',
+      vehicleType: 'Sedan (Air-conditioned)',
+      note: 'Sigiriya & Dambulla Excursion Ready',
+    ),
+    DriverAvailableDate(
+      id: 3,
+      date: '2026-10-18',
+      startTime: '08:00 AM',
+      endTime: '05:00 PM',
+      vehicleType: 'Toyota KDH Luxury Van',
+      note: 'Tea Plantations & Nuwara Eliya Scenic Drive',
+    ),
+    DriverAvailableDate(
+      id: 4,
+      date: '2026-10-20',
+      startTime: '09:00 AM',
+      endTime: '06:30 PM',
+      vehicleType: 'SUV 4WD',
+      note: 'Galle Fort Heritage & Southern Coast Tour',
+    ),
+  ];
+
+  final List<DriverBlockedDate> _driverBlockedDates = [
+    DriverBlockedDate(
+      id: 1,
+      startDate: '2026-10-25',
+      endDate: '2026-10-27',
+      reason: 'Temple Poya Festival Family Holiday',
+    ),
+    DriverBlockedDate(
+      id: 2,
+      startDate: '2026-11-04',
+      endDate: '2026-11-05',
+      reason: 'Vehicle Routine Maintenance & SLTDA Re-certification',
+    ),
+  ];
 
   // Tourist Discovery state (when user role is Tourist / Guest)
   List<GuideModel> _browsedGuides = [];
@@ -187,57 +271,456 @@ class _GuideManagementScreenState extends State<GuideManagementScreen>
     }
   }
 
-  void _showAddBlockedDateDialog() {
-    final startCtrl = TextEditingController(text: DateTime.now().add(const Duration(days: 7)).toIso8601String().split('T')[0]);
-    final endCtrl = TextEditingController(text: DateTime.now().add(const Duration(days: 9)).toIso8601String().split('T')[0]);
-    final reasonCtrl = TextEditingController(text: 'Personal leave / vehicle maintenance');
+  void _showAddAvailableDateDialog() {
+    DateTime selectedDate = DateTime.now().add(const Duration(days: 1));
+    String startTime = '08:00 AM';
+    String endTime = '06:00 PM';
+    String selectedVehicle = 'Toyota KDH Luxury Van';
+    final noteCtrl = TextEditingController(text: 'Full Day Islandwide Tour & Transfer Ready');
+
+    final vehicleOptions = [
+      'Toyota KDH Luxury Van',
+      'Sedan Car (Air-conditioned)',
+      'SUV 4WD',
+      'Toyota Coaster Minicoach',
+      'Licensed Guide Only (No Vehicle)',
+    ];
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: Text(
-          'Block Dates',
-          style: GoogleFonts.outfit(fontWeight: FontWeight.w800, color: _AppPalette.primaryNavy),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: startCtrl,
-              decoration: const InputDecoration(labelText: 'Start Date (YYYY-MM-DD)', border: OutlineInputBorder()),
+      builder: (ctx) => StatefulBuilder(
+        builder: (dialogCtx, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: _AppPalette.emerald50,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.event_available_rounded, color: _AppPalette.emerald700, size: 22),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Add Available Date',
+                  style: GoogleFonts.outfit(fontWeight: FontWeight.w800, color: _AppPalette.primaryNavy, fontSize: 18),
+                ),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Select Date', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: _AppPalette.slate700)),
+                const SizedBox(height: 6),
+                InkWell(
+                  onTap: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: selectedDate,
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime.now().add(const Duration(days: 180)),
+                    );
+                    if (picked != null) {
+                      setDialogState(() => selectedDate = picked);
+                    }
+                  },
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: _AppPalette.slate300),
+                      borderRadius: BorderRadius.circular(12),
+                      color: _AppPalette.slate50,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          selectedDate.toIso8601String().split('T')[0],
+                          style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 14, color: _AppPalette.slate800),
+                        ),
+                        const Icon(Icons.calendar_today_rounded, size: 18, color: _AppPalette.tealDark),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+
+                Text('Working Hours', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: _AppPalette.slate700)),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        decoration: BoxDecoration(border: Border.all(color: _AppPalette.slate300), borderRadius: BorderRadius.circular(12)),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Start', style: GoogleFonts.inter(fontSize: 10, color: _AppPalette.slate500)),
+                            Text(startTime, style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 13, color: _AppPalette.primaryNavy)),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        decoration: BoxDecoration(border: Border.all(color: _AppPalette.slate300), borderRadius: BorderRadius.circular(12)),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('End', style: GoogleFonts.inter(fontSize: 10, color: _AppPalette.slate500)),
+                            Text(endTime, style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 13, color: _AppPalette.primaryNavy)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 6,
+                  children: [
+                    ActionChip(
+                      label: const Text('Full Day (8am-6pm)', style: TextStyle(fontSize: 10)),
+                      backgroundColor: _AppPalette.emerald50,
+                      onPressed: () => setDialogState(() {
+                        startTime = '08:00 AM';
+                        endTime = '06:00 PM';
+                      }),
+                    ),
+                    ActionChip(
+                      label: const Text('Morning (8am-1pm)', style: TextStyle(fontSize: 10)),
+                      backgroundColor: _AppPalette.slate100,
+                      onPressed: () => setDialogState(() {
+                        startTime = '08:00 AM';
+                        endTime = '01:00 PM';
+                      }),
+                    ),
+                    ActionChip(
+                      label: const Text('Afternoon (1pm-7pm)', style: TextStyle(fontSize: 10)),
+                      backgroundColor: _AppPalette.slate100,
+                      onPressed: () => setDialogState(() {
+                        startTime = '01:00 PM';
+                        endTime = '07:00 PM';
+                      }),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+
+                Text('Assigned Vehicle / Transport', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: _AppPalette.slate700)),
+                const SizedBox(height: 6),
+                DropdownButtonFormField<String>(
+                  value: selectedVehicle,
+                  decoration: InputDecoration(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  items: vehicleOptions.map((v) => DropdownMenuItem(value: v, child: Text(v, style: const TextStyle(fontSize: 12)))).toList(),
+                  onChanged: (v) {
+                    if (v != null) setDialogState(() => selectedVehicle = v);
+                  },
+                ),
+                const SizedBox(height: 14),
+
+                Text('Tour / Route Notes', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: _AppPalette.slate700)),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: noteCtrl,
+                  style: const TextStyle(fontSize: 12),
+                  decoration: InputDecoration(
+                    hintText: 'e.g., Kandy & Sigiriya day tour or airport pickup',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: endCtrl,
-              decoration: const InputDecoration(labelText: 'End Date (YYYY-MM-DD)', border: OutlineInputBorder()),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
             ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: reasonCtrl,
-              decoration: const InputDecoration(labelText: 'Reason', border: OutlineInputBorder()),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: _AppPalette.tealDark, foregroundColor: Colors.white),
+              onPressed: () async {
+                final dateStr = selectedDate.toIso8601String().split('T')[0];
+                final newId = DateTime.now().millisecondsSinceEpoch;
+                Navigator.pop(ctx);
+
+                setState(() {
+                  _driverAvailableDates.insert(
+                    0,
+                    DriverAvailableDate(
+                      id: newId,
+                      date: dateStr,
+                      startTime: startTime,
+                      endTime: endTime,
+                      vehicleType: selectedVehicle,
+                      note: noteCtrl.text.trim().isNotEmpty ? noteCtrl.text.trim() : 'Available for hire',
+                    ),
+                  );
+                });
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Available date ($dateStr) added successfully!'),
+                    backgroundColor: _AppPalette.emerald700,
+                  ),
+                );
+
+                if (_guideProfile != null) {
+                  await ApiService.addGuideAvailabilitySlot(
+                    guideId: _guideProfile!.id,
+                    availableDate: dateStr,
+                    startTime: startTime,
+                    endTime: endTime,
+                  );
+                }
+              },
+              child: const Text('Add Available Date'),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+      ),
+    );
+  }
+
+  void _showAddBlockedDateDialog() {
+    DateTime startDate = DateTime.now().add(const Duration(days: 7));
+    DateTime endDate = DateTime.now().add(const Duration(days: 9));
+    final reasonCtrl = TextEditingController(text: 'Vehicle Routine Maintenance');
+
+    final reasonSuggestions = [
+      'Vehicle Maintenance',
+      'Personal Leave / Holiday',
+      'Family Event',
+      'Poya Festival / Public Holiday',
+      'Rest Day / Off-Duty',
+    ];
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (dialogCtx, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: _AppPalette.rose50,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.block_rounded, color: _AppPalette.rose500, size: 22),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Block Unavailable Dates',
+                  style: GoogleFonts.outfit(fontWeight: FontWeight.w800, color: _AppPalette.primaryNavy, fontSize: 18),
+                ),
+              ),
+            ],
           ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Date Range', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: _AppPalette.slate700)),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Expanded(
+                      child: InkWell(
+                        onTap: () async {
+                          final picked = await showDatePicker(
+                            context: context,
+                            initialDate: startDate,
+                            firstDate: DateTime.now(),
+                            lastDate: DateTime.now().add(const Duration(days: 180)),
+                          );
+                          if (picked != null) {
+                            setDialogState(() {
+                              startDate = picked;
+                              if (endDate.isBefore(startDate)) endDate = startDate;
+                            });
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                          decoration: BoxDecoration(border: Border.all(color: _AppPalette.slate300), borderRadius: BorderRadius.circular(12), color: _AppPalette.slate50),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('From', style: GoogleFonts.inter(fontSize: 10, color: _AppPalette.slate500)),
+                              Text(startDate.toIso8601String().split('T')[0], style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: _AppPalette.slate800)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: InkWell(
+                        onTap: () async {
+                          final picked = await showDatePicker(
+                            context: context,
+                            initialDate: endDate.isBefore(startDate) ? startDate : endDate,
+                            firstDate: startDate,
+                            lastDate: DateTime.now().add(const Duration(days: 180)),
+                          );
+                          if (picked != null) {
+                            setDialogState(() => endDate = picked);
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                          decoration: BoxDecoration(border: Border.all(color: _AppPalette.slate300), borderRadius: BorderRadius.circular(12), color: _AppPalette.slate50),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('To', style: GoogleFonts.inter(fontSize: 10, color: _AppPalette.slate500)),
+                              Text(endDate.toIso8601String().split('T')[0], style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: _AppPalette.slate800)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+
+                Text('Reason for Unavailability', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: _AppPalette.slate700)),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: reasonCtrl,
+                  style: const TextStyle(fontSize: 12),
+                  decoration: InputDecoration(
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 6,
+                  children: reasonSuggestions.map((r) => ActionChip(
+                    label: Text(r, style: const TextStyle(fontSize: 10)),
+                    backgroundColor: _AppPalette.slate100,
+                    onPressed: () => setDialogState(() => reasonCtrl.text = r),
+                  )).toList(),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: _AppPalette.rose500, foregroundColor: Colors.white),
+              onPressed: () async {
+                final sStr = startDate.toIso8601String().split('T')[0];
+                final eStr = endDate.toIso8601String().split('T')[0];
+                final newId = DateTime.now().millisecondsSinceEpoch;
+                Navigator.pop(ctx);
+
+                setState(() {
+                  _driverBlockedDates.insert(
+                    0,
+                    DriverBlockedDate(
+                      id: newId,
+                      startDate: sStr,
+                      endDate: eStr,
+                      reason: reasonCtrl.text.trim().isNotEmpty ? reasonCtrl.text.trim() : 'Unavailable / Personal Leave',
+                    ),
+                  );
+                });
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Dates ($sStr to $eStr) marked as unavailable.'),
+                    backgroundColor: _AppPalette.rose700,
+                  ),
+                );
+
+                await ApiService.addGuideBlockedDate(
+                  startDate: sStr,
+                  endDate: eStr,
+                  reason: reasonCtrl.text.trim(),
+                );
+              },
+              child: const Text('Block Dates'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _removeAvailableDate(DriverAvailableDate item) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text('Remove Available Date?', style: GoogleFonts.outfit(fontWeight: FontWeight.w800, color: _AppPalette.primaryNavy)),
+        content: Text('Are you sure you want to remove ${item.date} from your available schedule?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: _AppPalette.primaryNavy, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(backgroundColor: _AppPalette.rose500, foregroundColor: Colors.white),
             onPressed: () async {
               Navigator.pop(ctx);
-              setState(() => _isLoading = true);
-              await ApiService.addGuideBlockedDate(
-                startDate: startCtrl.text.trim(),
-                endDate: endCtrl.text.trim(),
-                reason: reasonCtrl.text.trim(),
+              setState(() {
+                _driverAvailableDates.removeWhere((d) => d.id == item.id);
+              });
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Removed ${item.date} from available schedule.'), backgroundColor: _AppPalette.slate700),
               );
-              await _loadGuidePortalData();
-              setState(() => _isLoading = false);
+              if (_guideProfile != null) {
+                await ApiService.removeGuideAvailabilitySlot(_guideProfile!.id, item.id);
+              }
             },
-            child: const Text('Block Dates'),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _removeBlockedDate(DriverBlockedDate item) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text('Unblock Dates?', style: GoogleFonts.outfit(fontWeight: FontWeight.w800, color: _AppPalette.primaryNavy)),
+        content: Text('Restore availability for ${item.startDate} to ${item.endDate}?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: _AppPalette.tealDark, foregroundColor: Colors.white),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              setState(() {
+                _driverBlockedDates.removeWhere((b) => b.id == item.id);
+              });
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Unblocked ${item.startDate} to ${item.endDate}. Now available for bookings.'), backgroundColor: _AppPalette.emerald700),
+              );
+              await ApiService.removeGuideBlockedDate(item.id);
+            },
+            child: const Text('Unblock'),
           ),
         ],
       ),
@@ -1067,52 +1550,437 @@ class _GuideManagementScreenState extends State<GuideManagementScreen>
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text('Working Hours & Blocked Dates', style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w800, color: _AppPalette.primaryNavy)),
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(backgroundColor: _AppPalette.primaryNavy, foregroundColor: Colors.white),
-              onPressed: _showAddBlockedDateDialog,
-              icon: const Icon(Icons.block_rounded, size: 14),
-              label: const Text('Block Dates'),
-            ),
-          ],
+        // Top Header and Action Buttons
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: _AppPalette.slate200),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Driver Availability & Calendar',
+                          style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w800, color: _AppPalette.primaryNavy),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Manage your working days and off-duty periods',
+                          style: GoogleFonts.inter(fontSize: 11, color: _AppPalette.slate500),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _AppPalette.tealDark,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        elevation: 0,
+                      ),
+                      onPressed: _showAddAvailableDateDialog,
+                      icon: const Icon(Icons.add_circle_outline_rounded, size: 16),
+                      label: Text(
+                        'Add Available Date',
+                        style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _AppPalette.rose500,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        elevation: 0,
+                      ),
+                      onPressed: _showAddBlockedDateDialog,
+                      icon: const Icon(Icons.block_rounded, size: 16),
+                      label: Text(
+                        'Block Dates',
+                        style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
+
+        // Segmented Switcher for Available vs Blocked
+        Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: _AppPalette.slate100,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: _AppPalette.slate200),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => setState(() => _availabilityMode = 0),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    decoration: BoxDecoration(
+                      color: _availabilityMode == 0 ? _AppPalette.primaryNavy : Colors.transparent,
+                      borderRadius: BorderRadius.circular(10),
+                      boxShadow: _availabilityMode == 0
+                          ? [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 4, offset: const Offset(0, 2))]
+                          : null,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.event_available_rounded,
+                          size: 16,
+                          color: _availabilityMode == 0 ? _AppPalette.emeraldAccent : _AppPalette.slate500,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Available Dates (${_driverAvailableDates.length})',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: _availabilityMode == 0 ? Colors.white : _AppPalette.slate600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => setState(() => _availabilityMode = 1),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    decoration: BoxDecoration(
+                      color: _availabilityMode == 1 ? _AppPalette.primaryNavy : Colors.transparent,
+                      borderRadius: BorderRadius.circular(10),
+                      boxShadow: _availabilityMode == 1
+                          ? [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 4, offset: const Offset(0, 2))]
+                          : null,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.event_busy_rounded,
+                          size: 16,
+                          color: _availabilityMode == 1 ? _AppPalette.rose500 : _AppPalette.slate500,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Blocked Dates (${_driverBlockedDates.length})',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: _availabilityMode == 1 ? Colors.white : _AppPalette.slate600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // List based on mode
+        if (_availabilityMode == 0) ...[
+          if (_driverAvailableDates.isEmpty)
+            _buildEmptyDatesState(
+              icon: Icons.event_available_rounded,
+              title: 'No Available Dates Configured',
+              subtitle: 'Add specific dates and vehicle slots when you are ready to accept driver and tour guide bookings.',
+              buttonLabel: 'Add Available Date',
+              buttonColor: _AppPalette.tealDark,
+              onPressed: _showAddAvailableDateDialog,
+            )
+          else
+            ..._driverAvailableDates.map((item) => _buildDriverAvailableCard(item)).toList(),
+        ] else ...[
+          if (_driverBlockedDates.isEmpty)
+            _buildEmptyDatesState(
+              icon: Icons.check_circle_outline_rounded,
+              title: 'No Blocked Dates',
+              subtitle: 'You are currently open for bookings on all standard working days. Block off dates whenever taking personal leave.',
+              buttonLabel: 'Block Specific Dates',
+              buttonColor: _AppPalette.rose500,
+              onPressed: _showAddBlockedDateDialog,
+            )
+          else
+            ..._driverBlockedDates.map((item) => _buildDriverBlockedCard(item)).toList(),
+        ],
+
+        const SizedBox(height: 16),
 
         // Working schedule card
         Container(
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: _AppPalette.slate200)),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: _AppPalette.slate200),
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Weekly Working Schedule', style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 13, color: _AppPalette.slate700)),
-              const SizedBox(height: 8),
+              Row(
+                children: [
+                  const Icon(Icons.access_time_filled_rounded, size: 16, color: _AppPalette.primaryNavy),
+                  const SizedBox(width: 6),
+                  Text('Standard Weekly Operating Hours', style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 13, color: _AppPalette.slate800)),
+                ],
+              ),
+              const SizedBox(height: 10),
               _scheduleRow('Monday - Friday', '08:00 AM - 06:00 PM', true),
               _scheduleRow('Saturday', '08:30 AM - 05:30 PM', true),
               _scheduleRow('Sunday', '09:00 AM - 04:00 PM', true),
             ],
           ),
         ),
-        const SizedBox(height: 16),
+      ],
+    );
+  }
 
-        // Blocked dates list
-        Text('Active Blocked Dates', style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w800, color: _AppPalette.primaryNavy)),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: _AppPalette.slate200)),
-          child: Column(
+  Widget _buildEmptyDatesState({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required String buttonLabel,
+    required Color buttonColor,
+    required VoidCallback onPressed,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _AppPalette.slate200),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, size: 40, color: _AppPalette.slate300),
+          const SizedBox(height: 10),
+          Text(title, style: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 15, color: _AppPalette.slate700)),
+          const SizedBox(height: 4),
+          Text(subtitle, textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 11, color: _AppPalette.slate400, height: 1.4)),
+          const SizedBox(height: 14),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(backgroundColor: buttonColor, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+            onPressed: onPressed,
+            icon: const Icon(Icons.add, size: 16),
+            label: Text(buttonLabel, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDriverAvailableCard(DriverAvailableDate item) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _AppPalette.emerald200.withOpacity(0.8), width: 1.2),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 6, offset: const Offset(0, 3)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _blockedDateRow('2026-10-25 to 2026-10-27', 'Temple Poya Festival Family Holiday'),
-              const Divider(height: 16),
-              _blockedDateRow('2026-11-04 to 2026-11-05', 'Vehicle Routine Maintenance & SLTDA Re-certification'),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                decoration: BoxDecoration(
+                  color: _AppPalette.emerald50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: _AppPalette.emerald200),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.check_circle_rounded, size: 12, color: _AppPalette.emerald700),
+                    const SizedBox(width: 4),
+                    Text(
+                      'AVAILABLE',
+                      style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w800, color: _AppPalette.emerald700),
+                    ),
+                  ],
+                ),
+              ),
+              Row(
+                children: [
+                  const Icon(Icons.calendar_month_rounded, size: 15, color: _AppPalette.tealDark),
+                  const SizedBox(width: 4),
+                  Text(
+                    item.date,
+                    style: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 14, color: _AppPalette.primaryNavy),
+                  ),
+                  const SizedBox(width: 4),
+                  InkWell(
+                    borderRadius: BorderRadius.circular(8),
+                    onTap: () => _removeAvailableDate(item),
+                    child: const Padding(
+                      padding: EdgeInsets.all(6),
+                      child: Icon(Icons.delete_outline_rounded, size: 20, color: _AppPalette.rose500),
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
-        ),
-      ],
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              const Icon(Icons.access_time_rounded, size: 14, color: _AppPalette.slate400),
+              const SizedBox(width: 6),
+              Text(
+                '${item.startTime} - ${item.endTime}',
+                style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 12, color: _AppPalette.slate700),
+              ),
+              const SizedBox(width: 14),
+              const Icon(Icons.directions_car_rounded, size: 14, color: _AppPalette.slate400),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  item.vehicleType,
+                  style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 12, color: _AppPalette.tealDark),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          if (item.note.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                const Icon(Icons.notes_rounded, size: 13, color: _AppPalette.slate400),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    item.note,
+                    style: GoogleFonts.inter(fontSize: 11, color: _AppPalette.slate500, fontStyle: FontStyle.italic),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDriverBlockedCard(DriverBlockedDate item) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _AppPalette.rose500.withOpacity(0.3), width: 1.2),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 6, offset: const Offset(0, 3)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                decoration: BoxDecoration(
+                  color: _AppPalette.rose50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: _AppPalette.rose500.withOpacity(0.3)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.block_rounded, size: 12, color: _AppPalette.rose700),
+                    const SizedBox(width: 4),
+                    Text(
+                      'UNAVAILABLE / OFF-DUTY',
+                      style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w800, color: _AppPalette.rose700),
+                    ),
+                  ],
+                ),
+              ),
+              InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: () => _removeBlockedDate(item),
+                child: const Padding(
+                  padding: EdgeInsets.all(6),
+                  child: Icon(Icons.delete_outline_rounded, size: 20, color: _AppPalette.rose500),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              const Icon(Icons.event_busy_rounded, size: 15, color: _AppPalette.rose500),
+              const SizedBox(width: 6),
+              Text(
+                '${item.startDate} to ${item.endDate}',
+                style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 13, color: _AppPalette.slate800),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              const Icon(Icons.info_outline_rounded, size: 13, color: _AppPalette.slate400),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  item.reason,
+                  style: GoogleFonts.inter(fontSize: 11, color: _AppPalette.slate500),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -1126,24 +1994,6 @@ class _GuideManagementScreenState extends State<GuideManagementScreen>
           Text(hours, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: _AppPalette.tealDark)),
         ],
       ),
-    );
-  }
-
-  Widget _blockedDateRow(String dates, String reason) {
-    return Row(
-      children: [
-        const Icon(Icons.event_busy_rounded, size: 18, color: _AppPalette.rose500),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(dates, style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 12, color: _AppPalette.slate800)),
-              Text(reason, style: GoogleFonts.inter(fontSize: 10, color: _AppPalette.slate400)),
-            ],
-          ),
-        ),
-      ],
     );
   }
 

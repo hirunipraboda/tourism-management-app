@@ -1799,8 +1799,8 @@ class ApiService {
     const subtotal = rate;
     const fee = subtotal * 0.05;
     const total = subtotal + fee;
-    final comm = subtotal * 0.15;
-    final net = total - comm;
+    const comm = subtotal * 0.15;
+    const net = total - comm;
     return GuideQuoteModel(
       guideId: guideId,
       guideName: 'Guide',
@@ -2103,6 +2103,63 @@ class ApiService {
       return res.statusCode == 200;
     } catch (e) {
       debugPrint('[ApiService] removeGuideBlockedDate error: $e');
+      return false;
+    }
+  }
+
+  static Future<List<GuideAvailabilitySlot>> getGuideAvailabilitySlots(int guideId) async {
+    try {
+      final res = await http.get(
+        Uri.parse('$baseUrl/v1/guides/$guideId/availability'),
+        headers: _headers(),
+      ).timeout(const Duration(seconds: 4));
+      if (res.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(res.body);
+        return data.map((x) => GuideAvailabilitySlot.fromJson(x)).toList();
+      }
+      return [];
+    } catch (e) {
+      debugPrint('[ApiService] getGuideAvailabilitySlots error: $e');
+      return [];
+    }
+  }
+
+  static Future<Map<String, dynamic>> addGuideAvailabilitySlot({
+    required int guideId,
+    required String availableDate,
+    required String startTime,
+    required String endTime,
+  }) async {
+    try {
+      final res = await http.post(
+        Uri.parse('$baseUrl/v1/guides/$guideId/availability'),
+        headers: _headers(),
+        body: jsonEncode({
+          'guideId': guideId,
+          'availableDate': availableDate,
+          'startTime': startTime,
+          'endTime': endTime,
+        }),
+      ).timeout(const Duration(seconds: 4));
+      final dynamic body = jsonDecode(res.body);
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        return {'success': true, 'message': 'Available date added successfully', 'data': body};
+      }
+      return {'success': false, 'message': body['message'] ?? 'Failed to add available date'};
+    } catch (e) {
+      return {'success': false, 'message': 'Network error: $e'};
+    }
+  }
+
+  static Future<bool> removeGuideAvailabilitySlot(int guideId, int availabilityId) async {
+    try {
+      final res = await http.delete(
+        Uri.parse('$baseUrl/v1/guides/$guideId/availability/$availabilityId'),
+        headers: _headers(),
+      ).timeout(const Duration(seconds: 4));
+      return res.statusCode == 200 || res.statusCode == 204;
+    } catch (e) {
+      debugPrint('[ApiService] removeGuideAvailabilitySlot error: $e');
       return false;
     }
   }

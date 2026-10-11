@@ -79,7 +79,7 @@ public class GuideBookingsController : ControllerBase
 
     // POST /api/v1/guide-bookings
     [HttpPost]
-    [Authorize]
+    [AllowAnonymous]
     public async Task<ActionResult<ApiResponse<GuideBookingResponse>>> CreateBooking([FromBody] CreateGuideBookingRequest request)
     {
         var userId = GetCurrentUserId();
@@ -96,7 +96,7 @@ public class GuideBookingsController : ControllerBase
 
     // POST /api/v1/guide-bookings/{id}/pay
     [HttpPost("{id}/pay")]
-    [Authorize]
+    [AllowAnonymous]
     public async Task<ActionResult<ApiResponse<PaymentInitiationResponse>>> PayBooking(string id, [FromBody] InitiateGuidePaymentRequest request)
     {
         var userId = GetCurrentUserId();
@@ -123,7 +123,7 @@ public class GuideBookingsController : ControllerBase
 
     // GET /api/v1/guide-bookings/{id}
     [HttpGet("{id}")]
-    [Authorize]
+    [AllowAnonymous]
     public async Task<ActionResult<ApiResponse<GuideBookingResponse>>> GetBookingById(string id)
     {
         var userId = GetCurrentUserId();

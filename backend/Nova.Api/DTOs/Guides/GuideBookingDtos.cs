@@ -72,14 +72,17 @@ public record CreateGuideBookingRequest(
     TimeOnly StartTime,
     TimeOnly EndTime,
     [Range(1, 100)] int Travelers,
-    [Required] List<string> DestinationIds,
-    string? PickupLocation,
-    string? PreferredLanguage,
-    string? SpecialRequests,
-    string? ContactName,
-    string? ContactEmail,
-    string? ContactPhone,
-    string? IdempotencyKey
+    List<string>? DestinationIds = null,
+    string? PickupLocation = null,
+    string? PreferredLanguage = null,
+    string? SpecialRequests = null,
+    string? ContactName = null,
+    string? ContactEmail = null,
+    string? ContactPhone = null,
+    string? CustomerName = null,
+    string? CustomerEmail = null,
+    string? CustomerPhone = null,
+    string? IdempotencyKey = null
 );
 
 public record GuideBookingResponse(

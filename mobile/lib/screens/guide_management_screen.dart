@@ -1621,6 +1621,7 @@ class _GuideManagementScreenState extends State<GuideManagementScreen>
       pickupLocation: pickupLocation,
       preferredLanguage: preferredLanguage,
       specialRequests: specialRequests,
+      destinationIds: guide.coveredDestinations,
     );
 
     if (bookingRes['success'] != true) {

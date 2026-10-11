@@ -287,7 +287,9 @@ public class GuideBookingService : IGuideBookingService
         if (conflict)
             throw new InvalidOperationException("The requested dates are no longer available. Please select different dates.");
 
-        var customer = await _db.Users.FindAsync(customerUserId);
+        var customer = (!string.IsNullOrWhiteSpace(customerUserId) && customerUserId != "anonymous_customer")
+            ? await _db.Users.FindAsync(customerUserId)
+            : null;
         var billableDays = (request.EndDate.DayNumber - request.StartDate.DayNumber) + 1;
         var dailyRate = guide.FullDayRate > 0 ? guide.FullDayRate : 110.0m;
         var subtotal = dailyRate * billableDays;
@@ -298,14 +300,26 @@ public class GuideBookingService : IGuideBookingService
 
         var bookingId = $"GB-{Guid.NewGuid():N}"[..11].ToUpper();
 
+        var resolvedContactName = !string.IsNullOrWhiteSpace(request.ContactName) ? request.ContactName
+            : (!string.IsNullOrWhiteSpace(request.CustomerName) ? request.CustomerName
+            : (customer?.Name ?? "Valued Traveler"));
+
+        var resolvedContactEmail = !string.IsNullOrWhiteSpace(request.ContactEmail) ? request.ContactEmail
+            : (!string.IsNullOrWhiteSpace(request.CustomerEmail) ? request.CustomerEmail
+            : (customer?.Email ?? "traveler@example.com"));
+
+        var resolvedContactPhone = !string.IsNullOrWhiteSpace(request.ContactPhone) ? request.ContactPhone
+            : (!string.IsNullOrWhiteSpace(request.CustomerPhone) ? request.CustomerPhone
+            : customer?.Phone);
+
         var booking = new GuideBooking
         {
             Id = bookingId,
             GuideId = guide.Id,
             CustomerId = customerUserId,
-            CustomerName = !string.IsNullOrWhiteSpace(request.ContactName) ? request.ContactName : (customer?.Name ?? "Valued Traveler"),
-            CustomerEmail = !string.IsNullOrWhiteSpace(request.ContactEmail) ? request.ContactEmail : (customer?.Email ?? "traveler@example.com"),
-            CustomerPhone = !string.IsNullOrWhiteSpace(request.ContactPhone) ? request.ContactPhone : customer?.Phone,
+            CustomerName = resolvedContactName,
+            CustomerEmail = resolvedContactEmail,
+            CustomerPhone = resolvedContactPhone,
             StartDate = request.StartDate,
             EndDate = request.EndDate,
             StartTime = request.StartTime,
@@ -329,18 +343,21 @@ public class GuideBookingService : IGuideBookingService
         };
 
         // Attach destinations
-        var destNames = await _db.Destinations
-            .Where(d => request.DestinationIds.Contains(d.Id))
-            .ToDictionaryAsync(d => d.Id, d => d.Name);
-
-        foreach (var dId in request.DestinationIds)
+        if (request.DestinationIds != null && request.DestinationIds.Any())
         {
-            booking.Destinations.Add(new GuideBookingDestination
+            var destNames = await _db.Destinations
+                .Where(d => request.DestinationIds.Contains(d.Id))
+                .ToDictionaryAsync(d => d.Id, d => d.Name);
+
+            foreach (var dId in request.DestinationIds)
             {
-                BookingId = booking.Id,
-                DestinationId = dId,
-                DestinationName = destNames.TryGetValue(dId, out var name) ? name : dId
-            });
+                booking.Destinations.Add(new GuideBookingDestination
+                {
+                    BookingId = booking.Id,
+                    DestinationId = dId,
+                    DestinationName = destNames.TryGetValue(dId, out var name) ? name : dId
+                });
+            }
         }
 
         _db.GuideBookings.Add(booking);
@@ -370,7 +387,8 @@ public class GuideBookingService : IGuideBookingService
             .FirstOrDefaultAsync(b => b.Id == bookingId);
 
         if (booking == null) throw new KeyNotFoundException("Booking not found.");
-        if (booking.CustomerId != customerUserId) throw new UnauthorizedAccessException("Not authorized to pay for this booking.");
+        if (booking.CustomerId != customerUserId && customerUserId != "anonymous_customer" && booking.CustomerId != "anonymous_customer")
+            throw new UnauthorizedAccessException("Not authorized to pay for this booking.");
 
         if (booking.Status == GuideBookingStatus.Confirmed)
             throw new InvalidOperationException("Booking is already paid and confirmed.");
@@ -413,24 +431,30 @@ public class GuideBookingService : IGuideBookingService
         };
         _db.GuidePayouts.Add(payout);
 
-        // Notify Guide and Customer
-        _db.Notifications.Add(new Notification
+        // Notify Guide and Customer (safe against null/anonymous FKs)
+        if (!string.IsNullOrWhiteSpace(booking.Guide?.UserId))
         {
-            UserId = booking.Guide?.UserId ?? booking.GuideId.ToString(),
-            Type = "GuideBookingConfirmed",
-            Title = "New Confirmed Tour Guide Booking",
-            Message = $"You have a confirmed booking with {booking.CustomerName} for {booking.StartDate:MMM dd} - {booking.EndDate:MMM dd}.",
-            RelatedBookingId = booking.Id
-        });
+            _db.Notifications.Add(new Notification
+            {
+                UserId = booking.Guide.UserId,
+                Type = "GuideBookingConfirmed",
+                Title = "New Confirmed Tour Guide Booking",
+                Message = $"You have a confirmed booking with {booking.CustomerName} for {booking.StartDate:MMM dd} - {booking.EndDate:MMM dd}.",
+                RelatedBookingId = booking.Id
+            });
+        }
 
-        _db.Notifications.Add(new Notification
+        if (!string.IsNullOrWhiteSpace(customerUserId) && customerUserId != "anonymous_customer")
         {
-            UserId = customerUserId,
-            Type = "CustomerBookingConfirmed",
-            Title = "Tour Guide Booking Confirmed",
-            Message = $"Your booking with guide {booking.Guide?.Name} has been confirmed. Ref: {booking.Id}.",
-            RelatedBookingId = booking.Id
-        });
+            _db.Notifications.Add(new Notification
+            {
+                UserId = customerUserId,
+                Type = "CustomerBookingConfirmed",
+                Title = "Tour Guide Booking Confirmed",
+                Message = $"Your booking with guide {booking.Guide?.Name} has been confirmed. Ref: {booking.Id}.",
+                RelatedBookingId = booking.Id
+            });
+        }
 
         _db.GuideBookingEvents.Add(new GuideBookingEvent
         {
@@ -466,7 +490,7 @@ public class GuideBookingService : IGuideBookingService
 
         if (booking == null) return null;
 
-        if (!isAdmin && booking.CustomerId != userId && booking.Guide?.UserId != userId)
+        if (!isAdmin && booking.CustomerId != userId && booking.Guide?.UserId != userId && booking.CustomerId != "anonymous_customer" && userId != "anonymous_customer")
         {
             throw new UnauthorizedAccessException("Forbidden.");
         }

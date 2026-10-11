@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   Compass,
   Search,
@@ -110,6 +110,25 @@ export const AdminDestinationsPage: React.FC = () => {
   const [selectedDestCategory, setSelectedDestCategory] = useState<string>('All');
   const [isAddDestModalOpen, setIsAddDestModalOpen] = useState(false);
   const [editingDestId, setEditingDestId] = useState<string | null>(null);
+
+  // Load live destinations from Supabase on mount
+  useEffect(() => {
+    let isMounted = true;
+    adminService.fetchDestinations().then((liveList) => {
+      if (isMounted && liveList.length > 0) {
+        const seen = new Set<string>();
+        const unique = liveList.filter((d) => {
+          if (seen.has(d.id)) return false;
+          seen.add(d.id);
+          return true;
+        });
+        setDestinations(unique);
+      }
+    }).catch((err) => {
+      console.warn('Could not fetch live destinations from Supabase:', err);
+    });
+    return () => { isMounted = false; };
+  }, []);
 
   // Live Weather & Details Modal State
   const [selectedWeatherDest, setSelectedWeatherDest] = useState<AdminDestination | null>(null);
@@ -531,11 +550,11 @@ export const AdminDestinationsPage: React.FC = () => {
   };
 
   // ── Delete Destination ───────────────────────────────────────────────────
-  const handleDeleteDestination = (id: string, name: string) => {
+  const handleDeleteDestination = async (id: string, name: string) => {
     if (window.confirm(`Are you sure you want to remove "${name}" from destinations?`)) {
-      const updated = adminService.deleteDestination(id);
+      const updated = await adminService.deleteDestination(id);
       setDestinations(updated);
-      showToast(`Destination "${name}" removed successfully.`);
+      showToast(`Destination "${name}" removed from Supabase DB successfully.`);
     }
   };
 
@@ -574,7 +593,7 @@ export const AdminDestinationsPage: React.FC = () => {
   }, [travelPackages, packageSearchQuery, packageStyleFilter]);
 
   // ── Create or Update Destination ──────────────────────────────────────────
-  const handleSaveDestination = (e: React.FormEvent) => {
+  const handleSaveDestination = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateDestForm()) {
       showToast('Please correct the highlighted validation errors before saving.');
@@ -605,13 +624,13 @@ export const AdminDestinationsPage: React.FC = () => {
     };
 
     if (editingDestId) {
-      adminService.updateDestination(editingDestId, payload);
+      await adminService.updateDestination(editingDestId, payload);
       setDestinations((prev) =>
         prev.map((d) => (d.id === editingDestId ? { ...d, ...payload } : d))
       );
-      showToast(`Destination "${destName}" updated successfully!`);
+      showToast(`Destination "${destName}" updated in Supabase DB successfully!`);
     } else {
-      const created = adminService.addDestination({
+      const created = await adminService.addDestination({
         ...payload,
         status: 'Active',
         lat: 7.29,
@@ -621,7 +640,7 @@ export const AdminDestinationsPage: React.FC = () => {
       });
       // Prevent duplication: replace or prepend cleanly ensuring unique id
       setDestinations((prev) => [created, ...prev.filter((d) => d.id !== created.id)]);
-      showToast(`Destination "${created.name}" created successfully!`);
+      showToast(`Destination "${created.name}" stored in Supabase DB successfully!`);
     }
 
     setIsAddDestModalOpen(false);

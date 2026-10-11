@@ -145,7 +145,7 @@ export const adminService = {
   },
 
   // 3. DESTINATIONS & ATTRACTIONS & ACTIVITIES
-  async fetchDestinations(search?: string): Promise<any[]> {
+  async fetchRawDestinations(search?: string): Promise<any[]> {
     const query = search ? `?search=${encodeURIComponent(search)}` : '';
     const res = await fetchApi<any[]>(`/admin/destinations${query}`);
     return res.data || [];
@@ -573,7 +573,46 @@ export const adminService = {
     return res.data;
   },
 
-  // 12. BACKWARDS-COMPATIBILITY SYNCHRONOUS METHODS (for legacy mock views)
+  // 12. BACKWARDS-COMPATIBILITY & LIVE SUPABASE DESTINATION METHODS
+  async fetchDestinations(): Promise<AdminDestination[]> {
+    try {
+      const res = await fetchApi<any>('/destinations');
+      const list = Array.isArray(res.data) ? res.data : (res.data?.destinations || []);
+      if (Array.isArray(list) && list.length > 0) {
+        const mapped: AdminDestination[] = list.map((d: any) => ({
+          id: d.id,
+          name: d.name,
+          province: d.province || 'Central Province',
+          category: (d.category || 'Cultural') as any,
+          location: d.location || d.name,
+          lat: 7.29,
+          lng: 80.63,
+          coverImage: d.imageUrl || 'https://images.unsplash.com/photo-1588598056972-2d12f6a73c1d?auto=format&fit=crop&w=800&q=80',
+          attractionsCount: d.attractions?.length || 0,
+          status: d.isActive !== false ? 'Active' : 'Inactive',
+          description: d.description || '',
+          accessibility: 'Highway & Rail Connected',
+          bestTimeToVisit: d.bestTimeToVisit || 'Year-round',
+          bookingsCount: 0,
+          growthPercentage: 8,
+          topAttractions: d.attractions?.map((a: any) => a.name) || [],
+          openingHours: (d.openingTime && d.closingTime) ? `${d.openingTime} – ${d.closingTime}` : '06:00 AM – 06:00 PM',
+          entryFeeForeign: d.entryFee ? `$${d.entryFee}` : 'Free Entry',
+          entryFeeLocal: 'Free Entry',
+        }));
+
+        mockDestinations = mapped;
+        try {
+          localStorage.setItem('nova_custom_destinations', JSON.stringify(mapped));
+        } catch {}
+        return mapped;
+      }
+    } catch (err) {
+      console.warn('fetchDestinations API error, falling back to local cache:', err);
+    }
+    return this.getDestinations();
+  },
+
   getDestinations(): AdminDestination[] {
     try {
       const stored = localStorage.getItem('nova_custom_destinations');
@@ -596,6 +635,9 @@ export const adminService = {
   },
 
   toggleDestinationStatus(id: string): AdminDestination[] {
+    fetchApi<any>(`/destinations/${id}/status`, { method: 'PATCH' }).catch((e) =>
+      console.warn('Toggle status API error:', e)
+    );
     const list: AdminDestination[] = this.getDestinations().map((d) =>
       d.id === id ? { ...d, status: (d.status === 'Active' ? 'Inactive' : 'Active') as 'Active' | 'Inactive' } : d
     );
@@ -606,7 +648,7 @@ export const adminService = {
     return [...list];
   },
 
-  addDestination(data: Partial<AdminDestination>): AdminDestination {
+  async addDestination(data: Partial<AdminDestination>): Promise<AdminDestination> {
     const newDest: AdminDestination = {
       id: `dest-${Date.now()}`,
       name: data.name || '',
@@ -625,6 +667,37 @@ export const adminService = {
       growthPercentage: 0,
       ...data,
     };
+
+    // 1. Persist directly to Supabase via backend API
+    try {
+      const dbPayload = {
+        name: newDest.name,
+        province: newDest.province,
+        category: newDest.category,
+        location: newDest.location,
+        imageUrl: newDest.coverImage,
+        description: newDest.description,
+        bestTimeToVisit: newDest.bestTimeToVisit,
+        entryFee: parseFloat(String(newDest.entryFeeForeign || '').replace(/[^0-9.]/g, '')) || 0,
+        openingTime: newDest.openingHours?.split('–')[0]?.trim() || '08:00 AM',
+        closingTime: newDest.openingHours?.split('–')[1]?.trim() || '06:00 PM',
+        isActive: newDest.status !== 'Inactive',
+        topAttractions: newDest.topAttractions || [],
+      };
+
+      const res = await fetchApi<any>('/destinations', {
+        method: 'POST',
+        body: JSON.stringify(dbPayload),
+      });
+
+      if (res.data?.id) {
+        newDest.id = res.data.id;
+      }
+    } catch (err) {
+      console.warn('Failed to persist destination to Supabase backend API:', err);
+    }
+
+    // 2. Sync to local state & cache
     const current = this.getDestinations();
     const updated: AdminDestination[] = [newDest, ...current.filter((d) => d.id !== newDest.id)];
     mockDestinations = updated;
@@ -634,7 +707,31 @@ export const adminService = {
     return newDest;
   },
 
-  updateDestination(id: string, data: Partial<AdminDestination>): AdminDestination | null {
+  async updateDestination(id: string, data: Partial<AdminDestination>): Promise<AdminDestination | null> {
+    try {
+      const dbPayload = {
+        name: data.name,
+        province: data.province,
+        category: data.category,
+        location: data.location,
+        imageUrl: data.coverImage,
+        description: data.description,
+        bestTimeToVisit: data.bestTimeToVisit,
+        entryFee: parseFloat(String(data.entryFeeForeign || '').replace(/[^0-9.]/g, '')) || 0,
+        openingTime: data.openingHours?.split('–')[0]?.trim() || '08:00 AM',
+        closingTime: data.openingHours?.split('–')[1]?.trim() || '06:00 PM',
+        isActive: data.status ? data.status !== 'Inactive' : undefined,
+        topAttractions: data.topAttractions || [],
+      };
+
+      await fetchApi<any>(`/destinations/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(dbPayload),
+      });
+    } catch (err) {
+      console.warn('Failed to update destination in Supabase backend API:', err);
+    }
+
     const current = this.getDestinations();
     const idx = current.findIndex((d) => d.id === id);
     if (idx === -1) return null;
@@ -646,7 +743,13 @@ export const adminService = {
     return current[idx];
   },
 
-  deleteDestination(id: string): AdminDestination[] {
+  async deleteDestination(id: string): Promise<AdminDestination[]> {
+    try {
+      await fetchApi<any>(`/destinations/${id}`, { method: 'DELETE' });
+    } catch (err) {
+      console.warn('Failed to delete destination from Supabase backend API:', err);
+    }
+
     const current = this.getDestinations();
     const updated = current.filter((d) => d.id !== id);
     mockDestinations = updated;

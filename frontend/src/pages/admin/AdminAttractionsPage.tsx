@@ -202,7 +202,17 @@ export const AdminAttractionsPage: React.FC = () => {
         adminService.fetchDestinations(),
       ]);
       setAttractions(attrData);
-      setDestinations(destData);
+      setDestinations(
+        destData.map((d: any) => ({
+          id: d.id,
+          name: d.name,
+          description: d.description || '',
+          location: d.location || '',
+          province: d.province || '',
+          imageUrl: d.coverImage || d.imageUrl || '',
+          status: d.status || 'Active',
+        }))
+      );
       if (destData.length > 0 && !destId) {
         setDestId(destData[0].id);
       }

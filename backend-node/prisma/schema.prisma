@@ -1,4 +1,3 @@
-// Travel Link - PostgreSQL Prisma Schema
 generator client {
   provider = "prisma-client-js"
 }
@@ -8,378 +7,758 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Role {
-  USER
-  ADMIN
-}
-
-enum UserStatus {
-  ACTIVE
-  INACTIVE
-  PENDING
-}
-
-enum Province {
-  CENTRAL
-  SOUTHERN
-  WESTERN
-  NORTHERN
-  EASTERN
-  NORTH_CENTRAL
-  NORTH_WESTERN
-  SABARAGAMUWA
-  UVA
-}
-
-enum DestinationCategory {
-  BEACH
-  WILDLIFE
-  HERITAGE
-  ADVENTURE
-  NATURE
-  CULTURE
-  RELIGIOUS
-  HILL_COUNTRY
-  CITY
-}
-
-enum TourCategory {
-  CULTURAL
-  WILDLIFE
-  ADVENTURE
-  HERITAGE
-  BEACH
-  NATURE
-  HILL_COUNTRY
-}
-
-enum TripStatus {
-  DRAFT
-  PLANNED
-  COMPLETED
-  CANCELLED
-}
-
-enum TravelOption {
-  PUBLIC
-  PRIVATE
-  NONE
-}
-
-enum BookingStatus {
-  PENDING
-  CONFIRMED
-  CANCELLED
-  COMPLETED
-}
-
-enum PaymentStatus {
-  PAID
-  PENDING
-  REFUNDED
-}
-
 model User {
-  id           String     @id @default(uuid())
-  name         String
-  email        String     @unique
-  password     String     @map("password_hash")
-  role         Role       @default(USER)
-  profileImage String?    @map("profile_image")
-  phone        String?
-  bio          String?
-  location     String?
-  department   String?
-  status       UserStatus @default(ACTIVE)
-  createdAt    DateTime   @default(now()) @map("created_at")
-  updatedAt    DateTime   @updatedAt @map("updated_at")
-
-  trips            Trip[]
-  bookings         Booking[]
-  reviews          Review[]
-  chatSessions     ChatSession[]
-  chatbotPackages  UserChatbotPackage[]
+  id                        String                      @id(map: "pk_users") @default(uuid())
+  name                      String
+  email                     String                      @unique(map: "ix_users_email")
+  password                  String                      @map("password_hash")
+  role                      String
+  createdAt                 DateTime                    @map("created_at") @db.Timestamptz(6)
+  updatedAt                 DateTime                    @updatedAt @map("updated_at") @db.Timestamptz(6)
+  is_active                 Boolean                     @default(false)
+  status                    String?                     @default("ACTIVE")
+  phone                     String?
+  bio                       String?
+  location                  String?
+  profileImage              String?                     @map("profile_image")
+  must_change_password      Boolean?                    @default(false)
+  ai_chat_sessions          ai_chat_sessions[]
+  ai_photo_queries          ai_photo_queries[]
+  bookings                  Booking[]
+  chatbot_package_purchases chatbot_package_purchases[]
+  chatbot_payments          chatbot_payments[]
+  guides                    guides[]
+  promo_code_usages         promo_code_usages[]
+  promo_payments            promo_payments[]
+  review_helpful_votes      review_helpful_votes[]
+  reviews                   Review[]
+  trips                     Trip[]
 
   @@map("users")
 }
 
 model Destination {
-  id              String              @id @default(uuid())
-  name            String
-  slug            String              @unique
-  description     String              @db.Text
-  location        String
-  province        Province            @default(CENTRAL)
-  district        String?
-  imageUrl        String
-  category        DestinationCategory @default(HERITAGE)
-  rating          Float               @default(4.5)
-  reviewCount     Int                 @default(0)
-  entryFee        Float               @default(0.0)
-  openingTime     String?
-  closingTime     String?
-  bestTimeToVisit String?
-  isActive        Boolean             @default(true)
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
-
-  attractions Attraction[]
-  tours       TourDestination[]
-  trips       TripDestination[]
-  reviews     Review[]
+  id                 String            @id(map: "pk_destinations") @default(uuid())
+  name               String
+  slug               String            @unique(map: "ix_destinations_slug")
+  description        String
+  location           String
+  province           String
+  image_url          String
+  rating             Float
+  created_at         DateTime          @db.Timestamptz(6)
+  district           String?
+  category           String?
+  review_count       Int?              @default(0)
+  entry_fee          Float?            @default(0.0)
+  opening_time       String?
+  closing_time       String?
+  best_time_to_visit String?
+  is_active          Boolean?          @default(true)
+  updated_at         DateTime?         @default(now()) @db.Timestamptz(6)
+  activities         activities[]
+  attractions        Attraction[]
+  reviews            Review[]
+  trip_destinations  TripDestination[]
+  trips              Trip[]
 
   @@map("destinations")
 }
 
 model Attraction {
-  id             String      @id @default(uuid())
-  destinationId  String
-  destination    Destination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
-  name           String
-  description    String      @db.Text
-  imageUrl       String?
-  category       String?
-  entryFee       Float       @default(0.0)
-  openingTime    String?
-  closingTime    String?
-  latitude       Float?
-  longitude      Float?
-  durationHours  Float       @default(2.0)
-  pricePerPerson Float       @default(0.0)
-  rating         Float       @default(4.5)
-  reviewsCount   Int         @default(0)
-  isActive       Boolean     @default(true)
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
+  id                 String      @id(map: "pk_attractions") @default(uuid())
+  destination_id     String
+  name               String
+  description        String
+  location           String?     @default("")
+  opening_time       String
+  closing_time       String
+  estimated_duration String?     @default("2 Hours")
+  estimated_cost     Decimal?    @default(0.0) @db.Decimal
+  image_url          String?     @default("")
+  status             String
+  created_at         DateTime    @db.Timestamptz(6)
+  category           String?
+  entry_fee          Float?      @default(0.0)
+  latitude           Float?
+  longitude          Float?
+  duration_hours     Float?      @default(2.0)
+  rating             Float?      @default(4.5)
+  review_count       Int?        @default(0)
+  is_active          Boolean?    @default(true)
+  updated_at         DateTime?   @default(now()) @db.Timestamptz(6)
+  destinations       Destination @relation(fields: [destination_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_attractions_destinations_destination_id")
 
+  @@index([destination_id], map: "ix_attractions_destination_id")
   @@map("attractions")
 }
 
-model Tour {
-  id           String            @id @default(uuid())
-  title        String
-  slug         String            @unique
-  code         String            @unique
-  description  String            @db.Text
-  durationDays Int               @default(1)
-  price        Float
-  currency     String            @default("USD")
-  imageUrl     String?
-  maxGroupSize Int               @default(10)
-  category     TourCategory      @default(CULTURAL)
-  rating       Float             @default(4.8)
-  isActive     Boolean           @default(true)
-  createdById  String?
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
-
-  destinations TourDestination[]
-  itineraries  TourItinerary[]
-  bookings     Booking[]
-  reviews      Review[]
-
-  @@map("tours")
-}
-
-model TourDestination {
-  tourId        String
-  destinationId String
-  order         Int         @default(0)
-  tour          Tour        @relation(fields: [tourId], references: [id], onDelete: Cascade)
-  destination   Destination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
-
-  @@id([tourId, destinationId])
-  @@map("tour_destinations")
-}
-
-model TourItinerary {
-  id          String   @id @default(uuid())
-  tourId      String
-  tour        Tour     @relation(fields: [tourId], references: [id], onDelete: Cascade)
-  dayNumber   Int
-  title       String
-  description String   @db.Text
-  activities  String?  @db.Text
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@map("tour_itineraries")
-}
-
 model Trip {
-  id                String            @id @default(uuid())
-  userId            String
-  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title             String
-  description       String?           @db.Text
-  startDate         DateTime
-  endDate           DateTime
-  numberOfTravelers Int               @default(1)
-  budget            Float             @default(0.0)
-  transportRequired Boolean           @default(false)
-  status            TripStatus        @default(PLANNED)
-  aiScore           Float             @default(85.0)
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
+  id                             String                           @id(map: "pk_trips") @default(uuid())
+  user_id                        String
+  destination                    String?
+  destination_id                 String?
+  start_date                     DateTime                         @db.Timestamptz(6)
+  end_date                       DateTime                         @db.Timestamptz(6)
+  number_of_travelers            Int
+  budget                         Decimal                          @db.Decimal
+  interests                      String[]
+  trip_style                     String
+  status                         String
+  created_at                     DateTime                         @db.Timestamptz(6)
+  updated_at                     DateTime                         @db.Timestamptz(6)
+  created_source                 String                           @default("")
+  trip_name                      String                           @default("")
+  bookings                       Booking[]
+  itineraries                    itineraries[]
+  itinerary_generation_workflows itinerary_generation_workflows[]
+  transport_options              transport_options[]
+  trip_destinations              TripDestination[]
+  destinations                   Destination?                     @relation(fields: [destination_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_trips_destinations_destination_id")
+  users                          User                             @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_trips_users_user_id")
 
-  destinations TripDestination[]
-  itineraries  TripItinerary[]
-  bookings     Booking[]
-
+  @@index([destination_id], map: "ix_trips_destination_id")
+  @@index([user_id], map: "ix_trips_user_id")
   @@map("trips")
 }
 
 model TripDestination {
-  tripId        String
-  destinationId String
-  trip          Trip        @relation(fields: [tripId], references: [id], onDelete: Cascade)
-  destination   Destination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+  trip_id        String
+  destination_id String
+  destinations   Destination @relation(fields: [destination_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_trip_destinations_destinations_destination_id")
+  trips          Trip        @relation(fields: [trip_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_trip_destinations_trips_trip_id")
 
-  @@id([tripId, destinationId])
+  @@id([trip_id, destination_id], map: "pk_trip_destinations")
+  @@index([destination_id], map: "ix_trip_destinations_destination_id")
   @@map("trip_destinations")
 }
 
-model TripItinerary {
-  id            String    @id @default(uuid())
-  tripId        String
-  trip          Trip      @relation(fields: [tripId], references: [id], onDelete: Cascade)
-  destinationId String?
-  date          DateTime?
-  dayNumber     Int       @default(1)
-  timeSlot      String?
-  title         String
-  description   String?   @db.Text
-  activities    String?   @db.Text
-  notes         String?   @db.Text
-  type          String?
-  cost          Float     @default(0.0)
-  duration      String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  @@map("trip_itineraries")
-}
-
 model Booking {
-  id                   String        @id @default(uuid())
-  bookingRef           String        @unique
-  userId               String
-  user                 User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tourId               String?
-  tour                 Tour?         @relation(fields: [tourId], references: [id], onDelete: SetNull)
-  tripId               String?
-  trip                 Trip?         @relation(fields: [tripId], references: [id], onDelete: SetNull)
-  customerName         String
-  customerEmail        String
-  numberOfParticipants Int           @default(1)
-  startDate            DateTime
-  endDate              DateTime?
-  travelOption         TravelOption  @default(NONE)
-  transportRequired    Boolean       @default(false)
-  totalPrice           Float
-  paymentStatus        PaymentStatus @default(PENDING)
-  status               BookingStatus @default(PENDING)
-  createdAt            DateTime      @default(now())
-  updatedAt            DateTime      @updatedAt
+  id             String   @id(map: "pk_bookings") @default(uuid())
+  user_id        String
+  trip_id        String?
+  service_type   String
+  service_name   String
+  customer_name  String
+  customer_email String
+  amount         Decimal  @db.Decimal
+  status         String
+  booking_date   DateTime @db.Timestamptz(6)
+  notes          String?
+  created_at     DateTime @db.Timestamptz(6)
+  updated_at     DateTime @db.Timestamptz(6)
+  trips          Trip?    @relation(fields: [trip_id], references: [id], onUpdate: NoAction, map: "fk_bookings_trips_trip_id")
+  users          User     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_bookings_users_user_id")
 
+  @@index([trip_id], map: "ix_bookings_trip_id")
+  @@index([user_id], map: "ix_bookings_user_id")
   @@map("bookings")
 }
 
 model Review {
-  id            String       @id @default(uuid())
-  userId        String
-  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  destinationId String?
-  destination   Destination? @relation(fields: [destinationId], references: [id], onDelete: Cascade)
-  tourId        String?
-  tour          Tour?        @relation(fields: [tourId], references: [id], onDelete: Cascade)
-  rating        Int
-  comment       String       @db.Text
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  id                   String                 @id(map: "pk_reviews") @default(uuid())
+  user_id              String
+  destination_id       String
+  rating               Int
+  comment              String
+  sentiment_label      String?                @default("Positive")
+  sentiment_score      Float?                 @default(0.0)
+  status               String?                @default("Published")
+  created_at           DateTime               @db.Timestamptz(6)
+  updated_at           DateTime?              @default(now()) @db.Timestamptz(6)
+  review_helpful_votes review_helpful_votes[]
+  destinations         Destination            @relation(fields: [destination_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_reviews_destinations_destination_id")
+  users                User                   @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_reviews_users_user_id")
 
+  @@index([destination_id], map: "ix_reviews_destination_id")
+  @@index([user_id], map: "ix_reviews_user_id")
   @@map("reviews")
 }
 
 model TransportPartner {
-  id                  String   @id @default(uuid())
-  name                String
-  description         String   @db.Text
-  logo                String?
-  websiteUrl          String
-  appUrl              String?
-  discount            Float    @default(10.0)
-  discountDescription String
-  isActive            Boolean  @default(true)
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  id                   String  @id(map: "pk_transport_partners") @default(uuid())
+  name                 String
+  description          String
+  logo                 String?
+  website_url          String
+  discount             Float   @default(0.0)
+  discount_description String
+  is_active            Boolean @default(true)
 
   @@map("transport_partners")
 }
 
-enum ChatRole {
-  USER
-  ASSISTANT
-  SYSTEM
-}
-
-model ChatSession {
-  id        String        @id @default(uuid())
-  userId    String
-  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title     String        @default("New Conversation")
-  createdAt DateTime      @default(now()) @map("created_at")
-  updatedAt DateTime      @updatedAt @map("updated_at")
-
-  messages  ChatMessage[]
-
-  @@map("chat_sessions")
-}
-
-model ChatMessage {
-  id          String      @id @default(uuid())
-  sessionId   String
-  session     ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  userId      String
-  role        ChatRole    @default(USER)
-  content     String      @db.Text
-  imageBase64 String?     @db.Text
-  imageMime   String?
-  createdAt   DateTime    @default(now()) @map("created_at")
-
-  @@map("chat_messages")
-}
-
 model ChatbotPackage {
-  id                   String               @id @default(uuid())
-  name                 String
-  description          String               @db.Text
-  price                Float                @default(0.0)
-  questionLimit        Int                  @default(20)
-  durationDays         Int                  @default(30)
-  status               String               @default("Active") // "Active" | "Inactive"
-  includesPhotoQueries Boolean              @default(true)
-  createdAt            DateTime             @default(now()) @map("created_at")
-  updatedAt            DateTime             @updatedAt @map("updated_at")
-
-  purchases            UserChatbotPackage[]
+  id                        String                      @id(map: "pk_chatbot_packages") @default(uuid())
+  name                      String
+  description               String
+  price                     Decimal                     @db.Decimal
+  question_limit            Int
+  duration_days             Int
+  status                    String
+  includes_photo_queries    Boolean
+  createdAt                 DateTime                    @map("created_at") @db.Timestamptz(6)
+  ai_chat_sessions          ai_chat_sessions[]
+  chatbot_package_purchases chatbot_package_purchases[]
 
   @@map("chatbot_packages")
 }
 
-model UserChatbotPackage {
-  id               String         @id @default(uuid())
-  userId           String
-  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  packageId        String
-  package          ChatbotPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
-  remainingQueries Int
-  totalQueries     Int
-  price            Float          @default(0.0)
-  status           String         @default("Active") // "Active" | "Expired" | "Exhausted"
-  expiresAt        DateTime?
-  createdAt        DateTime       @default(now()) @map("created_at")
-  updatedAt        DateTime       @updatedAt @map("updated_at")
+model EFMigrationsHistory {
+  migration_id    String @id(map: "pk___ef_migrations_history") @db.VarChar(150)
+  product_version String @db.VarChar(32)
 
-  @@map("user_chatbot_packages")
+  @@map("__EFMigrationsHistory")
+}
+
+model activities {
+  id               String                  @id(map: "pk_activities")
+  destination_id   String
+  name             String
+  description      String
+  category         String
+  cost_per_person  Decimal                 @db.Decimal
+  duration_minutes Int
+  opening_time     Unsupported("interval")
+  closing_time     Unsupported("interval")
+  latitude         Float?
+  longitude        Float?
+  image_url        String?
+  destinations     Destination             @relation(fields: [destination_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_activities_destinations_destination_id")
+  itinerary_items  itinerary_items[]
+
+  @@index([destination_id], map: "ix_activities_destination_id")
+}
+
+model ai_chat_sessions {
+  id               String          @id(map: "pk_ai_chat_sessions")
+  user_id          String
+  package_id       String?
+  topic            String
+  query_count      Int
+  status           String
+  started_at       DateTime        @db.Timestamptz(6)
+  last_activity_at DateTime        @db.Timestamptz(6)
+  chatbot_packages ChatbotPackage? @relation(fields: [package_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_ai_chat_sessions_chatbot_packages_package_id")
+  users            User            @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_ai_chat_sessions_users_user_id")
+
+  @@index([package_id], map: "ix_ai_chat_sessions_package_id")
+  @@index([user_id], map: "ix_ai_chat_sessions_user_id")
+}
+
+model ai_photo_queries {
+  id               String   @id(map: "pk_ai_photo_queries")
+  user_id          String
+  destination_name String
+  category         String
+  is_success       Boolean
+  latency_ms       Int
+  error_message    String?
+  query_date       DateTime @db.Timestamptz(6)
+  users            User     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_ai_photo_queries_users_user_id")
+
+  @@index([user_id], map: "ix_ai_photo_queries_user_id")
+}
+
+model bus_routes {
+  id             String   @id(map: "pk_bus_routes")
+  bus_number     String
+  route_name     String
+  origin         String
+  destination    String
+  departure_time String
+  arrival_time   String
+  operating_days String
+  fare           Decimal  @db.Decimal
+  status         String
+  created_at     DateTime @db.Timestamptz(6)
+}
+
+model chatbot_package_purchases {
+  id                String             @id(map: "pk_chatbot_package_purchases")
+  user_id           String
+  package_id        String
+  price             Decimal            @db.Decimal
+  remaining_queries Int
+  purchase_date     DateTime           @db.Timestamptz(6)
+  expiry_date       DateTime           @db.Timestamptz(6)
+  status            String
+  chatbot_packages  ChatbotPackage     @relation(fields: [package_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_chatbot_package_purchases_chatbot_packages_package_id")
+  users             User               @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_chatbot_package_purchases_users_user_id")
+  chatbot_payments  chatbot_payments[]
+
+  @@index([package_id], map: "ix_chatbot_package_purchases_package_id")
+  @@index([user_id], map: "ix_chatbot_package_purchases_user_id")
+}
+
+model chatbot_payments {
+  id                        String                    @id(map: "pk_chatbot_payments")
+  purchase_id               String
+  user_id                   String
+  package_name              String
+  amount                    Decimal                   @db.Decimal
+  payment_method            String
+  masked_card_number        String
+  transaction_reference     String
+  status                    String
+  created_at                DateTime                  @db.Timestamptz(6)
+  chatbot_package_purchases chatbot_package_purchases @relation(fields: [purchase_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_chatbot_payments_chatbot_package_purchases_purchase_id")
+  users                     User                      @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_chatbot_payments_users_user_id")
+
+  @@index([purchase_id], map: "ix_chatbot_payments_purchase_id")
+  @@index([user_id], map: "ix_chatbot_payments_user_id")
+}
+
+model guide_availabilities {
+  availability_id Int      @id(map: "pk_guide_availabilities") @default(autoincrement())
+  guide_id        Int
+  available_date  DateTime @db.Date
+  start_time      DateTime @db.Time(6)
+  end_time        DateTime @db.Time(6)
+  is_booked       Boolean
+  guides          guides   @relation(fields: [guide_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_guide_availabilities_guides_guide_id")
+
+  @@index([guide_id], map: "ix_guide_availabilities_guide_id")
+}
+
+model guide_blocked_dates {
+  id         Int       @id @default(autoincrement())
+  guide_id   Int
+  start_date DateTime  @db.Date
+  end_date   DateTime  @db.Date
+  reason     String?
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+model guide_booking_destinations {
+  booking_id       String @db.VarChar(20)
+  destination_id   String
+  destination_name String
+
+  @@id([booking_id, destination_id], map: "pk_guide_booking_destinations")
+}
+
+model guide_booking_events {
+  id         BigInt    @id @default(autoincrement())
+  booking_id String?   @db.VarChar(20)
+  guide_id   Int?
+  actor_id   String?
+  actor_role String    @default("System")
+  event_type String
+  details    String?
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+model guide_bookings {
+  id                  String    @id @db.VarChar(20)
+  guide_id            Int
+  customer_id         String
+  customer_name       String
+  customer_email      String
+  customer_phone      String?
+  start_date          DateTime  @db.Date
+  end_date            DateTime  @db.Date
+  start_time          DateTime  @db.Time(6)
+  end_time            DateTime  @db.Time(6)
+  travelers           Int       @default(1)
+  pickup_location     String?
+  preferred_language  String?
+  special_requests    String?
+  status              String    @default("PendingPayment")
+  subtotal            Decimal   @default(0.0) @db.Decimal(12, 2)
+  service_fee         Decimal   @default(0.0) @db.Decimal(12, 2)
+  total_amount        Decimal   @default(0.0) @db.Decimal(12, 2)
+  commission_amount   Decimal   @default(0.0) @db.Decimal(12, 2)
+  guide_net_amount    Decimal   @default(0.0) @db.Decimal(12, 2)
+  currency            String    @default("USD") @db.VarChar(3)
+  billable_days       Int       @default(1)
+  pricing_breakdown   String?
+  hold_expires_at     DateTime? @db.Timestamptz(6)
+  confirmed_at        DateTime? @db.Timestamptz(6)
+  guide_decision_at   DateTime? @db.Timestamptz(6)
+  completed_at        DateTime? @db.Timestamptz(6)
+  cancelled_at        DateTime? @db.Timestamptz(6)
+  cancelled_by        String?
+  cancellation_reason String?
+  reminder_sent_at    DateTime? @db.Timestamptz(6)
+  refund_status       String    @default("None")
+  refund_amount       Decimal   @default(0.0) @db.Decimal(12, 2)
+  idempotency_key     String?
+  created_at          DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+model guide_destinations {
+  guide_id       Int
+  destination_id String
+
+  @@id([guide_id, destination_id], map: "pk_guide_destinations")
+}
+
+model guide_payments {
+  id                         String    @id
+  booking_id                 String    @db.VarChar(20)
+  provider                   String    @default("Stripe") @db.VarChar(30)
+  provider_session_id        String?
+  provider_payment_intent_id String?
+  transaction_reference      String?
+  payment_method             String?
+  checkout_url               String?
+  amount                     Decimal   @default(0.0) @db.Decimal(12, 2)
+  currency                   String    @default("USD") @db.VarChar(3)
+  status                     String    @default("Initiated")
+  failure_reason             String?
+  created_at                 DateTime? @default(now()) @db.Timestamptz(6)
+  paid_at                    DateTime? @db.Timestamptz(6)
+  refunded_at                DateTime? @db.Timestamptz(6)
+  refund_reference           String?
+  refunded_amount            Decimal   @default(0.0) @db.Decimal(12, 2)
+}
+
+model guide_payouts {
+  id                   String    @id
+  booking_id           String    @db.VarChar(20)
+  guide_id             Int
+  gross_amount         Decimal   @default(0.0) @db.Decimal(12, 2)
+  commission_amount    Decimal   @default(0.0) @db.Decimal(12, 2)
+  net_amount           Decimal   @default(0.0) @db.Decimal(12, 2)
+  currency             String    @default("USD") @db.VarChar(3)
+  status               String    @default("Pending")
+  payout_reference     String?
+  payout_method        String?
+  processed_by_user_id String?
+  notes                String?
+  paid_at              DateTime? @db.Timestamptz(6)
+  created_at           DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+model guide_working_hours {
+  id          Int      @id @default(autoincrement())
+  guide_id    Int
+  day_of_week Int
+  start_time  DateTime @db.Time(6)
+  end_time    DateTime @db.Time(6)
+}
+
+model guides {
+  id                   Int                    @id(map: "pk_guides") @default(autoincrement())
+  provider_id          String
+  name                 String
+  email                String
+  phone                String?
+  bio                  String?
+  languages            String[]
+  specialties          String[]
+  years_experience     Int?
+  verification_status  String
+  rating_avg           Decimal                @db.Decimal
+  rating_count         Int
+  tours_completed      Int
+  avatar_url           String?
+  is_active            Boolean
+  created_at           DateTime               @db.Timestamptz(6)
+  updated_at           DateTime               @db.Timestamptz(6)
+  date_of_birth        DateTime?              @db.Date
+  gender               String?
+  show_age_publicly    Boolean?               @default(false)
+  qualifications       String?
+  hourly_rate          Decimal?               @default(0.0) @db.Decimal(12, 2)
+  half_day_rate        Decimal?               @default(0.0) @db.Decimal(12, 2)
+  full_day_rate        Decimal?               @default(0.0) @db.Decimal(12, 2)
+  accepting_bookings   Boolean?               @default(true)
+  is_archived          Boolean?               @default(false)
+  archived_at          DateTime?              @db.Timestamptz(6)
+  payout_account_note  String?
+  guide_availabilities guide_availabilities[]
+  users                User                   @relation(fields: [provider_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_guides_users_provider_id")
+  tour_operations      tour_operations[]
+  tour_packages        tour_packages[]
+
+  @@index([provider_id], map: "ix_guides_provider_id")
+}
+
+model itineraries {
+  id                   String                @id(map: "pk_itineraries")
+  trip_id              String
+  title                String
+  status               String
+  total_estimated_cost Decimal               @db.Decimal
+  feasibility_score    Float?
+  approved_by_user_id  String?
+  approved_at          DateTime?             @db.Timestamptz(6)
+  approval_comments    String?
+  created_at           DateTime              @db.Timestamptz(6)
+  updated_at           DateTime              @db.Timestamptz(6)
+  created_source       String                @default("")
+  trips                Trip                  @relation(fields: [trip_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_itineraries_trips_trip_id")
+  itinerary_approvals  itinerary_approvals[]
+  itinerary_days       itinerary_days[]
+
+  @@index([trip_id], map: "ix_itineraries_trip_id")
+}
+
+model itinerary_approvals {
+  id                  String      @id(map: "pk_itinerary_approvals")
+  itinerary_id        String
+  approved_by_user_id String
+  action              String
+  previous_status     String
+  new_status          String
+  comments            String
+  timestamp           DateTime    @db.Timestamptz(6)
+  itineraries         itineraries @relation(fields: [itinerary_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_itinerary_approvals_itineraries_itinerary_id")
+
+  @@index([itinerary_id], map: "ix_itinerary_approvals_itinerary_id")
+}
+
+model itinerary_days {
+  id              String            @id(map: "pk_itinerary_days")
+  itinerary_id    String
+  date            DateTime          @db.Timestamptz(6)
+  day_number      Int
+  title           String
+  location        String
+  itineraries     itineraries       @relation(fields: [itinerary_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_itinerary_days_itineraries_itinerary_id")
+  itinerary_items itinerary_items[]
+
+  @@index([itinerary_id], map: "ix_itinerary_days_itinerary_id")
+}
+
+model itinerary_generation_workflows {
+  id                  String                @id(map: "pk_itinerary_generation_workflows")
+  trip_id             String
+  status              String
+  current_step        String
+  constraints_json    String
+  error_message       String?
+  created_at          DateTime              @db.Timestamptz(6)
+  updated_at          DateTime              @db.Timestamptz(6)
+  trips               Trip                  @relation(fields: [trip_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_itinerary_generation_workflows_trips_trip_id")
+  workflow_audit_logs workflow_audit_logs[]
+
+  @@index([trip_id], map: "ix_itinerary_generation_workflows_trip_id")
+}
+
+model itinerary_items {
+  id                  String                  @id(map: "pk_itinerary_items")
+  itinerary_day_id    String
+  activity_id         String?
+  activity_name       String
+  location            String
+  start_time          Unsupported("interval")
+  end_time            Unsupported("interval")
+  duration_minutes    Int
+  estimated_cost      Decimal                 @db.Decimal
+  travel_time_minutes Int
+  notes               String?
+  sequence_order      Int
+  activities          activities?             @relation(fields: [activity_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_itinerary_items_activities_activity_id")
+  itinerary_days      itinerary_days          @relation(fields: [itinerary_day_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_itinerary_items_itinerary_days_itinerary_day_id")
+  transport_options   transport_options?
+
+  @@index([activity_id], map: "ix_itinerary_items_activity_id")
+  @@index([itinerary_day_id], map: "ix_itinerary_items_itinerary_day_id")
+}
+
+model notifications {
+  id                 String    @id
+  user_id            String
+  type               String    @db.VarChar(50)
+  title              String    @db.VarChar(200)
+  message            String    @db.VarChar(1000)
+  related_booking_id String?
+  is_read            Boolean   @default(false)
+  created_at         DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+model payment_webhook_events {
+  id                BigInt    @id @default(autoincrement())
+  provider          String    @db.VarChar(30)
+  provider_event_id String
+  event_type        String
+  processed_at      DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+model promo_code_usages {
+  id               String      @id(map: "pk_promo_code_usages")
+  promo_code_id    String
+  user_id          String
+  trip_id          String?
+  discount_applied Decimal     @db.Decimal
+  used_at          DateTime    @db.Timestamptz(6)
+  promo_codes      promo_codes @relation(fields: [promo_code_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_promo_code_usages_promo_codes_promo_code_id")
+  users            User        @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_promo_code_usages_users_user_id")
+
+  @@index([promo_code_id], map: "ix_promo_code_usages_promo_code_id")
+  @@index([user_id], map: "ix_promo_code_usages_user_id")
+}
+
+model promo_codes {
+  id                String              @id(map: "pk_promo_codes")
+  code              String              @unique(map: "ix_promo_codes_code")
+  discount_type     String
+  discount_value    Decimal             @db.Decimal
+  start_date        DateTime            @db.Timestamptz(6)
+  end_date          DateTime            @db.Timestamptz(6)
+  usage_limit       Int
+  times_used        Int
+  is_active         Boolean
+  description       String
+  partner           String
+  created_at        DateTime            @db.Timestamptz(6)
+  promo_code_usages promo_code_usages[]
+  promo_payments    promo_payments[]
+}
+
+model promo_payments {
+  id                    String       @id(map: "pk_promo_payments")
+  promo_code_id         String?
+  user_id               String
+  promo_code            String
+  amount_paid           Decimal      @db.Decimal
+  payment_method        String
+  masked_card_number    String
+  transaction_reference String
+  status                String
+  promo_code_status     String
+  created_at            DateTime     @db.Timestamptz(6)
+  promo_codes           promo_codes? @relation(fields: [promo_code_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_promo_payments_promo_codes_promo_code_id")
+  users                 User         @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_promo_payments_users_user_id")
+
+  @@index([promo_code_id], map: "ix_promo_payments_promo_code_id")
+  @@index([user_id], map: "ix_promo_payments_user_id")
+}
+
+model recommendation_settings {
+  id                       Int      @id(map: "pk_recommendation_settings") @default(autoincrement())
+  interest_weight          Decimal  @db.Decimal
+  rating_weight            Decimal  @db.Decimal
+  budget_weight            Decimal  @db.Decimal
+  distance_weight          Decimal  @db.Decimal
+  popularity_weight        Decimal  @db.Decimal
+  history_weight           Decimal  @db.Decimal
+  min_review_count_to_rank Int
+  updated_at               DateTime @db.Timestamptz(6)
+  updated_by               String   @db.VarChar(100)
+}
+
+model review_helpful_votes {
+  review_id  String
+  tourist_id String
+  reviews    Review @relation(fields: [review_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_review_helpful_votes_reviews_review_id")
+  users      User   @relation(fields: [tourist_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_review_helpful_votes_users_tourist_id")
+
+  @@id([review_id, tourist_id], map: "pk_review_helpful_votes")
+  @@index([tourist_id], map: "ix_review_helpful_votes_tourist_id")
+}
+
+model system_activities {
+  id            String   @id(map: "pk_system_activities")
+  activity_type String
+  description   String
+  actor_name    String
+  actor_role    String
+  severity      String
+  timestamp     DateTime @db.Timestamptz(6)
+}
+
+model tour_operations {
+  tour_operation_id  Int           @id(map: "pk_tour_operations") @default(autoincrement())
+  tour_package_id    Int
+  guide_id           Int
+  scheduled_date     DateTime      @db.Timestamptz(6)
+  number_of_tourists Int
+  total_cost         Decimal       @db.Decimal(18, 2)
+  status             String
+  notes              String        @db.VarChar(500)
+  created_at         DateTime      @db.Timestamptz(6)
+  guides             guides        @relation(fields: [guide_id], references: [id], onUpdate: NoAction, map: "fk_tour_operations_guides_guide_id")
+  tour_packages      tour_packages @relation(fields: [tour_package_id], references: [tour_package_id], onUpdate: NoAction, map: "fk_tour_operations_tour_packages_tour_package_id")
+
+  @@index([guide_id], map: "ix_tour_operations_guide_id")
+  @@index([tour_package_id], map: "ix_tour_operations_tour_package_id")
+}
+
+model tour_packages {
+  tour_package_id Int               @id(map: "pk_tour_packages") @default(autoincrement())
+  guide_id        Int
+  package_name    String            @db.VarChar(150)
+  description     String            @db.VarChar(1000)
+  destination     String            @db.VarChar(100)
+  duration_days   Int
+  price           Decimal           @db.Decimal(18, 2)
+  max_group_size  Int
+  is_active       Boolean
+  image_url       String?           @db.VarChar(1000)
+  created_at      DateTime          @db.Timestamptz(6)
+  tour_operations tour_operations[]
+  guides          guides            @relation(fields: [guide_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_tour_packages_guides_guide_id")
+
+  @@index([guide_id], map: "ix_tour_packages_guide_id")
+}
+
+model train_schedules {
+  id             String   @id(map: "pk_train_schedules")
+  train_number   String
+  train_name     String
+  origin         String
+  destination    String
+  departure_time String
+  arrival_time   String
+  train_type     String
+  operating_days String
+  fare           Decimal  @db.Decimal
+  status         String
+  created_at     DateTime @db.Timestamptz(6)
+}
+
+model transport_options {
+  id                 String           @id(map: "pk_transport_options")
+  trip_id            String?
+  itinerary_item_id  String?          @unique(map: "ix_transport_options_itinerary_item_id")
+  transport_type     String
+  origin             String
+  destination        String
+  travel_date        DateTime         @db.Timestamptz(6)
+  departure_time     String
+  arrival_time       String
+  duration_minutes   Int
+  route_number       String?
+  route_name         String?
+  direction          String?
+  intermediate_stops String[]
+  train_name         String?
+  train_number       String?
+  departure_station  String?
+  arrival_station    String?
+  train_type         String?
+  estimated_fare     Decimal?         @db.Decimal
+  source             String?          @default("SYSTEM")
+  retrieved_at       DateTime?        @default(now()) @db.Timestamptz(6)
+  is_selected        Boolean
+  created_at         DateTime         @db.Timestamptz(6)
+  provider           String?
+  vehicle_type       String?
+  estimated_cost     Decimal?         @db.Decimal
+  status             String?
+  updated_at         DateTime?        @db.Timestamptz(6)
+  itinerary_items    itinerary_items? @relation(fields: [itinerary_item_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_transport_options_itinerary_items_itinerary_item_id")
+  trips              Trip?            @relation(fields: [trip_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_transport_options_trips_trip_id")
+
+  @@index([origin, destination, travel_date], map: "ix_transport_options_origin_destination_travel_date")
+  @@index([trip_id], map: "ix_transport_options_trip_id")
+}
+
+model workflow_audit_logs {
+  id                             String                         @id(map: "pk_workflow_audit_logs")
+  workflow_id                    String
+  action                         String
+  actor                          String
+  timestamp                      DateTime                       @db.Timestamptz(6)
+  status                         String
+  details                        String
+  itinerary_generation_workflows itinerary_generation_workflows @relation(fields: [workflow_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_workflow_audit_logs_itinerary_generation_workflows_workflow")
+
+  @@index([workflow_id], map: "ix_workflow_audit_logs_workflow_id")
 }

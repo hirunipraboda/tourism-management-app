@@ -294,7 +294,10 @@ public class TripService : ITripService
 
     private static bool IsRestrictedUser(string userRole) =>
         !userRole.Equals(UserRole.Admin.ToString(), StringComparison.OrdinalIgnoreCase) &&
-        !userRole.Equals("ADMIN", StringComparison.OrdinalIgnoreCase);
+        !userRole.Equals("ADMIN", StringComparison.OrdinalIgnoreCase) &&
+        !userRole.Equals(UserRole.TourismOperator.ToString(), StringComparison.OrdinalIgnoreCase) &&
+        !userRole.Equals("OPERATOR", StringComparison.OrdinalIgnoreCase) &&
+        !userRole.Equals("TourismOperator", StringComparison.OrdinalIgnoreCase);
 
     private static TripResponse MapToResponse(Trip trip)
     {
@@ -313,7 +316,7 @@ public class TripService : ITripService
             Budget = trip.Budget,
             Interests = trip.Interests,
             TripStyle = trip.TripStyle,
-            Status = timelineStatus,
+            Status = trip.Status.ToString(),
             CalculatedStatus = timelineStatus,
             TimelineLabel = timelineLabel,
             CreatedSource = trip.CreatedSource ?? "USER",

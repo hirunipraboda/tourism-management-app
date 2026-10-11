@@ -216,6 +216,7 @@ public class TripServiceTests
             new Trip
             {
                 UserId = _touristId,
+                TripName = "Sigiriya Ancient Ruins",
                 Destination = "Sigiriya",
                 StartDate = DateTime.UtcNow.AddDays(1),
                 EndDate = DateTime.UtcNow.AddDays(3),
@@ -226,6 +227,7 @@ public class TripServiceTests
             new Trip
             {
                 UserId = _touristId,
+                TripName = "Sigiriya Heritage Trail",
                 Destination = "Sigiriya",
                 StartDate = DateTime.UtcNow.AddDays(5),
                 EndDate = DateTime.UtcNow.AddDays(7),
@@ -236,6 +238,7 @@ public class TripServiceTests
             new Trip
             {
                 UserId = _touristId,
+                TripName = "Galle Coastal Escapade",
                 Destination = "Galle",
                 StartDate = DateTime.UtcNow.AddDays(10),
                 EndDate = DateTime.UtcNow.AddDays(12),

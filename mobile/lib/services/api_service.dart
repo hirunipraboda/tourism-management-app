@@ -114,7 +114,9 @@ class ApiService {
     required String name,
     required String email,
     required String password,
+    String? confirmPassword,
     String? phone,
+    String? location,
   }) async {
     try {
       final res = await postWithFallback(
@@ -124,7 +126,10 @@ class ApiService {
           'name': name.trim(),
           'email': email.trim(),
           'password': password,
+          if (confirmPassword != null && confirmPassword.isNotEmpty)
+            'confirmPassword': confirmPassword,
           if (phone != null && phone.isNotEmpty) 'phone': phone.trim(),
+          if (location != null && location.isNotEmpty) 'location': location.trim(),
         }),
       );
 
@@ -139,9 +144,17 @@ class ApiService {
           'user': currentUser,
         };
       } else {
+        String? errMsg = body['message'];
+        if (errMsg == null && body['errors'] != null && body['errors'] is Map) {
+          final errs = (body['errors'] as Map)
+              .values
+              .expand((v) => v is List ? v : [v])
+              .join(', ');
+          if (errs.isNotEmpty) errMsg = errs;
+        }
         return {
           'success': false,
-          'message': body['message'] ?? 'Registration failed',
+          'message': errMsg ?? body['title'] ?? 'Registration failed',
         };
       }
     } catch (e) {

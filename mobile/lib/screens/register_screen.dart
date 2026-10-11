@@ -16,6 +16,7 @@ class _RegisterScreenState extends State<RegisterScreen>
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _locationController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   bool _obscurePassword = true;
@@ -50,6 +51,7 @@ class _RegisterScreenState extends State<RegisterScreen>
     _nameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
+    _locationController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
@@ -63,7 +65,9 @@ class _RegisterScreenState extends State<RegisterScreen>
       name: _nameController.text.trim(),
       email: _emailController.text.trim(),
       password: _passwordController.text,
+      confirmPassword: _confirmPasswordController.text,
       phone: _phoneController.text.trim(),
+      location: _locationController.text.trim(),
     );
 
     if (mounted) {
@@ -235,6 +239,14 @@ class _RegisterScreenState extends State<RegisterScreen>
                                   hint: '+94 77 123 4567',
                                   icon: Icons.phone_outlined,
                                   keyboardType: TextInputType.phone,
+                                ),
+                                const SizedBox(height: 18),
+                                _buildLabel('Location / Country (Optional)'),
+                                const SizedBox(height: 8),
+                                _buildTextField(
+                                  controller: _locationController,
+                                  hint: 'e.g. Colombo, Sri Lanka',
+                                  icon: Icons.location_on_outlined,
                                 ),
                                 const SizedBox(height: 18),
                                 _buildLabel('Password'),

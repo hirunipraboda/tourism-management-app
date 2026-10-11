@@ -373,6 +373,50 @@ class _LoginScreenState extends State<LoginScreen>
                                           ),
                                   ),
                                 ),
+                                const SizedBox(height: 12),
+
+                                // Create Account button
+                                SizedBox(
+                                  width: double.infinity,
+                                  height: 50,
+                                  child: OutlinedButton.icon(
+                                    key: const ValueKey('create_account_button'),
+                                    onPressed: _isLoading
+                                        ? null
+                                        : () {
+                                            Navigator.of(context).push(
+                                              MaterialPageRoute(
+                                                builder: (_) => const RegisterScreen(),
+                                              ),
+                                            );
+                                          },
+                                    icon: const Icon(
+                                      Icons.person_add_alt_1_rounded,
+                                      color: Colors.white,
+                                      size: 19,
+                                    ),
+                                    label: Text(
+                                      'Create Account',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    style: OutlinedButton.styleFrom(
+                                      side: BorderSide(
+                                        color: Colors.white.withValues(alpha: 0.35),
+                                        width: 1.5,
+                                      ),
+                                      backgroundColor:
+                                          Colors.white.withValues(alpha: 0.08),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(14),
+                                      ),
+                                    ),
+                                  ),
+                                ),
                                 const SizedBox(height: 14),
 
                                 // Dedicated Guide Portal Quick Sign-In Option

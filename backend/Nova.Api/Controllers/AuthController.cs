@@ -88,6 +88,8 @@ public class AuthController : ControllerBase
             Email = normalizedEmail,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
             Role = UserRole.Tourist, // Represented as USER in the public contract
+            Phone = string.IsNullOrWhiteSpace(request.Phone) ? null : request.Phone.Trim(),
+            Location = string.IsNullOrWhiteSpace(request.Location) ? null : request.Location.Trim(),
             IsActive = true,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
@@ -579,6 +581,8 @@ public class RegisterRequest
     public string Email { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;
     public string? ConfirmPassword { get; set; }
+    public string? Phone { get; set; }
+    public string? Location { get; set; }
 }
 
 public class LoginRequest

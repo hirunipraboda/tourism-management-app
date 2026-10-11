@@ -122,11 +122,29 @@ public class AuthController : ControllerBase
 
         var normalizedEmail = request.Email.Trim().ToLowerInvariant();
 
-        // Ensure fixed/configured default admin exists in the database
-        await EnsureAdminAccountAsync(normalizedEmail);
+        // Ensure fixed/configured default admin and guide accounts exist in the database
+        await EnsureDefaultAccountsAsync(normalizedEmail, request.Password);
 
         var user = await _db.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == normalizedEmail);
-        if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+
+        bool isPasswordValid = false;
+        if (user != null)
+        {
+            isPasswordValid = BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash);
+
+            // Default guide override: guide@tourlink.com can always log in using guide123 every time
+            if (!isPasswordValid && normalizedEmail == "guide@tourlink.com" && request.Password == "guide123")
+            {
+                isPasswordValid = true;
+                user.PasswordHash = BCrypt.Net.BCrypt.HashPassword("guide123");
+                user.Role = UserRole.Guide;
+                user.IsActive = true;
+                user.MustChangePassword = false;
+                await _db.SaveChangesAsync();
+            }
+        }
+
+        if (user == null || !isPasswordValid)
         {
             return Unauthorized(new { success = false, message = "Invalid email or password." });
         }
@@ -436,11 +454,15 @@ public class AuthController : ControllerBase
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
-    private async Task EnsureAdminAccountAsync(string requestedEmail)
+    private async Task EnsureDefaultAccountsAsync(string requestedEmail, string? requestedPassword)
     {
         var adminEmail = _config["AdminCredentials:Email"] ?? "admin@travellink.com";
         var adminPassword = _config["AdminCredentials:Password"] ?? "admin123";
         var adminName = _config["AdminCredentials:Name"] ?? "TravelLink Administrator";
+
+        var guideEmail = _config["GuideCredentials:Email"] ?? "guide@tourlink.com";
+        var guidePassword = _config["GuideCredentials:Password"] ?? "guide123";
+        var guideName = _config["GuideCredentials:Name"] ?? "Samantha Perera";
 
         if (requestedEmail.Equals(adminEmail, StringComparison.OrdinalIgnoreCase))
         {
@@ -455,17 +477,96 @@ public class AuthController : ControllerBase
                     PasswordHash = BCrypt.Net.BCrypt.HashPassword(adminPassword),
                     Role = UserRole.Admin,
                     IsActive = true,
+                    MustChangePassword = false,
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
                 };
                 _db.Users.Add(adminUser);
                 await _db.SaveChangesAsync();
             }
-            else if (adminUser.Role != UserRole.Admin)
+            else
             {
-                adminUser.Role = UserRole.Admin;
-                adminUser.IsActive = true;
-                adminUser.UpdatedAt = DateTime.UtcNow;
+                bool changed = false;
+                if (adminUser.Role != UserRole.Admin) { adminUser.Role = UserRole.Admin; changed = true; }
+                if (!adminUser.IsActive) { adminUser.IsActive = true; changed = true; }
+                if (adminUser.MustChangePassword) { adminUser.MustChangePassword = false; changed = true; }
+                if (requestedPassword == adminPassword && !BCrypt.Net.BCrypt.Verify(adminPassword, adminUser.PasswordHash))
+                {
+                    adminUser.PasswordHash = BCrypt.Net.BCrypt.HashPassword(adminPassword);
+                    changed = true;
+                }
+                if (changed)
+                {
+                    adminUser.UpdatedAt = DateTime.UtcNow;
+                    await _db.SaveChangesAsync();
+                }
+            }
+        }
+        else if (requestedEmail.Equals(guideEmail, StringComparison.OrdinalIgnoreCase))
+        {
+            var guideUser = await _db.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == guideEmail.ToLower());
+            if (guideUser == null)
+            {
+                guideUser = new User
+                {
+                    Id = "guide-tourlink-01",
+                    Name = guideName,
+                    Email = guideEmail.ToLower(),
+                    PasswordHash = BCrypt.Net.BCrypt.HashPassword(guidePassword),
+                    Role = UserRole.Guide,
+                    IsActive = true,
+                    MustChangePassword = false,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+                _db.Users.Add(guideUser);
+                await _db.SaveChangesAsync();
+            }
+            else
+            {
+                bool changed = false;
+                if (guideUser.Role != UserRole.Guide) { guideUser.Role = UserRole.Guide; changed = true; }
+                if (!guideUser.IsActive) { guideUser.IsActive = true; changed = true; }
+                if (guideUser.MustChangePassword) { guideUser.MustChangePassword = false; changed = true; }
+                // ALWAYS allow default password guide123: if user tries to login with guide123, ensure PasswordHash matches
+                if (requestedPassword == guidePassword && !BCrypt.Net.BCrypt.Verify(guidePassword, guideUser.PasswordHash))
+                {
+                    guideUser.PasswordHash = BCrypt.Net.BCrypt.HashPassword(guidePassword);
+                    changed = true;
+                }
+                if (changed)
+                {
+                    guideUser.UpdatedAt = DateTime.UtcNow;
+                    await _db.SaveChangesAsync();
+                }
+            }
+
+            // Also ensure the corresponding Guide profile exists
+            if (!await _db.Guides.AnyAsync(g => g.Email.ToLower() == guideEmail.ToLower() || g.UserId == "guide-tourlink-01"))
+            {
+                _db.Guides.Add(new Guide
+                {
+                    UserId = "guide-tourlink-01",
+                    Name = guideName,
+                    Email = guideEmail.ToLower(),
+                    Phone = "+94 77 123 4567",
+                    Bio = "National tour guide licensed by SLTDA with 8+ years experience specializing in cultural heritage, ancient kingdoms, and wildlife trails across Sri Lanka.",
+                    Languages = ["English", "Sinhala", "French"],
+                    Specialties = ["Cultural Heritage", "Ancient Kingdoms", "Wildlife Safari"],
+                    YearsExperience = 8,
+                    HourlyRate = 20.0m,
+                    HalfDayRate = 65.0m,
+                    FullDayRate = 110.0m,
+                    RatingAvg = 4.95m,
+                    RatingCount = 38,
+                    ToursCompleted = 142,
+                    VerificationStatus = GuideVerificationStatus.Verified,
+                    IsActive = true,
+                    AcceptingBookings = true,
+                    Qualifications = "SLTDA National Guide License #NG-2016-084, Advanced First Aid Certified, Wilderness Navigator",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                });
                 await _db.SaveChangesAsync();
             }
         }

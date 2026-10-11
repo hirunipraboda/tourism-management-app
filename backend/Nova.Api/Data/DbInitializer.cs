@@ -22,7 +22,7 @@ public static class DbInitializer
             new() { Id = "user-operator-1", Name = "Bob Operator", Email = "operator@example.com", PasswordHash = BCrypt.Net.BCrypt.HashPassword("Password123!"), Role = UserRole.TourismOperator, CreatedAt = DateTime.UtcNow.AddDays(-40) },
             new() { Id = "user-admin-1", Name = "Charlie Admin", Email = "admin@example.com", PasswordHash = BCrypt.Net.BCrypt.HashPassword("Password123!"), Role = UserRole.Admin, CreatedAt = DateTime.UtcNow.AddDays(-60) },
             new() { Id = "admin-travellink-01", Name = "TravelLink Administrator", Email = "admin@travellink.com", PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin123"), Role = UserRole.Admin, IsActive = true, CreatedAt = DateTime.UtcNow.AddDays(-90) },
-            new() { Id = "guide-tourlink-01", Name = "Samantha Perera", Email = "guide@tourlink.com", PasswordHash = BCrypt.Net.BCrypt.HashPassword("guide123"), Role = UserRole.Guide, MustChangePassword = true, IsActive = true, CreatedAt = DateTime.UtcNow.AddDays(-60) }
+            new() { Id = "guide-tourlink-01", Name = "Samantha Perera", Email = "guide@tourlink.com", PasswordHash = BCrypt.Net.BCrypt.HashPassword("guide123"), Role = UserRole.Guide, MustChangePassword = false, IsActive = true, CreatedAt = DateTime.UtcNow.AddDays(-60) }
         };
 
         foreach (var u in usersToEnsure)
@@ -36,12 +36,14 @@ public static class DbInitializer
             {
                 existing.Role = UserRole.Admin;
                 existing.IsActive = true;
+                existing.MustChangePassword = false;
                 existing.PasswordHash = u.PasswordHash;
             }
             else if (u.Email == "guide@tourlink.com")
             {
                 existing.Role = UserRole.Guide;
                 existing.IsActive = true;
+                existing.MustChangePassword = false;
                 existing.PasswordHash = u.PasswordHash;
             }
         }

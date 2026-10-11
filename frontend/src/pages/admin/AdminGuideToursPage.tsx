@@ -386,12 +386,40 @@ export const AdminGuideToursPage: React.FC = () => {
         payoutAccountNote: guideForm.payoutAccountNote,
       };
 
-      await guideService.createAdminGuide(payload);
+      const created = await guideService.createAdminGuide(payload);
+      if (created) {
+        const newDisplayGuide: GuideDisplayItem = {
+          id: `guide-${created.id}`,
+          numericId: created.id,
+          userId: created.userId,
+          name: created.name,
+          email: created.email,
+          phone: created.phone || 'N/A',
+          languages: created.languages || [],
+          specialties: created.specialties || [],
+          yearsExperience: created.yearsExperience || 1,
+          rating: created.ratingAvg || 5.0,
+          totalTours: created.toursCompleted || 0,
+          status: 'Active',
+          verificationStatus: 'Verified',
+          avatarUrl: created.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(created.name)}`,
+          bio: created.bio || '',
+          location: 'Sri Lanka',
+          hourlyRate: created.hourlyRate || 15,
+          halfDayRate: created.halfDayRate || 50,
+          fullDayRate: created.fullDayRate || 90,
+          acceptingBookings: true,
+          isArchived: false,
+          payoutAccountNote: created.payoutAccountNote,
+          coveredDestinations: [],
+        };
+        setGuides(prev => [newDisplayGuide, ...prev.filter(g => g.email.toLowerCase() !== created.email.toLowerCase())]);
+      }
       setIsGuideModalOpen(false);
       setGuideForm(emptyGuideForm);
-      await loadGuides();
-      await loadStats();
-      alert(`Guide ${payload.name} created successfully! Guide can login using ${payload.email} / ${payload.password}`);
+      loadGuides();
+      loadStats();
+      alert(`Guide ${payload.name} registered successfully! Guide can login using ${payload.email} / ${payload.password}`);
     } catch (err: any) {
       alert(err.message || 'Failed to create guide.');
     } finally {

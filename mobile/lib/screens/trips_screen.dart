@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../models/user_trip_models.dart';
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
+import 'manual_trip_planner_screen.dart';
 
 class TripsScreen extends StatefulWidget {
   final Function(int)? onNavigateTab;
@@ -248,11 +249,11 @@ class _TripsScreenState extends State<TripsScreen> {
 
               const SizedBox(height: 12),
 
-              // Option 2: Quick Custom Manual Trip
+              // Option 2: 6-Step Guided Manual Trip Planner (Same as Website)
               InkWell(
                 onTap: () {
                   Navigator.pop(ctx);
-                  _showQuickCustomTripDialog();
+                  _openManualTripPlanner();
                 },
                 borderRadius: BorderRadius.circular(18),
                 child: Container(
@@ -299,6 +300,21 @@ class _TripsScreenState extends State<TripsScreen> {
           ),
         );
       },
+    );
+  }
+
+  void _openManualTripPlanner() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ManualTripPlannerScreen(
+          onTripCreated: (newTrip) {
+            setState(() {
+              _allTrips.insert(0, newTrip);
+            });
+            _triggerToast('🎉 Journey "${newTrip.name}" saved to Your Trips!');
+          },
+        ),
+      ),
     );
   }
 

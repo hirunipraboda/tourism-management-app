@@ -284,7 +284,7 @@ class _LoginScreenState extends State<LoginScreen>
                                 const SizedBox(height: 8),
                                 _buildTextField(
                                   controller: _passwordController,
-                                  hint: 'â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢',
+                                  hint: 'Enter your password',
                                   icon: Icons.lock_outline_rounded,
                                   obscureText: _obscurePassword,
                                   suffixIcon: IconButton(

@@ -110,6 +110,7 @@ export const AdminDestinationsPage: React.FC = () => {
   const [selectedDestCategory, setSelectedDestCategory] = useState<string>('All');
   const [isAddDestModalOpen, setIsAddDestModalOpen] = useState(false);
   const [editingDestId, setEditingDestId] = useState<string | null>(null);
+  const [isSavingDest, setIsSavingDest] = useState(false);
 
   // Load live destinations from Supabase on mount
   useEffect(() => {
@@ -192,25 +193,16 @@ export const AdminDestinationsPage: React.FC = () => {
     const trimmedName = destName.trim();
     if (!trimmedName) {
       errors.name = 'Destination name is required.';
-    } else if (trimmedName.length < 3) {
-      errors.name = 'Destination name must be at least 3 characters.';
+    } else if (trimmedName.length < 2) {
+      errors.name = 'Destination name must be at least 2 characters.';
     } else if (trimmedName.length > 80) {
       errors.name = 'Destination name cannot exceed 80 characters.';
-    } else {
-      const isDuplicate = destinations.some(
-        (d) => d.name.toLowerCase() === trimmedName.toLowerCase() && d.id !== editingDestId
-      );
-      if (isDuplicate) {
-        errors.name = 'A destination with this name already exists in the catalog.';
-      }
     }
 
     // 2. Province / Region
     const trimmedProvince = destProvince.trim();
     if (!trimmedProvince) {
       errors.province = 'Province / Region is required.';
-    } else if (trimmedProvince.length < 3) {
-      errors.province = 'Please enter a valid province name (e.g. Central Province).';
     }
 
     // 3. Category
@@ -222,73 +214,6 @@ export const AdminDestinationsPage: React.FC = () => {
     const trimmedLocation = destLocation.trim();
     if (!trimmedLocation) {
       errors.location = 'Specific location is required.';
-    } else if (trimmedLocation.length < 3) {
-      errors.location = 'Location must be at least 3 characters.';
-    }
-
-    // 5. Best time to visit
-    const trimmedBestTime = destBestTimeToVisit.trim();
-    if (!trimmedBestTime) {
-      errors.bestTimeToVisit = 'Best time to visit is required (e.g. December to April).';
-    } else if (trimmedBestTime.length < 3) {
-      errors.bestTimeToVisit = 'Please provide a valid season or months.';
-    }
-
-    // 6. Recommended stay
-    const trimmedStay = destRecommendedStayDays.trim();
-    if (!trimmedStay) {
-      errors.recommendedStayDays = 'Recommended stay period is required (e.g. 2 - 3 Days).';
-    }
-
-    // 7. Average budget per day
-    const trimmedBudget = destAvgBudgetPerDay.trim();
-    if (!trimmedBudget) {
-      errors.avgBudgetPerDay = 'Average budget per day is required (e.g. $60 - $95 / day).';
-    }
-
-    // 8. Opening hours
-    const trimmedHours = destOpeningHours.trim();
-    if (!trimmedHours) {
-      errors.openingHours = 'Opening hours are required (e.g. 06:00 AM – 06:00 PM Daily).';
-    }
-
-    // 9. Local Entry Fee
-    const trimmedLocalFee = destEntryFeeLocal.trim();
-    if (!trimmedLocalFee) {
-      errors.entryFeeLocal = 'Local entry fee is required (e.g. Free Entry or LKR 200).';
-    }
-
-    // 10. Foreign Entry Fee
-    const trimmedForeignFee = destEntryFeeForeign.trim();
-    if (!trimmedForeignFee) {
-      errors.entryFeeForeign = 'Foreign entry fee is required (e.g. $25 / LKR 7,500).';
-    }
-
-    // 11. Top Attractions
-    if (destTopAttractions.length === 0) {
-      errors.topAttractions = 'Please select or add at least 1 top attraction.';
-    }
-
-    // 12. Cover Image
-    if (destImageInputMode === 'upload') {
-      if (!destUploadedImagePreview && !destCoverImage) {
-        errors.coverImage = 'Please upload a cover image for the destination.';
-      }
-    } else {
-      const trimmedCover = destCoverImage.trim();
-      if (!trimmedCover) {
-        errors.coverImage = 'Please enter an image URL.';
-      } else if (!/^https?:\/\/.+/i.test(trimmedCover)) {
-        errors.coverImage = 'Image URL must start with http:// or https://';
-      }
-    }
-
-    // 13. Description
-    const trimmedDesc = destDescription.trim();
-    if (!trimmedDesc) {
-      errors.description = 'Description is required.';
-    } else if (trimmedDesc.length < 15) {
-      errors.description = 'Description must be at least 15 characters to provide visitor details.';
     }
 
     setDestErrors(errors);
@@ -596,55 +521,65 @@ export const AdminDestinationsPage: React.FC = () => {
   const handleSaveDestination = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateDestForm()) {
-      showToast('Please correct the highlighted validation errors before saving.');
+      showToast('Please fill in the required fields (Name, Province, Location).');
       return;
     }
 
-    const finalImage =
-      destCoverImage ||
-      destUploadedImagePreview ||
-      'https://images.unsplash.com/photo-1588598056972-2d12f6a73c1d?auto=format&fit=crop&w=800&q=80';
+    setIsSavingDest(true);
+    try {
+      const finalImage =
+        destCoverImage.trim() ||
+        destUploadedImagePreview ||
+        'https://images.unsplash.com/photo-1588598056972-2d12f6a73c1d?auto=format&fit=crop&w=800&q=80';
 
-    const payload: Partial<AdminDestination> = {
-      name: destName.trim(),
-      province: destProvince,
-      category: destCategory,
-      location: destLocation.trim(),
-      coverImage: finalImage,
-      description: destDescription.trim(),
-      accessibility: destAccessibility,
-      bestTimeToVisit: destBestTimeToVisit,
-      recommendedStayDays: destRecommendedStayDays,
-      avgBudgetPerDay: destAvgBudgetPerDay,
-      topAttractions: destTopAttractions,
-      openingHours: destOpeningHours,
-      entryFeeLocal: destEntryFeeLocal,
-      entryFeeForeign: destEntryFeeForeign,
-      attractionsCount: Math.max(destTopAttractions.length, 1),
-    };
+      const finalAttractions =
+        destTopAttractions.length > 0 ? destTopAttractions : [destName.trim()];
 
-    if (editingDestId) {
-      await adminService.updateDestination(editingDestId, payload);
-      setDestinations((prev) =>
-        prev.map((d) => (d.id === editingDestId ? { ...d, ...payload } : d))
-      );
-      showToast(`Destination "${destName}" updated in Supabase DB successfully!`);
-    } else {
-      const created = await adminService.addDestination({
-        ...payload,
-        status: 'Active',
-        lat: 7.29,
-        lng: 80.63,
-        bookingsCount: 0,
-        growthPercentage: 0,
-      });
-      // Prevent duplication: replace or prepend cleanly ensuring unique id
-      setDestinations((prev) => [created, ...prev.filter((d) => d.id !== created.id)]);
-      showToast(`Destination "${created.name}" stored in Supabase DB successfully!`);
+      const payload: Partial<AdminDestination> = {
+        name: destName.trim(),
+        province: destProvince.trim(),
+        category: destCategory,
+        location: destLocation.trim(),
+        coverImage: finalImage,
+        description: destDescription.trim() || `Explore the attractions and culture of ${destName.trim()}.`,
+        accessibility: destAccessibility || 'Highway & Rail Connected',
+        bestTimeToVisit: destBestTimeToVisit.trim() || 'Year-round',
+        recommendedStayDays: destRecommendedStayDays.trim() || '2 - 3 Days',
+        avgBudgetPerDay: destAvgBudgetPerDay.trim() || '$60 - $95 / day',
+        topAttractions: finalAttractions,
+        openingHours: destOpeningHours.trim() || '06:00 AM – 06:00 PM Daily',
+        entryFeeLocal: destEntryFeeLocal.trim() || 'Free Entry',
+        entryFeeForeign: destEntryFeeForeign.trim() || '$25 / LKR 7,500',
+        attractionsCount: Math.max(finalAttractions.length, 1),
+      };
+
+      if (editingDestId) {
+        await adminService.updateDestination(editingDestId, payload);
+        setDestinations((prev) =>
+          prev.map((d) => (d.id === editingDestId ? { ...d, ...payload } : d))
+        );
+        showToast(`Destination "${destName}" updated in Supabase DB successfully!`);
+      } else {
+        const created = await adminService.addDestination({
+          ...payload,
+          status: 'Active',
+          lat: 7.29,
+          lng: 80.63,
+          bookingsCount: 0,
+          growthPercentage: 0,
+        });
+        setDestinations((prev) => [created, ...prev.filter((d) => d.id !== created.id)]);
+        showToast(`Destination "${created.name}" stored in Supabase DB successfully!`);
+      }
+
+      setIsAddDestModalOpen(false);
+      resetDestForm();
+    } catch (err: any) {
+      console.error('Error saving destination to Supabase:', err);
+      showToast(`Database Error: ${err.message || 'Could not connect to database'}`);
+    } finally {
+      setIsSavingDest(false);
     }
-
-    setIsAddDestModalOpen(false);
-    resetDestForm();
   };
 
   // ── Create or Update Travel Package ──────────────────────────────────────
@@ -2433,9 +2368,17 @@ export const AdminDestinationsPage: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="bg-[#0B3A53] hover:bg-[#072537] text-white font-extrabold text-xs uppercase tracking-wider px-8 py-3.5 rounded-full shadow-md transition-all cursor-pointer hover:scale-102"
+                  disabled={isSavingDest}
+                  className="bg-[#0B3A53] hover:bg-[#072537] text-white font-extrabold text-xs uppercase tracking-wider px-8 py-3.5 rounded-full shadow-md transition-all cursor-pointer hover:scale-102 disabled:opacity-50 flex items-center gap-2"
                 >
-                  {editingDestId ? 'Update Destination' : 'Save Destination'}
+                  {isSavingDest && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+                  <span>
+                    {isSavingDest
+                      ? 'Saving to Supabase...'
+                      : editingDestId
+                      ? 'Update Destination'
+                      : 'Save Destination'}
+                  </span>
                 </button>
               </div>
             </form>

@@ -669,22 +669,27 @@ export const adminService = {
     };
 
     // 1. Persist directly to Supabase via backend API
-    try {
-      const dbPayload = {
-        name: newDest.name,
-        province: newDest.province,
-        category: newDest.category,
-        location: newDest.location,
-        imageUrl: newDest.coverImage,
-        description: newDest.description,
-        bestTimeToVisit: newDest.bestTimeToVisit,
-        entryFee: parseFloat(String(newDest.entryFeeForeign || '').replace(/[^0-9.]/g, '')) || 0,
-        openingTime: newDest.openingHours?.split('–')[0]?.trim() || '08:00 AM',
-        closingTime: newDest.openingHours?.split('–')[1]?.trim() || '06:00 PM',
-        isActive: newDest.status !== 'Inactive',
-        topAttractions: newDest.topAttractions || [],
-      };
+    const finalAttractions =
+      newDest.topAttractions && newDest.topAttractions.length > 0
+        ? newDest.topAttractions
+        : [newDest.name];
 
+    const dbPayload = {
+      name: newDest.name,
+      province: newDest.province,
+      category: newDest.category,
+      location: newDest.location,
+      imageUrl: newDest.coverImage,
+      description: newDest.description || `Explore the attractions and culture of ${newDest.name}.`,
+      bestTimeToVisit: newDest.bestTimeToVisit || 'Year-round',
+      entryFee: parseFloat(String(newDest.entryFeeForeign || '').replace(/[^0-9.]/g, '')) || 0,
+      openingTime: newDest.openingHours?.split('–')[0]?.trim() || '08:00 AM',
+      closingTime: newDest.openingHours?.split('–')[1]?.trim() || '06:00 PM',
+      isActive: newDest.status !== 'Inactive',
+      topAttractions: finalAttractions,
+    };
+
+    try {
       const res = await fetchApi<any>('/destinations', {
         method: 'POST',
         body: JSON.stringify(dbPayload),
@@ -693,8 +698,9 @@ export const adminService = {
       if (res.data?.id) {
         newDest.id = res.data.id;
       }
-    } catch (err) {
-      console.warn('Failed to persist destination to Supabase backend API:', err);
+    } catch (err: any) {
+      console.error('Failed to persist destination to Supabase backend API:', err);
+      throw new Error(err.message || 'Failed to save destination to database');
     }
 
     // 2. Sync to local state & cache
@@ -708,28 +714,29 @@ export const adminService = {
   },
 
   async updateDestination(id: string, data: Partial<AdminDestination>): Promise<AdminDestination | null> {
-    try {
-      const dbPayload = {
-        name: data.name,
-        province: data.province,
-        category: data.category,
-        location: data.location,
-        imageUrl: data.coverImage,
-        description: data.description,
-        bestTimeToVisit: data.bestTimeToVisit,
-        entryFee: parseFloat(String(data.entryFeeForeign || '').replace(/[^0-9.]/g, '')) || 0,
-        openingTime: data.openingHours?.split('–')[0]?.trim() || '08:00 AM',
-        closingTime: data.openingHours?.split('–')[1]?.trim() || '06:00 PM',
-        isActive: data.status ? data.status !== 'Inactive' : undefined,
-        topAttractions: data.topAttractions || [],
-      };
+    const dbPayload = {
+      name: data.name,
+      province: data.province,
+      category: data.category,
+      location: data.location,
+      imageUrl: data.coverImage,
+      description: data.description,
+      bestTimeToVisit: data.bestTimeToVisit,
+      entryFee: parseFloat(String(data.entryFeeForeign || '').replace(/[^0-9.]/g, '')) || 0,
+      openingTime: data.openingHours?.split('–')[0]?.trim() || '08:00 AM',
+      closingTime: data.openingHours?.split('–')[1]?.trim() || '06:00 PM',
+      isActive: data.status ? data.status !== 'Inactive' : undefined,
+      topAttractions: data.topAttractions || [],
+    };
 
+    try {
       await fetchApi<any>(`/destinations/${id}`, {
         method: 'PUT',
         body: JSON.stringify(dbPayload),
       });
-    } catch (err) {
-      console.warn('Failed to update destination in Supabase backend API:', err);
+    } catch (err: any) {
+      console.error('Failed to update destination in Supabase backend API:', err);
+      throw new Error(err.message || 'Failed to update destination in database');
     }
 
     const current = this.getDestinations();
@@ -746,8 +753,9 @@ export const adminService = {
   async deleteDestination(id: string): Promise<AdminDestination[]> {
     try {
       await fetchApi<any>(`/destinations/${id}`, { method: 'DELETE' });
-    } catch (err) {
-      console.warn('Failed to delete destination from Supabase backend API:', err);
+    } catch (err: any) {
+      console.error('Failed to delete destination from Supabase backend API:', err);
+      throw new Error(err.message || 'Failed to delete destination from database');
     }
 
     const current = this.getDestinations();

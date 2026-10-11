@@ -53,8 +53,33 @@ export async function fetchApi<T>(
       message: resJson.message,
       success: resJson.success !== undefined ? resJson.success : true,
     };
-  } catch (error) {
-    console.warn(`[Travel Link API] Endpoint "${endpoint}" fetch error or backend unavailable. Falling back to mock logic if configured.`, error);
+  } catch (error: any) {
+    // If direct BASE_URL failed (e.g. cross-origin/CORS issue or port 5000 not directly reachable from client),
+    // attempt relative proxy path /api which Vite proxies directly to http://localhost:5000
+    if (BASE_URL.startsWith('http') && !endpoint.startsWith('http')) {
+      try {
+        const fallbackUrl = `/api${endpoint}`;
+        const fallbackRes = await fetch(fallbackUrl, {
+          ...options,
+          headers,
+        });
+
+        if (fallbackRes.ok) {
+          const resJson = await fallbackRes.json();
+          const payloadData = resJson.data !== undefined ? resJson.data : resJson;
+          return {
+            data: payloadData,
+            status: fallbackRes.status,
+            message: resJson.message,
+            success: resJson.success !== undefined ? resJson.success : true,
+          };
+        }
+      } catch (proxyError) {
+        // Fallback also failed, proceed to report original error
+      }
+    }
+
+    console.warn(`[Travel Link API] Endpoint "${endpoint}" fetch error or backend unavailable:`, error);
     throw error;
   }
 }

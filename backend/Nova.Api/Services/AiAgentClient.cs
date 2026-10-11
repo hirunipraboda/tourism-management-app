@@ -21,28 +21,41 @@ public class AiAgentClient : IAiAgentClient
     private readonly ILogger<AiAgentClient> _logger;
     private readonly string _baseUrl;
 
+    private static bool? _lastAvailableState;
+    private static DateTime _lastAvailableCheck = DateTime.MinValue;
+    private static readonly TimeSpan CacheDuration = TimeSpan.FromSeconds(20);
+
     public AiAgentClient(HttpClient httpClient, IConfiguration configuration, ILogger<AiAgentClient> logger)
     {
         _httpClient = httpClient;
         _logger = logger;
-        _baseUrl = configuration["AiAgentService:BaseUrl"] ?? "https://nova-agentic-ai-f4im.onrender.com";
+        _baseUrl = configuration["AiAgentService:BaseUrl"] ?? "http://localhost:8000";
         _httpClient.BaseAddress = new Uri(_baseUrl);
         
-        var timeoutSec = int.TryParse(configuration["AiAgentService:TimeoutSeconds"], out var sec) ? sec : 120;
+        var timeoutSec = int.TryParse(configuration["AiAgentService:TimeoutSeconds"], out var sec) ? sec : 15;
         _httpClient.Timeout = TimeSpan.FromSeconds(timeoutSec);
     }
 
     public async Task<bool> IsAvailableAsync()
     {
+        if (_lastAvailableState.HasValue && DateTime.UtcNow - _lastAvailableCheck < CacheDuration)
+        {
+            return _lastAvailableState.Value;
+        }
+
         try
         {
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
             var response = await _httpClient.GetAsync("/health", cts.Token);
-            return response.IsSuccessStatusCode;
+            _lastAvailableState = response.IsSuccessStatusCode;
+            _lastAvailableCheck = DateTime.UtcNow;
+            return _lastAvailableState.Value;
         }
         catch (Exception ex)
         {
-            _logger.LogWarning("AI Agent microservice health check failed: {Message}", ex.Message);
+            _logger.LogWarning("AI Agent microservice health check failed ({Url}): {Message}", _baseUrl, ex.Message);
+            _lastAvailableState = false;
+            _lastAvailableCheck = DateTime.UtcNow;
             return false;
         }
     }
@@ -50,6 +63,11 @@ public class AiAgentClient : IAiAgentClient
     public async Task<List<ActivityCandidate>> ResearchDestinationAsync(string destination, List<string> interests, string tripStyle)
     {
         var candidates = new List<ActivityCandidate>();
+
+        if (!await IsAvailableAsync())
+        {
+            return candidates; // Return immediately to avoid blocking on offline remote services
+        }
 
         try
         {
@@ -60,7 +78,8 @@ public class AiAgentClient : IAiAgentClient
                 requested_information = $"Top attractions, opening hours, ticket costs for {tripStyle} traveler"
             };
 
-            var response = await _httpClient.PostAsJsonAsync("/agents/destination-research", payload);
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+            var response = await _httpClient.PostAsJsonAsync("/agents/destination-research", payload, cts.Token);
             if (response.IsSuccessStatusCode)
             {
                 var json = await response.Content.ReadFromJsonAsync<JsonElement>();
@@ -127,6 +146,11 @@ public class AiAgentClient : IAiAgentClient
 
     public async Task<TripPlanDto?> PlanTripAsync(TripPlanningRequestDto request)
     {
+        if (!await IsAvailableAsync())
+        {
+            return null;
+        }
+
         try
         {
             var payload = new
@@ -145,7 +169,8 @@ public class AiAgentClient : IAiAgentClient
                 specialRequirements = request.SpecialRequirements
             };
 
-            var response = await _httpClient.PostAsJsonAsync("/agents/plan", payload);
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            var response = await _httpClient.PostAsJsonAsync("/agents/plan", payload, cts.Token);
             if (response.IsSuccessStatusCode)
             {
                 var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
@@ -166,6 +191,11 @@ public class AiAgentClient : IAiAgentClient
 
     public async Task<TransportLogisticsAssessment?> CheckLogisticsAsync(string origin, string destination, string? travelDate, List<string> interests)
     {
+        if (!await IsAvailableAsync())
+        {
+            return null;
+        }
+
         try
         {
             var payload = new
@@ -176,7 +206,8 @@ public class AiAgentClient : IAiAgentClient
                 interests = interests ?? []
             };
 
-            var response = await _httpClient.PostAsJsonAsync("/agents/logistics", payload);
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            var response = await _httpClient.PostAsJsonAsync("/agents/logistics", payload, cts.Token);
             if (response.IsSuccessStatusCode)
             {
                 var json = await response.Content.ReadFromJsonAsync<JsonElement>();
@@ -205,6 +236,11 @@ public class AiAgentClient : IAiAgentClient
 
     public async Task<RecommendationResponseDto?> GetRecommendationsAsync(RecommendationFilterRequestDto request)
     {
+        if (!await IsAvailableAsync())
+        {
+            return null;
+        }
+
         try
         {
             var payload = new
@@ -220,7 +256,8 @@ public class AiAgentClient : IAiAgentClient
                 preferredEnvironment = request.PreferredEnvironment
             };
 
-            var response = await _httpClient.PostAsJsonAsync("/agents/recommendations", payload);
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            var response = await _httpClient.PostAsJsonAsync("/agents/recommendations", payload, cts.Token);
             if (response.IsSuccessStatusCode)
             {
                 var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
